@@ -34,7 +34,8 @@ def rodent_mocap(kp_data, params, random_state=None):
 
     # Build a mocap viewing task
     task = ViewMocap(walker, arena, kp_data, params=params)
-    return composer.Environment(time_limit=params['_TIME_BINS']*(params['n_frames']-1),
+    time_limit = params['_TIME_BINS']*(params['n_frames']-1)
+    return composer.Environment(time_limit=time_limit,
                                 task=task,
                                 random_state=random_state,
                                 strip_singleton_obs_buffer_dim=True)
@@ -98,12 +99,13 @@ class ViewMocap(composer.Task):
             self.video_name = video_name
         for id, name in enumerate(self.params['_KEYPOINT_MODEL_PAIRS']):
             start = (np.random.rand(3)-.5)*.001
+            rgba = self.params['_KEYPOINT_COLOR_PAIRS'][name]
             site = self._arena.mjcf_model.worldbody.add('site', name=name,
-                                           type='sphere',
-                                           size=[.005],
-                                           rgba=self.params['_KEYPOINT_COLOR_PAIRS'][name],
-                                           pos=start,
-                                           group=2)
+                                                        type='sphere',
+                                                        size=[.005],
+                                                        rgba=rgba,
+                                                        pos=start,
+                                                        group=2)
 
             self.sites.append(site)
         enabled_observables = []
@@ -120,20 +122,25 @@ class ViewMocap(composer.Task):
 
     @property
     def root_entity(self):
+        """Return arena root."""
         return self._arena
 
     def initialize_episode_mjcf(self, random_state):
+        """Initialize an arena episode."""
         self._arena.regenerate(random_state)
         self._arena.mjcf_model.visual.map.znear = 0.0002
         # self._arena.mjcf_model.visual.map.zfar = 4.
 
     def initialize_episode(self, physics, random_state):
+        """Reinitialize the pose of the walker."""
         self._walker.reinitialize_pose(physics, random_state)
 
     def get_reward(self, physics):
+        """Get reward."""
         return 0.0
 
     def get_discount(self, physics):
+        """Get discount."""
         return 1.
 
     def grab_frame(self, physics):
@@ -232,54 +239,65 @@ class Rat(base.Walker):
         # an attribute for easier access
         for key, v in self.params['_KEYPOINT_MODEL_PAIRS'].items():
             parent = self._mjcf_root.find('body', v)
+            pos = self.params['_KEYPOINT_INITIAL_OFFSETS'][key]
             site = parent.add('site', name=key,
                               type='sphere',
                               size=[.005],
                               rgba="0 0 0 1",
-                              pos=self.params['_KEYPOINT_INITIAL_OFFSETS'][key])
+                              pos=pos)
             self.body_sites.append(site)
         super(Rat, self)._build(initializer=initializer)
 
     @property
     def upright_pose(self):
+        """Reset pose to upright position."""
         return base.WalkerPose(xpos=_UPRIGHT_POS,
                                xquat=_UPRIGHT_QUAT)
 
     @property
     def mjcf_model(self):
+        """Return the model root."""
         return self._mjcf_root
 
     @composer.cached_property
     def actuators(self):
+        """Return all actuators."""
         return tuple(self._mjcf_root.find_all('actuator'))
 
     @composer.cached_property
     def root_body(self):
+        """Return the body."""
         return self._mjcf_root.find('body', 'torso')
 
     @composer.cached_property
     def head(self):
+        """Return the head."""
         return self._mjcf_root.find('body', 'skull')
 
     @composer.cached_property
     def left_arm_root(self):
+        """Return the left arm."""
         return self._mjcf_root.find('body', 'scapula_L')
 
     @composer.cached_property
     def right_arm_root(self):
+        """Return the right arm."""
         return self._mjcf_root.find('body', 'scapula_R')
 
     @composer.cached_property
     def ground_contact_geoms(self):
+        """Return ground contact geoms."""
         return tuple(self._mjcf_root.find('body', 'foot_L').find_all('geom') +
                      self._mjcf_root.find('body', 'foot_R').find_all('geom'))
 
     @composer.cached_property
     def standing_height(self):
+        """Return standing height."""
         return self.params['_STAND_HEIGHT']
 
     @composer.cached_property
     def end_effectors(self):
+        """Return end effectors."""
         return (self._mjcf_root.find('body', 'lower_arm_R'),
                 self._mjcf_root.find('body', 'lower_arm_L'),
                 self._mjcf_root.find('body', 'foot_R'),
@@ -287,24 +305,29 @@ class Rat(base.Walker):
 
     @composer.cached_property
     def observable_joints(self):
+        """Return observable joints."""
         return tuple(actuator.joint for actuator in self.actuators
                      if actuator.joint is not None)
 
     @composer.cached_property
     def bodies(self):
+        """Return all bodies."""
         return tuple(self._mjcf_root.find_all('body'))
 
     @composer.cached_property
     def egocentric_camera(self):
+        """Return the egocentric camera."""
         return self._mjcf_root.find('camera', 'egocentric')
 
     @property
     def marker_geoms(self):
+        """Return the lower arm geoms."""
         return (self._mjcf_root.find('geom', 'lower_arm_R'),
                 self._mjcf_root.find('geom', 'lower_arm_L'))
 
     @property
     def _xml_path(self):
+        """Return the path to th model .xml file."""
         return self.params['_XML_PATH']
 
     def _build_observables(self):
@@ -316,11 +339,13 @@ class RodentObservables(base.WalkerObservables):
 
     @composer.observable
     def head_height(self):
+        """Observe the head height."""
         return observable.Generic(
             lambda physics: physics.bind(self._entity.head).xpos[2])
 
     @composer.observable
     def sensors_torque(self):
+        """Observe the torque sensors."""
         return observable.MJCFFeature(
             'sensordata', self._entity.mjcf_model.sensor.torque,
             corruptor=lambda v,
@@ -328,23 +353,26 @@ class RodentObservables(base.WalkerObservables):
 
     @composer.observable
     def actuator_activation(self):
-        return observable.MJCFFeature('act',
-                                      self._entity.mjcf_model.find_all('actuator'))
+        """Observe the actuator activation."""
+        model = self._entity.mjcf_model
+        return observable.MJCFFeature('act', model.find_all('actuator'))
 
     @composer.observable
     def appendages_pos(self):
-        """Equivalent to `end_effectors_pos` with the head's position appended."""
+        """Equivalent to `end_effectors_pos` with head's position appended."""
         def relative_pos_in_egocentric_frame(physics):
             end_effectors_with_head = (
                 self._entity.end_effectors + (self._entity.head,))
             end_effector = physics.bind(end_effectors_with_head).xpos
             torso = physics.bind(self._entity.root_body).xpos
-            xmat = np.reshape(physics.bind(self._entity.root_body).xmat, (3, 3))
+            xmat = \
+                np.reshape(physics.bind(self._entity.root_body).xmat, (3, 3))
             return np.reshape(np.dot(end_effector - torso, xmat), -1)
         return observable.Generic(relative_pos_in_egocentric_frame)
 
     @property
     def proprioception(self):
+        """Return proprioceptive information."""
         return [
                 self.joints_pos,
                 self.joints_vel,

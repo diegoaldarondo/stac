@@ -48,7 +48,7 @@ def view_stac(data_path, param_path, *,
     prev_time = env.physics.time()
     if headless & render_video:
         while prev_time < env._time_limit:
-            while (env.physics.time() - prev_time) < .03:
+            while (env.physics.time() - prev_time) < params['_TIME_BINS']:
                 env.physics.step()
             env.task.after_step(env.physics, None)
             prev_time = env.physics.time()

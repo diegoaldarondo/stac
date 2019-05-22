@@ -5,17 +5,16 @@ import scipy.optimize
 
 
 def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
-           reg_coef=0., temporal_reg_coef=.2,
-           root_only=False, temporal_regularization=False):
+           reg_coef=0., root_only=False, temporal_regularization=False):
     """Compute the marker loss for q_phase optimization.
 
     :param physics: Physics of current environment.
     :param kp_data: Reference
     :param sites: sites of keypoints at frame_index
+    :param params: Animal parameters dictionary
     :param qs_to_opt: Binary vector of qposes to optimize.
     :param q_copy: Copy of current qpos, for use in optimization of subsets
                    of qpos.
-    :param temporal_reg_coef: Regularization coefficient for temporal reg.
     :param reg_coef: L1 regularization coefficient during marker loss.
     :param root_only: If True, only regularize the root.
     :param temporal_regularization: If True, regularize arm joints over time.
@@ -23,7 +22,6 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
     # Make copy of previous frame for temporal regularization
     # TODO(refactor): Make more readable implementation of qpos copy
     q_prev = q_copy.copy()
-    # print('q_copy: ', q_copy.shape)
     temporal_arm_regularizer = 0.
 
     # Optional regularization.
@@ -47,7 +45,7 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
 
     residual = (kp_data.T - q_joints_to_markers(q, physics, sites))
     return (.5*np.sum(residual**2) + reg_term
-            + temporal_reg_coef*temporal_arm_regularizer)
+            + params['temporal_reg_coef']*temporal_arm_regularizer)
 
 
 def q_joints_to_markers(q, physics, sites):
@@ -76,9 +74,11 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
     :param physics: Physics of current environment.
     :param marker_ref_arr: Keypoint data reference
     :param sites: sites of keypoints at frame_index
+    :param params: Animal parameters dictionary
     :param reg_coef: L1 regularization coefficient during marker loss.
     :param qs_to_opt: Binary vector of qs to optimize.
     :param root_only: If True, only optimize the root.
+    :param temporal_regularization: If True, regularize arm joints over time.
     """
     # Define initial position of the optimization
     q0 = np.copy(physics.named.data.qpos[:])
@@ -86,6 +86,10 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
     q_copy = np.copy(q0)
 
     # Set the center to help with finding the optima
+    # TODO(centering_bug):
+    # The center is not necessarily from 12:15 depending on struct ordering.
+    # This probably won't be a problem, as it is just an ititialization for the
+    # optimizer, but keep it in mind.
     if root_only:
         q0[:3] = marker_ref_arr[12:15]
 
@@ -176,6 +180,7 @@ def m_phase(physics, kp_data, sites, time_indices, q, initial_offsets, params,
     :param q: qpos values for the frames in time_indices.
     :param time_indices: time_indices used for offset estimation.
     :param initial_offsets: Initial offset values for offset regularization.
+    :param params: Animal parameters dictionary
     :param reg_coef: L1 regularization coefficient during marker loss.
     :param maxiter: Maximum number of iterations to use in the minimization.
     """

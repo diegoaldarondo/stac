@@ -1,8 +1,5 @@
 """Utility functions to convert from mocap positions to mujoco sensors."""
 import numpy as np
-from dm_control import mjcf
-from dm_control import suite
-from dm_control import composer
 import h5py
 import os
 import yaml
@@ -40,11 +37,15 @@ def load_kp_data_from_file(filename, struct_name='markers_preproc'):
 def load_snippets_from_file(folder):
     """Load snippets from file and return list of kp_data."""
     filenames = [os.path.join(folder, f) for f in os.listdir(folder)
-                 if os.path.isfile(os.path.join(folder, f))]
+                 if os.path.isfile(os.path.join(folder, f)) and
+                 'params' not in f]
     snippets = [None]*len(filenames)
     for i, filename in enumerate(filenames):
         with h5py.File(filename, 'r') as f:
-            data = f['data']
+            try:
+                data = f['data']
+            except:
+                data = f['preproc_mocap']
             kp_names = [k for k in data.keys()]
             # Concatenate the data for each keypoint,
             # and format to (t x n_dims)
