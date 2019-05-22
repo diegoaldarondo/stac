@@ -12,127 +12,29 @@ from dm_control.locomotion.walkers import initializers
 from dm_control.locomotion.arenas import floors as arenas
 from dm_control.locomotion.walkers import base
 from dm_control.composer.observation import observable
-from scipy.spatial.transform import Rotation as rotation
 import numpy as np
 import os
 import scipy.optimize
 
-
-_XML_PATH = '/home/diego/code/olveczky/dm/stac/models/rat_may17.xml'
-_PARTS_TO_ZERO = ['toe', 'ankle', 'finger', 'wrist']
-# _PARTS_TO_ZERO = ['toe', 'ankle', 'finger']
-# _PARTS_TO_ZERO = ['ankle']
-
-KEYPOINT_MODEL_PAIRS = {"ArmL": "hand_L",
-                        "ArmR": "hand_R",
-                        "ElbowL": "lower_arm_L",
-                        "ElbowR": "lower_arm_R",
-                        "HeadB": "skull",
-                        "HeadF": "skull",
-                        "HeadL": "skull",
-                        "HipL": "upper_leg_L",
-                        "HipR": "upper_leg_R",
-                        "KneeL": "lower_leg_L",
-                        "KneeR": "lower_leg_R",
-                        "Offset1": "vertebra_1",
-                        "Offset2": "vertebra_1",
-                        "ShinL": "foot_L",
-                        "ShinR": "foot_R",
-                        "ShoulderL": "upper_arm_L",
-                        "ShoulderR": "upper_arm_R",
-                        "SpineF": "vertebra_cervical_5",
-                        "SpineL": "pelvis",
-                        "SpineM": "vertebra_1"}
-LEFT_LEG = "0 0 .3 1"
-RIGHT_LEG = ".3 0 0 1"
-LEFT_ARM = "0 0 .8 1"
-RIGHT_ARM = ".8 0 0 1"
-HEAD = ".8 .8 0 1"
-SPINE = ".8 .8 .8 1"
-KEYPOINT_COLOR_PAIRS = {"ArmL": LEFT_ARM,
-                        "ArmR": RIGHT_ARM,
-                        "ElbowL": LEFT_ARM,
-                        "ElbowR": RIGHT_ARM,
-                        "HeadB": HEAD,
-                        "HeadF": HEAD,
-                        "HeadL": HEAD,
-                        "HipL": LEFT_LEG,
-                        "HipR": RIGHT_LEG,
-                        "KneeL": LEFT_LEG,
-                        "KneeR": RIGHT_LEG,
-                        "Offset1": SPINE,
-                        "Offset2": SPINE,
-                        "ShinL": LEFT_LEG,
-                        "ShinR": RIGHT_LEG,
-                        "ShoulderL": LEFT_ARM,
-                        "ShoulderR": RIGHT_ARM,
-                        "SpineF": SPINE,
-                        "SpineL": SPINE,
-                        "SpineM": SPINE}
-
-# KEYPOINT_INITIAL_OFFSETS = {"ArmL": "0. 0. 0.",
-#                             "ArmR": "0. 0. 0.",
-#                             "ElbowL": "0. 0. 0.",
-#                             "ElbowR": "0. 0. 0.",
-#                             "HeadB": "0. -.025 .045",
-#                             "HeadF": ".025 -.025 .045",
-#                             "HeadL": "0. .025 .045",
-#                             "HipL": "0. 0. 0.005",
-#                             "HipR": "0. 0. 0.005",
-#                             "KneeL": "0. 0. 0.",
-#                             "KneeR": "0. 0. 0.",
-#                             "Offset1": "0.015 .0155 -0.005",
-#                             "Offset2": "-0.015 .015 -0.005",
-#                             "ShinL": "0.015 0.01 0.0125",
-#                             "ShinR": "0.015 -0.01 0.0125",
-#                             "ShoulderL": "0. 0. 0.",
-#                             "ShoulderR": "0. 0. 0.",
-#                             "SpineF": "0. 0. 0.005",
-#                             "SpineL": "0. 0. 0.005",
-#                             "SpineM": "0. 0. 0.005"}
-KEYPOINT_INITIAL_OFFSETS = {"ArmL": "0. 0. 0.",
-                            "ArmR": "0. 0. 0.",
-                            "ElbowL": "0. 0. 0.",
-                            "ElbowR": "0. 0. 0.",
-                            "HeadB": "0. -.025 .045",
-                            "HeadF": ".025 -.025 .045",
-                            "HeadL": "0. .025 .045",
-                            "HipL": "0.03 0. 0.04",
-                            "HipR": "0. 0. 0.005",
-                            "KneeL": "0. 0. 0.03",
-                            "KneeR": "0. 0. 0.",
-                            "Offset1": "0.015 .0155 -0.005",
-                            "Offset2": "-0.015 .015 -0.005",
-                            "ShinL": "0.02 0. 0.015",
-                            "ShinR": "0.015 -0.01 0.0125",
-                            "ShoulderL": "0. 0. 0.",
-                            "ShoulderR": "0. 0. 0.",
-                            "SpineF": "0. 0. 0.005",
-                            "SpineL": "0. 0. 0.005",
-                            "SpineM": "0. 0. 0.005"}
-# _Q_TO_XMAT = {ankle_L}
-
-_TIME_BINS = .03
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
 
-# Height of head above which the rat is considered standing.
-_STAND_HEIGHT = 1.5
+# # Height of head above which the rat is considered standing.
 _TORQUE_THRESHOLD = 60
 
 
-def rodent_mocap(kp_data, n_frames, random_state=None):
+def rodent_mocap(kp_data, params, random_state=None):
     """View a rat with mocap sites."""
     # Build a position-controlled Rat
-    walker = Rat(initializer=initializers.ZerosInitializer(),
+    walker = Rat(initializer=initializers.ZerosInitializer(), params=params,
                  observable_options={'egocentric_camera': dict(enabled=True)})
 
     # Build a Floor arena that is obstructed by walls.
     arena = arenas.Floor(size=(1, 1))
 
     # Build a mocap viewing task
-    task = ViewMocap(walker, arena, kp_data)
-    return composer.Environment(time_limit=_TIME_BINS*(n_frames-1),
+    task = ViewMocap(walker, arena, kp_data, params=params)
+    return composer.Environment(time_limit=params['_TIME_BINS']*(params['n_frames']-1),
                                 task=task,
                                 random_state=random_state,
                                 strip_singleton_obs_buffer_dim=True)
@@ -155,6 +57,7 @@ class ViewMocap(composer.Task):
                  width=600,
                  height=480,
                  video_name=None,
+                 params=None,
                  fps=30.0):
         """Initialize ViewMocap environment.
 
@@ -187,17 +90,18 @@ class ViewMocap(composer.Task):
         self.height = height
         self.fps = fps
         self.V = None
+        self.params = params
         if video_name is None:
             now = datetime.now()
             self.video_name = now.strftime("clips/%m_%d_%Y_%H_%M_%S.mp4")
         else:
             self.video_name = video_name
-        for id, name in enumerate(KEYPOINT_MODEL_PAIRS):
+        for id, name in enumerate(self.params['_KEYPOINT_MODEL_PAIRS']):
             start = (np.random.rand(3)-.5)*.001
             site = self._arena.mjcf_model.worldbody.add('site', name=name,
                                            type='sphere',
                                            size=[.005],
-                                           rgba=KEYPOINT_COLOR_PAIRS[name],
+                                           rgba=self.params['_KEYPOINT_COLOR_PAIRS'][name],
                                            pos=start,
                                            group=2)
 
@@ -270,7 +174,8 @@ class ViewMocap(composer.Task):
         """Update the mujoco markers on each step."""
         # Get the frame
         self.frame = physics.time()
-        self.frame = np.floor(self.frame/_TIME_BINS).astype('int32')
+        self.frame = \
+            np.floor(self.frame/self.params['_TIME_BINS']).astype('int32')
 
         # Set the mocap marker positions
         physics.bind(self.sites).pos[:] = \
@@ -281,7 +186,7 @@ class ViewMocap(composer.Task):
             physics.named.data.qpos[:] = self.precomp_qpos[self.frame]
             # Make certain parts parallel to the floor for cosmetics
             for id, name in enumerate(physics.named.data.qpos.axes.row.names):
-                if any(part in name for part in _PARTS_TO_ZERO):
+                if any(part in name for part in self.params['_PARTS_TO_ZERO']):
                     # Doing it through optimization is pretty easy, but a hack
                     q0 = physics.named.data.qpos[name].copy()
                     q_opt = \
@@ -309,10 +214,11 @@ class ViewMocap(composer.Task):
 class Rat(base.Walker):
     """A position-controlled rat with control range scaled to [-1, 1]."""
 
-    def _build(self,
+    def _build(self, params=None,
                name='walker',
                marker_rgba=None,
                initializer=None):
+        self.params = params
         self._mjcf_root = mjcf.from_path(self._xml_path)
         if name:
             self._mjcf_root.model = name
@@ -324,19 +230,20 @@ class Rat(base.Walker):
         self.body_sites = []
         # Add keypoint sites to the mjcf model, and a reference to the sites as
         # an attribute for easier access
-        for key, v in KEYPOINT_MODEL_PAIRS.items():
+        for key, v in self.params['_KEYPOINT_MODEL_PAIRS'].items():
             parent = self._mjcf_root.find('body', v)
             site = parent.add('site', name=key,
                               type='sphere',
                               size=[.005],
                               rgba="0 0 0 1",
-                              pos=KEYPOINT_INITIAL_OFFSETS[key])
+                              pos=self.params['_KEYPOINT_INITIAL_OFFSETS'][key])
             self.body_sites.append(site)
         super(Rat, self)._build(initializer=initializer)
 
     @property
     def upright_pose(self):
-        return base.WalkerPose(xpos=_UPRIGHT_POS, xquat=_UPRIGHT_QUAT)
+        return base.WalkerPose(xpos=_UPRIGHT_POS,
+                               xquat=_UPRIGHT_QUAT)
 
     @property
     def mjcf_model(self):
@@ -369,7 +276,7 @@ class Rat(base.Walker):
 
     @composer.cached_property
     def standing_height(self):
-        return _STAND_HEIGHT
+        return self.params['_STAND_HEIGHT']
 
     @composer.cached_property
     def end_effectors(self):
@@ -398,7 +305,7 @@ class Rat(base.Walker):
 
     @property
     def _xml_path(self):
-        return _XML_PATH
+        return self.params['_XML_PATH']
 
     def _build_observables(self):
         return RodentObservables(self)

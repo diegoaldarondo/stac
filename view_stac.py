@@ -4,9 +4,10 @@ import clize
 import rodent_environments
 import numpy as np
 import pickle
+import util
 
 
-def view_stac(data_path, *,
+def view_stac(data_path, param_path, *,
               render_video=False,
               save_path=None,
               headless=False):
@@ -29,8 +30,10 @@ def view_stac(data_path, *,
         else:
             kp_data = np.zeros((n_frames, offsets.size))
 
+    params = util.load_params(param_path)
+    params['n_frames'] = n_frames
     # Build the environment, and set the offsets, and params
-    env = rodent_environments.rodent_mocap(kp_data, n_frames)
+    env = rodent_environments.rodent_mocap(kp_data, params)
     sites = env.task._walker.body_sites
     env.physics.bind(sites).pos[:] = offsets
     for id, site in enumerate(sites):

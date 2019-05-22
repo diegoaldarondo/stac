@@ -3,21 +3,10 @@ from dm_control.mujoco.wrapper.mjbindings import mjlib
 import numpy as np
 import scipy.optimize
 
-# Set floating point tolerance during optimization
-_FTOL = 1e-4
-_ROOT_FTOL = 1e-8
-_DIFF_STEP = 3e-8
-_SITES_TO_REGULARIZE = ["ArmL", "ArmR", "ElbowL",
-                        "ElbowR", "ShoulderL", "ShoulderR",
-                        "HipL", "HipR", "KneeL", "KneeR",
-                        "ShinL", "ShinR"]
-_IS_LIMB = ['scapula', 'hip', 'knee',
-            'shoulder', 'elbow']
-_ARM_JOINTS = ['shoulder', 'scapula', 'elbow', 'wrist', 'finger']
 
-
-def q_loss(q, physics, kp_data, sites, qs_to_opt=None, q_copy=None,
-           reg_coef=0., temporal_reg_coef=.2, root_only=False, temporal_regularization=False):
+def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
+           reg_coef=0., temporal_reg_coef=.2,
+           root_only=False, temporal_regularization=False):
     """Compute the marker loss for q_phase optimization.
 
     :param physics: Physics of current environment.
@@ -52,12 +41,8 @@ def q_loss(q, physics, kp_data, sites, qs_to_opt=None, q_copy=None,
     # Add temporal regularization for arms.
     if temporal_regularization:
         part_names = physics.named.data.qpos.axes.row.names
-        # for i in range(6):
-        #     part_names.insert(0, part_names[0])  # Fix to match len(qpos).
-        # print('part_names: ', len(part_names))
-        # print(part_names)
         for id, name in enumerate(part_names):
-            if any(part in name for part in _ARM_JOINTS):
+            if any(part in name for part in params['_ARM_JOINTS']):
                 temporal_arm_regularizer += (q[id] - q_prev[id])**2
 
     residual = (kp_data.T - q_joints_to_markers(q, physics, sites))
@@ -84,8 +69,8 @@ def q_joints_to_markers(q, physics, sites):
     return return_value.flatten()
 
 
-def q_phase(physics, marker_ref_arr, sites, reg_coef=0., qs_to_opt=None,
-            root_only=False, temporal_regularization=False):
+def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
+            qs_to_opt=None, root_only=False, temporal_regularization=False):
     """Update q_pose using estimated marker parameters.
 
     :param physics: Physics of current environment.
@@ -111,17 +96,17 @@ def q_phase(physics, marker_ref_arr, sites, reg_coef=0., qs_to_opt=None,
 
     # Use different tolerances for root vs normal optimization
     if root_only:
-        ftol = _ROOT_FTOL
+        ftol = params['_ROOT_FTOL']
     else:
-        ftol = _FTOL
+        ftol = params['_FTOL']
     q_opt_param = scipy.optimize.least_squares(
-            lambda q: q_loss(q, physics, marker_ref_arr, sites,
+            lambda q: q_loss(q, physics, marker_ref_arr, sites, params,
                              qs_to_opt=qs_to_opt,
                              q_copy=q_copy,
                              reg_coef=reg_coef,
                              root_only=root_only,
                              temporal_regularization=temporal_regularization),
-            q0, ftol=ftol, diff_step=_DIFF_STEP,
+            q0, ftol=ftol, diff_step=params['_DIFF_STEP'],
             verbose=0)
 
     # Set pose to the optimized q and step forward.
@@ -181,7 +166,7 @@ def m_joints_to_markers(offset, physics, sites):
     return return_value.flatten()
 
 
-def m_phase(physics, kp_data, sites, time_indices, q, initial_offsets,
+def m_phase(physics, kp_data, sites, time_indices, q, initial_offsets, params,
             reg_coef=0., maxiter=5):
     """Estimate marker offset, keeping qpose fixed.
 
@@ -201,7 +186,7 @@ def m_phase(physics, kp_data, sites, time_indices, q, initial_offsets,
     # offsets will be regularized or not.
     is_regularized = []
     for site in sites:
-        if any(n in site.name for n in _SITES_TO_REGULARIZE):
+        if any(n in site.name for n in params['_SITES_TO_REGULARIZE']):
             is_regularized.append(np.array([1., 1., 1.]))
         else:
             is_regularized.append(np.array([0., 0., 0.]))
