@@ -379,9 +379,9 @@
                       <geom name="skull_F_collision" class="collision_primitive" type="ellipsoid" size="0.006500000000000001 0.008 0.02" pos="0.016 0 -0.001" euler="0 110 0"/>
                       <geom name="skull_Fb_collision" class="collision_primitive" type="ellipsoid" size="0.006500000000000001 0.008 0.02" density="1.0" pos="0.016 0 0.002" euler="0 110 0"/>
                       <geom name="skull_L_collision" class="collision_primitive" type="ellipsoid" size="0.006500000000000001 0.012 0.014" pos="0.006 0.005000000000000001 -0.001" euler="0 110 0"/>
-                      <geom name="eye_L_collision" class="collision_primitive" type="sphere" group="1" size="0.004 0.004 0.004" rgba="0 0 0 1" pos="0.001 0.0115 0.0025"/>
+                      <geom name="eye_L_collision" class="collision_primitive" type="sphere" group="1" size="0.005 0.005 0.005" rgba="0 0 0 1" pos="0.001 0.0115 0.0025"/>
                       <geom name="skull_R_collision" class="collision_primitive" type="ellipsoid" size="0.006500000000000001 0.012 0.014" pos="0.006 -0.005000000000000001 -0.001" euler="0 110 0"/>
-                      <geom name="eye_R_collision" class="collision_primitive" type="sphere" group="1" size="0.004 0.004 0.004" rgba="0 0 0 1" pos="0.001 -0.0115 0.0025"/>
+                      <geom name="eye_R_collision" class="collision_primitive" type="sphere" group="1" size="0.005 0.005 0.005" rgba="0 0 0 1" pos="0.001 -0.0115 0.0025"/>
                       <geom name="skull_P0_collision" class="collision_primitive" type="box" size="0.006 0.005600000000000001 0.0016" pos="0.002 0 -0.007000000000000001"/>
                       <geom name="skull_P1_collision" class="collision_primitive" type="box" size="0.004 0.0036 0.0012" pos="0.007000000000000001 0 -0.007000000000000001"/>
                       <geom name="skull_P2_collision" class="collision_primitive" type="box" size="0.001 0.003 0.0008" pos="0.009500000000000001 0 -0.007000000000000001"/>

@@ -191,6 +191,8 @@ class ViewMocap(composer.Task):
         # Set qpose if it has been precomputed.
         if self.precomp_qpos is not None:
             physics.named.data.qpos[:] = self.precomp_qpos[self.frame]
+            physics.named.data.qpos['walker/mandible'] = -.297
+
             # Make certain parts parallel to the floor for cosmetics
             for id, name in enumerate(physics.named.data.qpos.axes.row.names):
                 if any(part in name for part in self.params['_PARTS_TO_ZERO']):
@@ -208,8 +210,8 @@ class ViewMocap(composer.Task):
             mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
 
         if self.render_video:
-            if not os.path.isdir('./clips'):
-                os.makedir('./clips')
+            # if not os.path.isdir('./clips'):
+            #     os.makedir('./clips')
             if self.V is None:
                 self.V = cv2.VideoWriter(self.video_name,
                                          cv2.VideoWriter_fourcc(*'mp4v'),

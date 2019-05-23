@@ -1,7 +1,18 @@
 #!/bin/bash
-DATAPATH="/home/diego/code/olveczky/dm/stac/results/JDM25_v3/snippet{}.p"
-SAVEPATH="/home/diego/code/olveczky/dm/stac/clips/JDM25_v3_2/snippet{}.mp4"
-PARAMPATH="/home/diego/code/olveczky/dm/stac/params/JDM25.yaml"
-NSNIPPETS=186
+DATAFOLDER="/home/diego/data/dm/stac/results/JDM33_v2/*.p"
+DATAPATHS=($(find $DATAFOLDER))
+FILES=($(find $DATAFOLDER -printf "%f\n"))
 
-seq 186 $NSNIPPETS | xargs -i --max-procs=8 python view_stac.py $DATAPATH $PARAMPATH --render-video="True" --save-path=$SAVEPATH --headless="True"
+
+SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM33_v2/"
+SAVEPATHS=()
+cnt=${#FILES[@]}
+for ((i=0;i<cnt;i++)); do
+  SAVEPATHS[i]="$SAVEFOLDER${FILES[i]%.p}.mp4"
+done
+
+PARAMPATH="/home/diego/code/olveczky/dm/stac/params/JDM33.yaml"
+cnt=${#FILES[@]}
+for i in $(seq 0 $[$cnt-1]);
+  do echo ${DATAPATHS[$i]} $PARAMPATH ${SAVEPATHS[$i]};
+done | xargs -l --max-procs=1 bash -c 'python view_stac.py $0 $1 --render-video="True" --save-path=$2 --headless="True"'

@@ -19,20 +19,16 @@ def preprocess_snippet(kp_data, kp_names, params):
 
     # Rescale by centering at spineM, scaling, and decentering
     for dim in range(np.round(kp_data.shape[1]/3).astype('int32')):
-        kp_data[:, dim*3] -= spineM[:, 0]
-        kp_data[:, dim*3 + 1] -= spineM[:, 1]
-        kp_data[:, dim*3 + 2] -= spineM[:, 2]
+        kp_data[:, dim*3 + np.array([0, 1, 2])] -= spineM
     kp_data *= params['scale_factor']
     spineM *= params['scale_factor']
     for dim in range(np.round(kp_data.shape[1]/3).astype('int32')):
-        kp_data[:, dim*3] += spineM[:, 0]
-        kp_data[:, dim*3 + 1] += spineM[:, 1]
-        kp_data[:, dim*3 + 2] += spineM[:, 2]
+        kp_data[:, dim*3 + np.array([0, 1, 2])] += spineM
 
     # Downsample
     kp_data = kp_data[::params['skip'], :]
 
-    # Handle z-offset ambiguity
+    # Handle z-offset conditions
     if params['adaptive_z_offset']:
         kp_data[:, 2::3] -= \
             np.nanpercentile(kp_data[:, 2::3].flatten(), params['z_perc'])
@@ -178,19 +174,9 @@ def compute_stac(kp_data, save_path, params):
     offsets = env.physics.bind(env.task._walker.body_sites).pos[:].copy()
     out_dict = {'qpos': q,
                 'offsets': offsets,
-                'kp_data': np.copy(kp_data[:params['n_frames'], :]),
-                'start_frame': params['start_frame'],
-                'offset_path': params['offset_path'],
-                'n_frames': params['n_frames'],
-                'n_sample_frames': params['n_sample_frames'],
-                'q_reg_coef': params['q_reg_coef'],
-                'm_reg_coef': params['m_reg_coef'],
-                'skip': params['skip'],
-                'scale_factor': params['scale_factor'],
-                'z_offset': params['z_offset'],
-                'verbose': params['verbose'],
-                'visualize': params['visualize'],
-                'render_video': params['render_video']}
+                'kp_data': np.copy(kp_data[:params['n_frames'], :])}
+    for k, v in params.items():
+        out_dict[k] = v
     if file_extension == '.p':
         with open(save_path, "wb") as output_file:
             pickle.dump(out_dict, output_file)
@@ -223,6 +209,7 @@ def handle_args(data_path, param_path, *,
     :param visualize: If True, launch viewer
     :param render_video: If True, render_video
     """
+    # Aggregate optional cl arguments into params dict
     kw = {"offset_path": offset_path,
           "start_frame": start_frame,
           "n_frames": n_frames,
@@ -236,22 +223,35 @@ def handle_args(data_path, param_path, *,
     for key, v in kw.items():
         params[key] = v
 
+    # Support snippet-based processing
     if n_snip is not None:
-        data, kp_names = util.load_snippets_from_file(data_path)
-        n_snip = int(n_snip) - 1  # Handle seq offset
+        data, kp_names, files, behaviors, com_vels = \
+            util.load_snippets_from_file(data_path)
+
+        # Handle seq offset
+        n_snip = int(n_snip) - 1
         print(n_snip)
+
+        # Put useful statistics into params dict for now. Consider stats dict
+        params['behavior'] = behaviors[n_snip]
+        params['com_vel'] = com_vels[n_snip]
+
         kp_data = \
             preprocess_snippet(data[n_snip], kp_names, params)
+
+        # Save the file as a pickle with the same name as the input file in the
+        # folder specified by save_path
         if save_path is None:
             save_path = os.path.join(os.getcwd(),
                                      'results', 'JDM25_v4',
                                      'snippet%d.p' % (n_snip))
         else:
-            save_path = os.path.join(save_path,  'snippet%d.p' % (n_snip))
-        print(save_path)
+            save_path = os.path.join(save_path,  files[n_snip][:-4] + '.p')
+        print(save_path, flush=True)
         compute_stac(kp_data, save_path, params)
         print('Finished %d' % (n_snip))
 
+    # Support file-based processing
     else:
         kp_data = \
             preprocess_data(data_path, start_frame, params)

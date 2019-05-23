@@ -1,9 +1,9 @@
 #!/bin/bash
-DATAPATH="/home/diego/data/dm/stac/snippets/JDM33"
+DATAPATH="/home/diego/data/dm/stac/snippets/JDM33/reformatted"
 VERBOSE="True"
-OFFSETPATH="/home/diego/data/dm/stac/offsets/JDM33_offset.p"
+OFFSETPATH="/home/diego/data/dm/stac/offsets/JDM33_offset_2.p"
 VISUALIZE="False"
-NSNIPPETS=15
-SAVEPATH="/home/diego/data/dm/stac/results/JDM33"
+NSNIPPETS=611
+SAVEPATH="/home/diego/data/dm/stac/results/JDM33_v2"
 PARAMPATH="/home/diego/code/olveczky/dm/stac/params/JDM33.yaml"
-seq 7 $NSNIPPETS | xargs -i --max-procs=7 python compute_stac.py $DATAPATH $PARAMPATH --n-snip={} --verbose=$VERBOSE --visualize=$VISUALIZE --save-path=$SAVEPATH --offset-path=$OFFSETPATH
+seq $NSNIPPETS | xargs -i --max-procs=7 python compute_stac.py $DATAPATH $PARAMPATH --n-snip={} --verbose=$VERBOSE --visualize=$VISUALIZE --save-path=$SAVEPATH --offset-path=$OFFSETPATH
