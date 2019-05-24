@@ -47,7 +47,7 @@ def load_snippets_from_file(folder):
         with h5py.File(filename, 'r') as f:
             try:
                 data = f['data']
-            except:
+            except KeyError:
                 data = f['preproc_mocap']
             kp_names = [k for k in data.keys()]
             # Concatenate the data for each keypoint,
