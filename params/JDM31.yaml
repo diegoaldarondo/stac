@@ -94,6 +94,7 @@ _SITES_TO_REGULARIZE:
 - ShinR
 _STAND_HEIGHT: 1.5
 _TIME_BINS: 0.03
+_MANDIBLE_POS: -.297
 _XML_PATH: /home/diego/code/olveczky/dm/stac/models/rat_may17.xml
 adaptive_z_offset_value: 0.03
 m_reg_coef: 0.25

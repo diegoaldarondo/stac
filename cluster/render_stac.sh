@@ -15,4 +15,4 @@ PARAMPATH="/home/diego/code/olveczky/dm/stac/params/JDM33.yaml"
 cnt=${#FILES[@]}
 for i in $(seq 0 $[$cnt-1]);
   do echo ${DATAPATHS[$i]} $PARAMPATH ${SAVEPATHS[$i]};
-done | xargs -l --max-procs=1 bash -c 'python view_stac.py $0 $1 --render-video="True" --save-path=$2 --headless="True"'
+done | xargs -l --max-procs=7 bash -c 'python view_stac.py $0 $1 --render-video="True" --save-path=$2 --headless="True"'

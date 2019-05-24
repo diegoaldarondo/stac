@@ -1,4 +1,4 @@
-"""."""
+"""Environment for rodent modeling with dm_control and motion capture."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -13,7 +13,6 @@ from dm_control.locomotion.arenas import floors as arenas
 from dm_control.locomotion.walkers import base
 from dm_control.composer.observation import observable
 import numpy as np
-import os
 import scipy.optimize
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
@@ -191,7 +190,8 @@ class ViewMocap(composer.Task):
         # Set qpose if it has been precomputed.
         if self.precomp_qpos is not None:
             physics.named.data.qpos[:] = self.precomp_qpos[self.frame]
-            physics.named.data.qpos['walker/mandible'] = -.297
+            physics.named.data.qpos['walker/mandible'] = \
+                self.params['_MANDIBLE_POS']
 
             # Make certain parts parallel to the floor for cosmetics
             for id, name in enumerate(physics.named.data.qpos.axes.row.names):

@@ -71,6 +71,7 @@ data = dict(
                                "SpineL": "0. 0. 0.005",
                                "SpineM": "0. 0. 0.005"},
     _TIME_BINS=.03,
+    _MANDIBLE_POS=-.297,
     _FTOL=1e-4,
     _ROOT_FTOL=1e-8,
     _DIFF_STEP=3e-8,
