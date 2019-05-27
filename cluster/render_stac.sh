@@ -1,17 +1,17 @@
 #!/bin/bash
 DATAFOLDER="/home/diego/data/dm/stac/results/JDM33_v2/*.p"
+SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM33_v2/"
+PARAMPATH="/home/diego/code/olveczky/dm/stac/params/JDM33.yaml"
+
 DATAPATHS=($(find $DATAFOLDER))
 FILES=($(find $DATAFOLDER -printf "%f\n"))
 
-
-SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM33_v2/"
 SAVEPATHS=()
 cnt=${#FILES[@]}
 for ((i=0;i<cnt;i++)); do
   SAVEPATHS[i]="$SAVEFOLDER${FILES[i]%.p}.mp4"
 done
 
-PARAMPATH="/home/diego/code/olveczky/dm/stac/params/JDM33.yaml"
 cnt=${#FILES[@]}
 for i in $(seq 0 $[$cnt-1]);
   do echo ${DATAPATHS[$i]} $PARAMPATH ${SAVEPATHS[$i]};
