@@ -104,3 +104,4 @@ q_reg_coef: 0.0
 scale_factor: 1.2
 temporal_reg_coef: 0.2
 z_offset: 0.02
+z_perc: 5

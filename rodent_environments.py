@@ -14,12 +14,16 @@ from dm_control.locomotion.walkers import base
 from dm_control.composer.observation import observable
 import numpy as np
 import scipy.optimize
+from scipy import ndimage
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
 
 # # Height of head above which the rat is considered standing.
 _TORQUE_THRESHOLD = 60
+_HEIGHTFIELD_ID = 0
+_TERRAIN_SMOOTHNESS = 0.15  # 0.0: maximally bumpy; 1.0: completely smooth.
+_TERRAIN_BUMP_SCALE = .4  # Spatial scale of terrain bumps (in meters).
 
 
 def rodent_mocap(kp_data, params, random_state=None):
@@ -52,7 +56,6 @@ class ViewMocap(composer.Task):
                  physics_timestep=0.001,
                  control_timestep=0.025,
                  precomp_qpos=None,
-                 precomp_xpos=None,
                  render_video=False,
                  width=600,
                  height=480,
@@ -61,20 +64,19 @@ class ViewMocap(composer.Task):
                  fps=30.0):
         """Initialize ViewMocap environment.
 
-        :param walker,
-        :param arena,
-        :param kp_data,
-        :param walker_spawn_position=(0, 0, 0),
-        :param walker_spawn_rotation=None,
-        :param physics_timestep=0.001,
-        :param control_timestep=0.025,
-        :param precomp_qpos=None,
-        :param precomp_xpos=None,
-        :param render_video=False,
-        :param width=600,
-        :param height=480,
-        :param video_name=None,
-        :param fps=30.0
+        :param walker: Rodent walker
+        :param arena: Arena defining floor
+        :param kp_data: Keypoint data (t x (n_marker*ndims))
+        :param walker_spawn_position: Initial spawn position.
+        :param walker_spawn_rotation: Initial spawn rotation.
+        :param physics_timestep: Timestep for physics simulation
+        :param control_timestep: Timestep for controller
+        :param precomp_qpos: Precomputed list of qposes.
+        :param render_video: If true, render a video of the simulation.
+        :param width: Width of video
+        :param height: Height of video
+        :param video_name: Name of video
+        :param fps: Frame rate of video
         """
         self._arena = arena
         self._walker = walker
@@ -84,7 +86,6 @@ class ViewMocap(composer.Task):
         self.kp_data = kp_data
         self.sites = []
         self.precomp_qpos = precomp_qpos
-        self.precomp_xpos = precomp_xpos
         self.render_video = render_video
         self.width = width
         self.height = height
@@ -218,6 +219,94 @@ class ViewMocap(composer.Task):
                                          self.fps,
                                          (self.width, self.height))
             self.V.write(self.grab_frame(physics))
+
+
+class ViewMocap_Hfield(ViewMocap):
+    """View mocap while modeling uneven terrain."""
+
+    def __init__(self,
+                 walker,
+                 arena,
+                 kp_data,
+                 walker_spawn_position=(0, 0, 0),
+                 walker_spawn_rotation=None,
+                 physics_timestep=0.001,
+                 control_timestep=0.025,
+                 precomp_qpos=None,
+                 render_video=False,
+                 width=600,
+                 height=480,
+                 video_name=None,
+                 params=None,
+                 fps=30.0):
+        """Initialize ViewMocap environment with heightfield.
+
+        :param walker: Rodent walker
+        :param arena: Arena defining heightfield
+        :param kp_data: Keypoint data (t x (n_marker*ndims))
+        :param walker_spawn_position: Initial spawn position.
+        :param walker_spawn_rotation: Initial spawn rotation.
+        :param physics_timestep: Timestep for physics simulation
+        :param control_timestep: Timestep for controller
+        :param precomp_qpos: Precomputed list of qposes.
+        :param render_video: If true, render a video of the simulation.
+        :param width: Width of video
+        :param height: Height of video
+        :param video_name: Name of video
+        :param fps: Frame rate of video
+        """
+        super(ViewMocap_Hfield, self).__init__(walker, arena, kp_data,
+                                               precomp_qpos=precomp_qpos,
+                                               render_video=render_video,
+                                               width=width,
+                                               height=height,
+                                               video_name=video_name,
+                                               params=params,
+                                               fps=fps)
+
+    def initialize_episode(self, physics, random_state):
+        """Set the state of the environment at the start of each episode.
+
+        :param physics: An instance of `Physics`.
+        """
+        print('Made it to top')
+        # Get heightfield resolution, assert that it is square.
+        res = physics.model.hfield_nrow[_HEIGHTFIELD_ID]
+        assert res == physics.model.hfield_ncol[_HEIGHTFIELD_ID]
+
+        # # Sinusoidal bowl shape.
+        # row_grid, col_grid = np.ogrid[-1:1:res*1j, -1:1:res*1j]
+        # radius = np.clip(np.sqrt(col_grid**2 + row_grid**2), .04, 1)
+        # bowl_shape = .5 - np.cos(2*np.pi*radius)/2
+
+        # Random smooth bumps.
+        terrain_size = 2 * physics.model.hfield_size[_HEIGHTFIELD_ID, 0]
+        bump_res = int(terrain_size / _TERRAIN_BUMP_SCALE)
+        bumps = np.random.uniform(_TERRAIN_SMOOTHNESS, 1,
+                                  (bump_res, bump_res)) - .5
+        smooth_bumps = ndimage.zoom(bumps, res / float(bump_res))
+        # Terrain is elementwise product.
+        # terrain = bowl_shape * smooth_bumps
+        terrain = smooth_bumps
+        start_idx = physics.model.hfield_adr[_HEIGHTFIELD_ID]
+        physics.model.hfield_data[start_idx:start_idx+res**2] = terrain.ravel()
+
+        # super(ViewMocap_Hfield, self).initialize_episode(physics)
+
+        # If we have a rendering context, we need to re-upload the modified
+        # heightfield data.
+        if physics.contexts:
+            with physics.contexts.gl.make_current() as ctx:
+                ctx.call(mjlib.mjr_uploadHField,
+                         physics.model.ptr,
+                         physics.contexts.mujoco.ptr,
+                         _HEIGHTFIELD_ID)
+        print('Made it to bot')
+        self._walker.reinitialize_pose(physics, random_state)
+        # # Initial configuration.
+        # orientation = self.random.randn(4)
+        # orientation /= np.linalg.norm(orientation)
+        # _find_non_contacting_height(physics, orientation)
 
 
 class Rat(base.Walker):
