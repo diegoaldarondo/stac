@@ -52,7 +52,7 @@ def preprocess_data(data_path, start_frame, params,
     kp_data, kp_names = util.load_kp_data_from_file(data_path,
                                                     struct_name=struct_name)
     kp_data = preprocess_snippet(kp_data[start_frame:], kp_names, params)
-    return kp_data
+    return kp_data, kp_names
 
 
 def initial_optimization(env, initial_offsets, params, maxiter=100):
@@ -74,6 +74,7 @@ def root_optimization(env, params):
 def q_clip(env, qs_to_opt, params):
     """Q-phase across the clip: optimize joint angles."""
     q = []
+    walker_body_sites = []
     for i in range(params['n_frames']):
         stac.q_phase(env.physics, env.task.kp_data[i, :],
                      env.task._walker.body_sites, params,
@@ -86,9 +87,11 @@ def q_clip(env, qs_to_opt, params):
                      env.task._walker.body_sites, params,
                      reg_coef=params['q_reg_coef'],
                      qs_to_opt=qs_to_opt, temporal_regularization=temp_reg)
-        retval = env.physics.named.data.qpos[:]
-        q.append(retval.copy())
-    return q
+        q.append(np.copy(env.physics.named.data.qpos[:]))
+        walker_body_sites.append(
+            np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
+        )
+    return q, walker_body_sites
 
 
 def compute_stac(kp_data, save_path, params):
@@ -146,7 +149,7 @@ def compute_stac(kp_data, save_path, params):
     # Q_phase optimization
     if params['verbose']:
         print('q-phase', flush=True)
-    q = q_clip(env, limbs, params)
+    q, walker_body_sites = q_clip(env, limbs, params)
 
     # If you've precomputed the offsets, stop here.
     # Otherwise do another m and q phase.
@@ -159,7 +162,7 @@ def compute_stac(kp_data, save_path, params):
                      initial_offsets, params, reg_coef=params['m_reg_coef'])
         if params['verbose']:
             print('q-phase', flush=True)
-        q = q_clip(env, limbs, params)
+        q, walker_body_sites = q_clip(env, limbs, params)
 
     # Optional visualization
     if params['visualize']:
@@ -173,6 +176,7 @@ def compute_stac(kp_data, save_path, params):
     filename, file_extension = os.path.splitext(save_path)
     offsets = env.physics.bind(env.task._walker.body_sites).pos[:].copy()
     out_dict = {'qpos': q,
+                'walker_body_sites': walker_body_sites,
                 'offsets': offsets,
                 'kp_data': np.copy(kp_data[:params['n_frames'], :])}
     for k, v in params.items():
@@ -253,7 +257,7 @@ def handle_args(data_path, param_path, *,
 
     # Support file-based processing
     else:
-        kp_data = \
+        kp_data, kp_names = \
             preprocess_data(data_path, start_frame, params)
         if save_path is None:
             save_path = os.path.join(os.getcwd(),

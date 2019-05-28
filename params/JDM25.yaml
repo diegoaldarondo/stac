@@ -78,8 +78,6 @@ _KEYPOINT_MODEL_PAIRS:
 _PARTS_TO_ZERO:
 - toe
 - ankle
-- finger
-- wrist
 _ROOT_FTOL: 1.0e-08
 _SITES_TO_REGULARIZE:
 - ArmL
