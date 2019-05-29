@@ -1,6 +1,6 @@
 """Generate animal parameter .yaml files."""
 import yaml
-out_path = "./params/JDM31.yaml"
+out_path = "./params/baseParams.yaml"
 LEFT_LEG = "0 0 .3 1"
 RIGHT_LEG = ".3 0 0 1"
 LEFT_ARM = "0 0 .8 1"
@@ -54,17 +54,17 @@ data = dict(
                                "ArmR": "0. 0. 0.",
                                "ElbowL": "0. 0. 0.",
                                "ElbowR": "0. 0. 0.",
-                               "HeadB": "0. -.025 .045",
-                               "HeadF": ".025 -.025 .045",
-                               "HeadL": "0. .025 .045",
-                               "HipL": "0.03 0. 0.04",
+                               "HeadB": "0. -.025 .075",
+                               "HeadF": ".025 -.025 .075",
+                               "HeadL": "0. .025 .075",
+                               "HipL": "0. 0. 0.005",
                                "HipR": "0. 0. 0.005",
-                               "KneeL": "0. 0. 0.03",
+                               "KneeL": "0. 0. 0.",
                                "KneeR": "0. 0. 0.",
                                "Offset1": "0.015 .0155 -0.005",
                                "Offset2": "-0.015 .015 -0.005",
-                               "ShinL": "0.02 0. 0.015",
-                               "ShinR": "0.015 -0.01 0.0125",
+                               "ShinL": "0.015 0. 0.0125",
+                               "ShinR": "0.015 0. 0.0125",
                                "ShoulderL": "0. 0. 0.",
                                "ShoulderR": "0. 0. 0.",
                                "SpineF": "0. 0. 0.005",

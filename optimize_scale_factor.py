@@ -19,7 +19,7 @@ def scale_loss(scale_factor, data_path, params, kp_data, kp_names):
     compute_stac.root_optimization(env, params)
     site_pos = np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
     print(scale_factor)
-    return (site_pos.flatten() - kp_data[0, :].squeeze())**2
+    return (site_pos.flatten() - np.nanmean(kp_data, axis=0).squeeze())**2
 
 
 def preprocess_data(scale_factor, data_path, params, kp_data, kp_names,
@@ -73,7 +73,7 @@ def optimize_scale_factor(data_path, param_path,
         data_path,
         struct_name='markers_preproc')
     # scale_factor0 = params['scale_factor']
-    scale_factor0 = 1.3
+    scale_factor0 = 1.4
     scale_opt = scipy.optimize.least_squares(
         lambda scale: scale_loss(scale, data_path, params, kp_data, kp_names),
         scale_factor0
