@@ -12,7 +12,6 @@ def view_model(*, param_path='./params/baseParams.yaml'):
     params = util.load_params(param_path)
     params['n_frames'] = kp_data.shape[0]
     env = rodent_environments.rodent_mocap(kp_data, params)
-    import pdb; pdb.set_trace()
     viewer.launch(env)
 
 

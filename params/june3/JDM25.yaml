@@ -99,7 +99,7 @@ _XML_PATH: /home/diego/code/olveczky/dm/stac/models/rat_june3.xml
 adaptive_z_offset_value: 0.02
 m_reg_coef: 0.25
 q_reg_coef: 0.0
-scale_factor: 1.297
+scale_factor: 1.097
 temporal_reg_coef: 0.2
 z_offset: 0.02
 z_perc: 5

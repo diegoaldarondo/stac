@@ -55,14 +55,10 @@ def preprocess_data(data_path, start_frame, params,
     return kp_data, kp_names
 
 
-def initial_optimization(env, initial_offsets, params, limbs, maxiter=100):
+def initial_optimization(env, initial_offsets, params, maxiter=100):
     """Optimize the first frame with alternating q and m phase."""
     stac.q_phase(env.physics, env.task.kp_data[0, :],
                  env.task._walker.body_sites, params, root_only=True)
-    stac.q_phase(env.physics, env.task.kp_data[0, :],
-                 env.task._walker.body_sites, params,
-                 reg_coef=params['q_reg_coef'],
-                 qs_to_opt=limbs)
     root_q = [env.physics.named.data.qpos[:].copy()]
     stac.m_phase(env.physics, env.task.kp_data, env.task._walker.body_sites,
                  [0], root_q, initial_offsets, params,
@@ -144,7 +140,7 @@ def compute_stac(kp_data, save_path, params):
         # of the m and q phases
         if params['verbose']:
             print('Initial Optimization', flush=True)
-        initial_optimization(env, initial_offsets, params, limbs)
+        initial_optimization(env, initial_offsets, params)
 
         # Find the frames to use in the m-phase optimization.
         time_indices = np.random.randint(0, params['n_frames'],
