@@ -13,6 +13,7 @@ from dm_control.locomotion.arenas import floors as arenas
 from dm_control.locomotion.walkers import base
 from dm_control.composer.observation import observable
 import numpy as np
+import pickle
 import scipy.optimize
 from scipy import ndimage
 
@@ -32,11 +33,17 @@ def rodent_mocap(kp_data, params, random_state=None):
     walker = Rat(initializer=initializers.ZerosInitializer(), params=params,
                  observable_options={'egocentric_camera': dict(enabled=True)})
 
-    # Build a Floor arena that is obstructed by walls.
-    arena = arenas.Floor(size=(1, 1))
+    if params['_USE_HFIELD']:
+        # Build a Floor arena that is obstructed by walls.
+        arena = arenas.VariableFloor(size=(1, 1))
+        # Build a mocap viewing task
+        task = ViewMocap_Hfield(walker, arena, kp_data, params=params)
+    else:
+        # Build a Floor arena that is obstructed by walls.
+        arena = arenas.Floor(size=(1, 1))
+        # Build a mocap viewing task
+        task = ViewMocap(walker, arena, kp_data, params=params)
 
-    # Build a mocap viewing task
-    task = ViewMocap(walker, arena, kp_data, params=params)
     time_limit = params['_TIME_BINS']*(params['n_frames']-1)
     return composer.Environment(time_limit=time_limit,
                                 task=task,
@@ -255,6 +262,7 @@ class ViewMocap_Hfield(ViewMocap):
         :param video_name: Name of video
         :param fps: Frame rate of video
         """
+        self.hfield_image = None
         super(ViewMocap_Hfield, self).__init__(walker, arena, kp_data,
                                                precomp_qpos=precomp_qpos,
                                                render_video=render_video,
@@ -264,32 +272,44 @@ class ViewMocap_Hfield(ViewMocap):
                                                params=params,
                                                fps=fps)
 
+    def _smooth_hfield_image(self, image, sigma=1):
+        image = ndimage.gaussian_filter(image, sigma)
+        return image
+
+    def _load_hfield_image(self, params):
+        with open(params['hfield_image_path'], 'rb') as f:
+            in_dict = pickle.load(f)
+            image = in_dict['hfield']*params['scale_factor']/1000
+        return image
+
     def initialize_episode(self, physics, random_state):
         """Set the state of the environment at the start of each episode.
 
         :param physics: An instance of `Physics`.
         """
-        print('Made it to top')
         # Get heightfield resolution, assert that it is square.
         res = physics.model.hfield_nrow[_HEIGHTFIELD_ID]
         assert res == physics.model.hfield_ncol[_HEIGHTFIELD_ID]
 
-        # # Sinusoidal bowl shape.
-        # row_grid, col_grid = np.ogrid[-1:1:res*1j, -1:1:res*1j]
-        # radius = np.clip(np.sqrt(col_grid**2 + row_grid**2), .04, 1)
-        # bowl_shape = .5 - np.cos(2*np.pi*radius)/2
+        # Find the size of the arena in the hfield
+        hfield_size = physics.model.hfield_size[0][0]
+        arena_px_size = \
+            int(np.floor(res*(self.params['_ARENA_DIAMETER']/hfield_size)))
 
-        # Random smooth bumps.
-        terrain_size = 2 * physics.model.hfield_size[_HEIGHTFIELD_ID, 0]
-        bump_res = int(terrain_size / _TERRAIN_BUMP_SCALE)
-        bumps = np.random.uniform(_TERRAIN_SMOOTHNESS, 1,
-                                  (bump_res, bump_res)) - .5
-        smooth_bumps = ndimage.zoom(bumps, res / float(bump_res))
-        # Terrain is elementwise product.
-        # terrain = bowl_shape * smooth_bumps
-        terrain = smooth_bumps
+        # Load the arena height data
+        hfield = self._load_hfield_image(self.params)
+        hfield = cv2.resize(hfield, (arena_px_size, arena_px_size),
+                            interpolation=cv2.INTER_LINEAR)
+        hfield = self._smooth_hfield_image(hfield, sigma=0.5)
+
+        # Find the bounds of the arena in the hfield.
+        ar_start = int(np.floor((res-arena_px_size)/2))
+        ar_end = ar_start+arena_px_size
+        self.hfield_image = np.zeros((res, res))
+        self.hfield_image[ar_start:ar_end, ar_start:ar_end] = hfield
         start_idx = physics.model.hfield_adr[_HEIGHTFIELD_ID]
-        physics.model.hfield_data[start_idx:start_idx+res**2] = terrain.ravel()
+        physics.model.hfield_data[start_idx:start_idx+res**2] = \
+            self.hfield_image.ravel()
 
         # super(ViewMocap_Hfield, self).initialize_episode(physics)
 
@@ -301,7 +321,6 @@ class ViewMocap_Hfield(ViewMocap):
                          physics.model.ptr,
                          physics.contexts.mujoco.ptr,
                          _HEIGHTFIELD_ID)
-        print('Made it to bot')
         self._walker.reinitialize_pose(physics, random_state)
         # # Initial configuration.
         # orientation = self.random.randn(4)
