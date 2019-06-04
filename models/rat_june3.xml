@@ -148,18 +148,18 @@
   <asset>
     <texture name="skybox" type="skybox" builtin="gradient" rgb1="0.40000000000000002 0.59999999999999998 0.80000000000000004" rgb2="0 0 0" mark="random" markrgb="1 1 1" width="800" height="800"/>
     <texture name="grid" type="2d" builtin="checker" rgb1="0.10000000000000001 0.20000000000000001 0.29999999999999999" rgb2="0.20000000000000001 0.29999999999999999 0.40000000000000002" mark="edge" markrgb="0.20000000000000001 0.29999999999999999 0.40000000000000002" width="300" height="300"/>
-    <material name="grid"  texture="grid" texrepeat="1 1" texuniform="true" reflectance="0.2"/>
-    <material name="self"  rgba="0.69999999999999996 0.5 0.29999999999999999 1"/>
-    <material name="self_default"  rgba="0.69999999999999996 0.5 0.29999999999999999 1"/>
-    <material name="self_highlight"  rgba="0 0.5 0.29999999999999999 1"/>
-    <material name="effector"  rgba="0.69999999999999996 0.40000000000000002 0.20000000000000001 1"/>
-    <material name="effector_default"  rgba="0.69999999999999996 0.40000000000000002 0.20000000000000001 1"/>
-    <material name="effector_highlight"  rgba="0 0.5 0.29999999999999999 1"/>
-    <material name="decoration"  rgba="0.29999999999999999 0.5 0.69999999999999996 1"/>
-    <material name="eye"  rgba="0 0.20000000000000001 1 1"/>
-    <material name="target"  rgba="0.59999999999999998 0.29999999999999999 0.29999999999999999 1"/>
-    <material name="target_default"  rgba="0.59999999999999998 0.29999999999999999 0.29999999999999999 1"/>
-    <material name="target_highlight"  rgba="0.59999999999999998 0.29999999999999999 0.29999999999999999 0.40000000000000002"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance="0.2"/>
+    <material name="self" rgba="0.69999999999999996 0.5 0.29999999999999999 1"/>
+    <material name="self_default" rgba="0.69999999999999996 0.5 0.29999999999999999 1"/>
+    <material name="self_highlight" rgba="0 0.5 0.29999999999999999 1"/>
+    <material name="effector" rgba="0.69999999999999996 0.40000000000000002 0.20000000000000001 1"/>
+    <material name="effector_default" rgba="0.69999999999999996 0.40000000000000002 0.20000000000000001 1"/>
+    <material name="effector_highlight" rgba="0 0.5 0.29999999999999999 1"/>
+    <material name="decoration" rgba="0.29999999999999999 0.5 0.69999999999999996 1"/>
+    <material name="eye" rgba="0 0.20000000000000001 1 1"/>
+    <material name="target" rgba="0.59999999999999998 0.29999999999999999 0.29999999999999999 1"/>
+    <material name="target_default" rgba="0.59999999999999998 0.29999999999999999 0.29999999999999999 1"/>
+    <material name="target_highlight" rgba="0.59999999999999998 0.29999999999999999 0.29999999999999999 0.40000000000000002"/>
     <skin name="skin" file="rat_skin_walker.skn"/>
   </asset>
   <worldbody>
@@ -193,23 +193,23 @@
                       <joint name="hip_L_abduct" class="hip_abduct" axis="1 -0 -0"/>
                       <joint name="hip_L_extend" class="hip_extend" axis="0 1 0"/>
                       <site name="knee_L" type="cylinder" size="0.00060000000000000006 0.0040000000000000001" pos="0.016222667294645648 0.018385689600598401 -0.027037778824409414" zaxis="0 1 0"/>
-                      <geom name="upper_leg_L0_collision" class="collision_primitive" size="0.01 0.02" pos="0.0098399999999999998 0.012299999999999998 -0.014759999999999999" euler="35 -40 0"/>
-                      <body name="lower_leg_L" pos="0.017641196982034445 0.019993356579639035 -0.029401994970057407">
+                      <geom name="upper_leg_L0_collision" class="collision_primitive" size="0.0091958994115686095 0.018391798823137219" pos="0.0090487650209835121 0.011310956276229389 -0.013573147531475267" euler="35 -40 0"/>
+                      <body name="lower_leg_L" pos="0.016222667294645648 0.018385689600598401 -0.027037778824409414">
                         <joint name="knee_L" class="knee" axis="0.5 -1 0"/>
                         <site name="ankle_L" type="cylinder" size="0.00060000000000000006 0.0025999999999999999" pos="-0.035088982905058332 -0.0051349731080573167 -0.023963207837600808" zaxis="0 1 0"/>
-                        <body name="foot_L" pos="-0.035211935503459336 -0.0051529661712379519 -0.024047175465777105">
+                        <body name="foot_L" pos="-0.035088982905058332 -0.0051349731080573167 -0.023963207837600808">
                           <joint name="ankle_L" class="ankle" axis="-0.29999999999999999 1 0"/>
-                          <geom name="foot_L_collision" class="collision_primitive_paw" size="0.0035000000000000009 0.0135" pos="0.0090199999999999985 0.0024599999999999999 -0.0024599999999999999" euler="90 -70 0"/>
+                          <geom name="foot_L_collision" class="collision_primitive_paw" size="0.0034877787435353782 0.01345286086792217" pos="0.0089885040761968852 0.0024514102025991508 -0.0024514102025991508" euler="90 -70 0"/>
                           <site name="toe_L" type="cylinder" size="0.00060000000000000006 0.005000000000000001" pos="0.021846843754864571 0.0078838610071902578 -0.0028495883158519003" zaxis="0 1 0"/>
                           <body name="toe_L" pos="0.021846843754864571 0.0078838610071902578 -0.0028495883158519003">
                             <joint name="toe_L" class="toe" axis="0 1 0"/>
-                            <geom name="toe_L0_collision" class="collision_primitive_paw" size="0.0023 0.007000000000000001" pos="0.0087974227092323613 -0.0008797422709232363 0" euler="90 -70 0"/>
-                            <geom name="toe_L1_collision" class="collision_primitive_paw" size="0.0023 0.0074999999999999997" pos="0.0083575515737707457 0.0026392268127697089 0" euler="90 -70 0"/>
-                            <geom name="toe_L2_collision" class="collision_primitive_paw" size="0.0023 0.007000000000000001" pos="0.0070379381673858904 0.0057183247610010368 0" euler="90 -70 0"/>
+                            <geom name="toe_L0_collision" class="collision_primitive_paw" size="0.0024675697842968824 0.0075099949956861645" pos="0.0087974227092323613 -0.0008797422709232363 0" euler="90 -70 0"/>
+                            <geom name="toe_L1_collision" class="collision_primitive_paw" size="0.0024675697842968824 0.0080464232096637469" pos="0.0083575515737707457 0.0026392268127697089 0" euler="90 -70 0"/>
+                            <geom name="toe_L2_collision" class="collision_primitive_paw" size="0.0024675697842968824 0.0075099949956861645" pos="0.0070379381673858904 0.0057183247610010368 0" euler="90 -70 0"/>
                             <site name="sole_L" class="sensor" type="box" size="0.0080000000000000002 0.0060000000000000001 0.0040000000000000001" pos="0.0024599999999999999 0 -0.00164"/>
                           </body>
                         </body>
-                        <geom name="lower_leg_L_collision" class="collision_primitive" size="0.0074999999999999997 0.021999999999999999" pos="-0.014027482450951759 0.00014009791425872447 -0.012259940030566241" quat="0.58439398761405215 0.27858155227390202 0.39004539538183519 0.65478284607542836"/>
+                        <geom name="lower_leg_L_collision" class="collision_primitive" size="0.0068969245586764571 0.020230978705450941" pos="-0.012899531761649629 0.00012883263272937939 -0.011274117531295053" quat="0.58439398761405215 0.27858155227390202 0.39004539538183519 0.65478284607542836"/>
                       </body>
                     </body>
                     <body name="upper_leg_R" pos="-0.0048102924167646149 -0.011491254106715469 -0.0098878233011272659">
@@ -217,23 +217,23 @@
                       <joint name="hip_R_abduct" class="hip_abduct" axis="-1 0 0"/>
                       <joint name="hip_R_extend" class="hip_extend" axis="0 1 0"/>
                       <site name="knee_R" type="cylinder" size="0.00060000000000000006 0.0040000000000000001" pos="0.016222667294645648 -0.018385689600598401 -0.027037778824409414" zaxis="0 1 0"/>
-                      <geom name="upper_leg_R0_collision" class="collision_primitive" size="0.01 0.02" pos="0.0098399999999999998 -0.012299999999999998 -0.014759999999999999" euler="-35 -40 0"/>
-                      <body name="lower_leg_R" pos="0.017641196982034445 -0.019993356579639035 -0.029401994970057407">
+                      <geom name="upper_leg_R0_collision" class="collision_primitive" size="0.0091958994115686095 0.018391798823137219" pos="0.0090487650209835121 -0.011310956276229389 -0.013573147531475267" euler="-35 -40 0"/>
+                      <body name="lower_leg_R" pos="0.016222667294645648 -0.018385689600598401 -0.027037778824409414">
                         <joint name="knee_R" class="knee" axis="-0.5 -1 0"/>
                         <site name="ankle_R" type="cylinder" size="0.00060000000000000006 0.0025999999999999999" pos="-0.035088982905058332 0.0051349731080573167 -0.023963207837600808" zaxis="0 1 0"/>
-                        <body name="foot_R" pos="-0.035211935503459336 0.0051529661712379519 -0.024047175465777105">
+                        <body name="foot_R" pos="-0.035088982905058332 0.0051349731080573167 -0.023963207837600808">
                           <joint name="ankle_R" class="ankle" axis="0.29999999999999999 1 0"/>
-                          <geom name="foot_R_collision" class="collision_primitive_paw" size="0.0035000000000000009 0.0135" pos="0.0090199999999999985 -0.0024599999999999999 -0.0024599999999999999" euler="90 70 0"/>
+                          <geom name="foot_R_collision" class="collision_primitive_paw" size="0.0034877787435353782 0.01345286086792217" pos="0.0089885040761968852 -0.0024514102025991508 -0.0024514102025991508" euler="90 70 0"/>
                           <site name="toe_R" type="cylinder" size="0.00060000000000000006 0.005000000000000001" pos="0.021846843754864571 -0.0078838610071902578 -0.0028495883158519003" zaxis="0 1 0"/>
                           <body name="toe_R" pos="0.021846843754864571 -0.0078838610071902578 -0.0028495883158519003">
                             <joint name="toe_R" class="toe" axis="0 1 0"/>
-                            <geom name="toe_R0_collision" class="collision_primitive_paw" size="0.0023 0.007000000000000001" pos="0.0087974227092323613 0.0008797422709232363 0" euler="90 70 0"/>
-                            <geom name="toe_R1_collision" class="collision_primitive_paw" size="0.0023 0.0074999999999999997" pos="0.0083575515737707457 -0.0026392268127697089 0" euler="90 70 0"/>
-                            <geom name="toe_R2_collision" class="collision_primitive_paw" size="0.0023 0.007000000000000001" pos="0.0070379381673858904 -0.0057183247610010368 0" euler="90 70 0"/>
+                            <geom name="toe_R0_collision" class="collision_primitive_paw" size="0.0024675697842968824 0.0075099949956861645" pos="0.0087974227092323613 0.0008797422709232363 0" euler="90 70 0"/>
+                            <geom name="toe_R1_collision" class="collision_primitive_paw" size="0.0024675697842968824 0.0080464232096637469" pos="0.0083575515737707457 -0.0026392268127697089 0" euler="90 70 0"/>
+                            <geom name="toe_R2_collision" class="collision_primitive_paw" size="0.0024675697842968824 0.0075099949956861645" pos="0.0070379381673858904 -0.0057183247610010368 0" euler="90 70 0"/>
                             <site name="sole_R" class="sensor" type="box" size="0.0080000000000000002 0.0060000000000000001 0.0040000000000000001" pos="0.0024599999999999999 0 -0.00164"/>
                           </body>
                         </body>
-                        <geom name="lower_leg_R_collision" class="collision_primitive" size="0.0074999999999999997 0.021999999999999999" pos="-0.01375933611187981 -0.00018482183372541612 -0.012095229314958577" quat="0.65643150361110036 0.39014177197659983 0.27795769268188453 0.58277491358567579"/>
+                        <geom name="lower_leg_R_collision" class="collision_primitive" size="0.0068969245586764571 0.020230978705450941" pos="-0.012652947085481026 -0.00016996029920005856 -0.011122651214021497" quat="0.65643150361110036 0.39014177197659983 0.27795769268188453 0.58277491358567579"/>
                       </body>
                     </body>
                     <body name="vertebra_C1" pos="-0.015789911729839668 0 -0.011881622926183695">
@@ -423,25 +423,25 @@
           <joint name="shoulder_L" class="shoulder" axis="0 1 0"/>
           <joint name="shoulder_sup_L" class="shoulder_sup" axis="0 0 -1"/>
           <site name="elbow_L" type="cylinder" size="0.00060000000000000006 0.0040000000000000001" pos="-0.016311817434811103 0.010602681332627218 -0.022836544408735546" zaxis="0 1 0.20000000000000001"/>
-          <body name="lower_arm_L" pos="-0.016399999999999998 0.010659999999999999 -0.022959999999999998">
+          <body name="lower_arm_L" pos="-0.016311817434811103 0.010602681332627218 -0.022836544408735546">
             <joint name="elbow_L" class="elbow" axis="0 1 0.20000000000000001"/>
             <site name="wrist_L" type="cylinder" size="0.00080000000000000004 0.0033999999999999998" pos="0.020045095656359722 0.011692972466209837 -0.018374671018329743" zaxis="0 1 0"/>
-            <body name="hand_L" pos="0.01968 0.011479999999999999 -0.018039999999999997">
+            <body name="hand_L" pos="0.020045095656359722 0.011692972466209837 -0.018374671018329743">
               <joint name="wrist_L" class="wrist" axis="0.59999999999999998 -1 0"/>
-              <geom name="hand_L_collision" class="collision_primitive_paw" type="ellipsoid" size="0.007000000000000001 0.0040000000000000001 0.0023999999999999998" pos="0.00164 0.00081999999999999998 -0.0049199999999999999" euler="-40 50 45"/>
-              <site name="finger_L" type="cylinder" size="0.00060000000000000006 0.005000000000000001" pos="0.0032799999999999999 0.00164 -0.0090199999999999985" zaxis="-0.20000000000000001 1 0"/>
-              <body name="finger_L" pos="0.0032799999999999999 0.00164 -0.0090199999999999985">
+              <geom name="hand_L_collision" class="collision_primitive_paw" type="ellipsoid" size="0.0071891017652019919 0.0041080581515439947 0.0024648348909263968" pos="0.0016843038421330378 0.00084215192106651892 -0.0050529115263991137" euler="-40 50 45"/>
+              <site name="finger_L" type="cylinder" size="0.00060000000000000006 0.005000000000000001" pos="0.0033686076842660757 0.0016843038421330378 -0.0092636711317317065" zaxis="-0.20000000000000001 1 0"/>
+              <body name="finger_L" pos="0.0033686076842660757 0.0016843038421330378 -0.0092636711317317065">
                 <joint name="finger_L" class="finger" axis="-0.5 1 0"/>
-                <geom name="finger_L0_collision" class="collision_primitive_paw" size="0.002 0.0035000000000000009" pos="0.0053300000000000005 -0.00081999999999999998 0" euler="90 -75 0"/>
-                <geom name="finger_L1_collision" class="collision_primitive_paw" size="0.002 0.0040000000000000001" pos="0.0049199999999999999 0.0020499999999999997 0" euler="90 -63 0"/>
-                <geom name="finger_L2_collision" class="collision_primitive_paw" size="0.002 0.0035000000000000009" pos="0.0028700000000000006 0.0041000000000000003 0" euler="90 -55 0"/>
+                <geom name="finger_L0_collision" class="collision_primitive_paw" size="0.0020540290757719974 0.0035945508826009964" pos="0.0054739874869323734 -0.00084215192106651892 0" euler="90 -75 0"/>
+                <geom name="finger_L1_collision" class="collision_primitive_paw" size="0.0020540290757719974 0.0041080581515439947" pos="0.0050529115263991137 0.0021053798026662972 0" euler="90 -63 0"/>
+                <geom name="finger_L2_collision" class="collision_primitive_paw" size="0.0020540290757719974 0.0035945508826009964" pos="0.0029475317237328169 0.0042107596053325954 0" euler="90 -55 0"/>
                 <site name="palm_L" class="sensor" type="box" size="0.0080000000000000002 0.0060000000000000001 0.0040000000000000001" pos="0.0024599999999999999 0 -0.00081999999999999998"/>
               </body>
             </body>
-            <geom name="radius_L_collision" class="collision_primitive" size="0.0033999999999999998 0.014500000000000001" pos="0.010481459846302785 0.0062410118847916994 -0.011138172046713772" quat="0.023764932308462921 0.79177214415182184 0.42322934679317159 0.43978292344135678"/>
-            <geom name="ulna_L_collision" class="collision_primitive" size="0.0040000000000000001 0.012" pos="0.0061490298423941001 0.0045480893298371922 -0.0086452442174428136" quat="0.012822444520418631 0.74462498727826065 0.47760656071953278 0.46611284727523911"/>
+            <geom name="radius_L_collision" class="collision_primitive" size="0.0034630754690865373 0.01476899832404553" pos="0.01067590778645492 0.0063567926942646093 -0.011344803054541134" quat="0.023764932308462921 0.79177214415182184 0.42322934679317159 0.43978292344135678"/>
+            <geom name="ulna_L_collision" class="collision_primitive" size="0.0040742064342194559 0.012222619302658369" pos="0.0062631042370223725 0.0046324637027568855 -0.0088056274040260139" quat="0.012822444520418631 0.74462498727826065 0.47760656071953278 0.46611284727523911"/>
           </body>
-          <geom name="humerus_L_collision" class="collision_primitive" size="0.0080000000000000002 0.016" pos="-0.0079712000559407185 0.0059582959210794095 -0.012335974800721728" quat="0.47256099918016298 0.34500828054201771 0.00070160501549135191 0.8109592444517103"/>
+          <geom name="humerus_L_collision" class="collision_primitive" size="0.0079569841145420029 0.015913968229084006" pos="-0.0079283390273695784 0.0059262582492211587 -0.012269644440841655" quat="0.47256099918016298 0.34500828054201771 0.00070160501549135191 0.8109592444517103"/>
         </body>
         <geom name="scapula_L_collision" class="nonself_collision_primitive" type="ellipsoid" size="0.0050053708255290994 0.014631827920675281 0.024311044067144391" pos="0.01757062251063465 0.0086369166801125909 -0.015229522492676917" quat="0.18441940626963749 0.76922228553766514 0.47403228455170038 0.38675567381237091"/>
       </body>
@@ -454,30 +454,29 @@
           <joint name="shoulder_R" class="shoulder" axis="0 1 0"/>
           <joint name="shoulder_sup_R" class="shoulder_sup" axis="-0 -0 1"/>
           <site name="elbow_R" type="cylinder" size="0.00060000000000000006 0.0040000000000000001" pos="-0.016311817434811103 -0.010602681332627218 -0.022836544408735546" zaxis="0 1 -0.20000000000000001"/>
-          <body name="lower_arm_R" pos="-0.016399999999999998 -0.010659999999999999 -0.022959999999999998">
+          <body name="lower_arm_R" pos="-0.016311817434811103 -0.010602681332627218 -0.022836544408735546">
             <joint name="elbow_R" class="elbow" axis="0 1 -0.20000000000000001"/>
             <site name="wrist_R" type="cylinder" size="0.00080000000000000004 0.0033999999999999998" pos="0.020045095656359722 -0.011692972466209837 -0.018374671018329743" zaxis="0 1 0"/>
-            <body name="hand_R" pos="0.01968 -0.011479999999999999 -0.018039999999999997">
+            <body name="hand_R" pos="0.020045095656359722 -0.011692972466209837 -0.018374671018329743">
               <joint name="wrist_R" class="wrist" axis="-0.59999999999999998 -1 0"/>
-              <geom name="hand_R_collision" class="collision_primitive_paw" type="ellipsoid" size="0.007000000000000001 0.0040000000000000001 0.0023999999999999998" pos="0.00164 -0.00081999999999999998 -0.0049199999999999999" euler="40 50 -45"/>
-              <site name="finger_R" type="cylinder" size="0.00060000000000000006 0.005000000000000001" pos="0.0032799999999999999 -0.00164 -0.0090199999999999985" zaxis="0.20000000000000001 1 0"/>
-              <body name="finger_R" pos="0.0032799999999999999 -0.00164 -0.0090199999999999985">
+              <geom name="hand_R_collision" class="collision_primitive_paw" type="ellipsoid" size="0.0071891017652019919 0.0041080581515439947 0.0024648348909263968" pos="0.0016843038421330378 -0.00084215192106651892 -0.0050529115263991137" euler="40 50 -45"/>
+              <site name="finger_R" type="cylinder" size="0.00060000000000000006 0.005000000000000001" pos="0.0033686076842660757 -0.0016843038421330378 -0.0092636711317317065" zaxis="0.20000000000000001 1 0"/>
+              <body name="finger_R" pos="0.0033686076842660757 -0.0016843038421330378 -0.0092636711317317065">
                 <joint name="finger_R" class="finger" axis="0.5 1 0"/>
-                <geom name="finger_R0_collision" class="collision_primitive_paw" size="0.002 0.0035000000000000009" pos="0.0053300000000000005 0.00081999999999999998 0" euler="90 75 0"/>
-                <geom name="finger_R1_collision" class="collision_primitive_paw" size="0.002 0.0040000000000000001" pos="0.0049199999999999999 -0.0020499999999999997 0" euler="90 63 0"/>
-                <geom name="finger_R2_collision" class="collision_primitive_paw" size="0.002 0.0035000000000000009" pos="0.0028700000000000006 -0.0041000000000000003 0" euler="90 55 0"/>
+                <geom name="finger_R0_collision" class="collision_primitive_paw" size="0.0020540290757719974 0.0035945508826009964" pos="0.0054739874869323734 0.00084215192106651892 0" euler="90 75 0"/>
+                <geom name="finger_R1_collision" class="collision_primitive_paw" size="0.0020540290757719974 0.0041080581515439947" pos="0.0050529115263991137 -0.0021053798026662972 0" euler="90 63 0"/>
+                <geom name="finger_R2_collision" class="collision_primitive_paw" size="0.0020540290757719974 0.0035945508826009964" pos="0.0029475317237328169 -0.0042107596053325954 0" euler="90 55 0"/>
                 <site name="palm_R" class="sensor" type="box" size="0.0080000000000000002 0.0060000000000000001 0.0040000000000000001" pos="0.0024599999999999999 0 -0.00081999999999999998"/>
               </body>
             </body>
-            <geom name="radius_R_collision" class="collision_primitive" size="0.0033999999999999998 0.014500000000000001" pos="0.010481465968685834 -0.0062414145527450865 -0.01113817663823637" quat="0.43978285859011762 0.42323047325609903 0.79177155870747651 0.023765576358593481"/>
-            <geom name="ulna_R_collision" class="collision_primitive" size="0.0040000000000000001 0.012" pos="0.0061490321811166126 -0.0045484902454263456 -0.0086452442674054292" quat="0.46611278282571561 0.47760677953250608 0.74462488546938377 0.01282254930824632"/>
+            <geom name="radius_R_collision" class="collision_primitive" size="0.0034630754690865373 0.01476899832404553" pos="0.010675914022418022 -0.0063572028323562449 -0.011344807731243862" quat="0.43978285859011762 0.42323047325609903 0.79177155870747651 0.023765576358593481"/>
+            <geom name="ulna_R_collision" class="collision_primitive" size="0.0040742064342194559 0.012222619302658369" pos="0.0062631066191319498 -0.0046328720559751123 -0.0088056274549155166" quat="0.46611278282571561 0.47760677953250608 0.74462488546938377 0.01282254930824632"/>
           </body>
-          <geom name="humerus_R_collision" class="collision_primitive" size="0.0080000000000000002 0.016" pos="-0.0079711974200441533 -0.0059586754400521077 -0.012335972673946267" quat="0.81095939353104862 0.00070139480829139946 0.34500827950404478 0.47256074441571583"/>
+          <geom name="humerus_R_collision" class="collision_primitive" size="0.0079569841145420029 0.015913968229084006" pos="-0.0079283364056461914 -0.0059266357275257753 -0.012269642325501836" quat="0.81095939353104862 0.00070139480829139946 0.34500827950404478 0.47256074441571583"/>
         </body>
         <geom name="scapula_R_collision" class="nonself_collision_primitive" type="ellipsoid" size="0.0050053702667355532 0.014631831273436551 0.024311039596796039" pos="0.017570620188504527 -0.0086372952673672201 -0.015229520628109939" quat="0.38675569721296882 0.47403213120406879 0.76922234964236824 0.1844194839763772"/>
       </body>
     </body>
-
   </worldbody>
   <contact>
     <exclude name="pelvis:vertebra_C3" body1="pelvis" body2="vertebra_C3"/>

@@ -101,6 +101,8 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
     # Use different tolerances for root vs normal optimization
     if root_only:
         ftol = params['_ROOT_FTOL']
+    elif qs_to_opt is not None:
+        ftol = params['_LIMB_FTOL']
     else:
         ftol = params['_FTOL']
     q_opt_param = scipy.optimize.least_squares(

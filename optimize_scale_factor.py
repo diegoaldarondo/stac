@@ -73,7 +73,7 @@ def optimize_scale_factor(data_path, param_path,
         data_path,
         struct_name='markers_preproc')
     # scale_factor0 = params['scale_factor']
-    scale_factor0 = 1.4
+    scale_factor0 = 1.0
     scale_opt = scipy.optimize.least_squares(
         lambda scale: scale_loss(scale, data_path, params, kp_data, kp_names),
         scale_factor0
