@@ -6,6 +6,7 @@ _ARM_JOINTS:
 - finger
 _DIFF_STEP: 3.0e-08
 _FTOL: 0.0001
+_LIMB_FTOL: 0.000001
 _IS_LIMB:
 - scapula
 - hip
@@ -34,21 +35,21 @@ _KEYPOINT_COLOR_PAIRS:
   SpineL: .8 .8 .8 1
   SpineM: .8 .8 .8 1
 _KEYPOINT_INITIAL_OFFSETS:
-  ArmL: -0.01 0. 0.01
-  ArmR: -0.01 0. 0.01
-  ElbowL: 0. 0. 0.
-  ElbowR: 0. 0. 0.
-  HeadB: 0. -.025 .05
-  HeadF: .025 -.025 .05
-  HeadL: 0. .025 .05
+  ArmL: -0.01 0.005 0.01
+  ArmR: -0.01 -0.005 0.01
+  ElbowL: 0. 0.01 0.
+  ElbowR: 0. -0.01 0.
+  HeadB: 0. -.025 .04
+  HeadF: .025 -.025 .04
+  HeadL: 0. .025 .04
   HipL: 0. 0.015 0.015
   HipR: 0. -0.015 0.015
-  KneeL: 0.01 0.01 0.015
-  KneeR: 0.01 -0.01 0.015
+  KneeL: 0.01 0.015 0.015
+  KneeR: 0.01 -0.015 0.015
   Offset1: 0.015 .025 -0.005
   Offset2: -0.015 .025 -0.005
-  ShinL: 0.03 0.01 0.02
-  ShinR: 0.03 -0.01 0.02
+  ShinL: 0.02 0.015 0.02
+  ShinR: 0.02 -0.015 0.02
   ShoulderL: 0. 0. 0.
   ShoulderR: 0. 0. 0.
   SpineF: 0. 0. 0.0225
@@ -85,21 +86,20 @@ _SITES_TO_REGULARIZE:
 - ArmR
 - ElbowL
 - ElbowR
-- ShoulderL
-- ShoulderR
-- HipL
-- HipR
 - KneeL
 - KneeR
 - ShinL
 - ShinR
 _STAND_HEIGHT: 1.5
+_USE_HFIELD: 1
 _TIME_BINS: 0.03
 _XML_PATH: /home/diego/code/olveczky/dm/stac/models/rat_june3.xml
+_ARENA_DIAMETER: 0.5842
+hfield_image_path: /home/diego/code/olveczky/dm/stac/params/floor_models/test_floormap.p
 adaptive_z_offset_value: 0.02
-m_reg_coef: 0.25
+m_reg_coef: 0.9
 q_reg_coef: 0.0
-scale_factor: 1.297
+scale_factor: 1.08
 temporal_reg_coef: 0.2
 z_offset: 0.02
 z_perc: 5

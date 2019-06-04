@@ -80,6 +80,12 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
     :param root_only: If True, only optimize the root.
     :param temporal_regularization: If True, regularize arm joints over time.
     """
+    lb = np.concatenate(
+        [-np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 0]])
+    lb = np.minimum(lb, 0.0)
+    ub = np.concatenate(
+        [np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 1]])
+
     # Define initial position of the optimization
     q0 = np.copy(physics.named.data.qpos[:])
 
@@ -106,14 +112,14 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
     else:
         ftol = params['_FTOL']
     q_opt_param = scipy.optimize.least_squares(
-            lambda q: q_loss(q, physics, marker_ref_arr, sites, params,
-                             qs_to_opt=qs_to_opt,
-                             q_copy=q_copy,
-                             reg_coef=reg_coef,
-                             root_only=root_only,
-                             temporal_regularization=temporal_regularization),
-            q0, ftol=ftol, diff_step=params['_DIFF_STEP'],
-            verbose=0)
+        lambda q: q_loss(q, physics, marker_ref_arr, sites, params,
+                         qs_to_opt=qs_to_opt,
+                         q_copy=q_copy,
+                         reg_coef=reg_coef,
+                         root_only=root_only,
+                         temporal_regularization=temporal_regularization),
+        q0, bounds=(lb, ub), ftol=ftol, diff_step=params['_DIFF_STEP'],
+        verbose=0)
 
     # Set pose to the optimized q and step forward.
     if qs_to_opt is None:
