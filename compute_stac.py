@@ -13,17 +13,17 @@ _MM_TO_METERS = 1000
 
 def preprocess_snippet(kp_data, kp_names, params):
     """Preprocess snippet data."""
-    kp_data = kp_data/_MM_TO_METERS
+    kp_data = kp_data / _MM_TO_METERS
     spineM_id = np.argwhere([name == 'SpineM' for name in kp_names])
-    spineM = np.squeeze(kp_data[:, spineM_id*3 + np.array([0, 1, 2])])
+    spineM = np.squeeze(kp_data[:, spineM_id * 3 + np.array([0, 1, 2])])
 
     # Rescale by centering at spineM, scaling, and decentering
-    for dim in range(np.round(kp_data.shape[1]/3).astype('int32')):
-        kp_data[:, dim*3 + np.array([0, 1, 2])] -= spineM
+    for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
+        kp_data[:, dim * 3 + np.array([0, 1, 2])] -= spineM
     kp_data *= params['scale_factor']
     spineM *= params['scale_factor']
-    for dim in range(np.round(kp_data.shape[1]/3).astype('int32')):
-        kp_data[:, dim*3 + np.array([0, 1, 2])] += spineM
+    for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
+        kp_data[:, dim * 3 + np.array([0, 1, 2])] += spineM
 
     # Downsample
     kp_data = kp_data[::params['skip'], :]
@@ -250,7 +250,7 @@ def handle_args(data_path, param_path, *,
                                      'results', 'JDM25_v4',
                                      'snippet%d.p' % (n_snip))
         else:
-            save_path = os.path.join(save_path,  files[n_snip][:-4] + '.p')
+            save_path = os.path.join(save_path, files[n_snip][:-4] + '.p')
         print(save_path, flush=True)
         compute_stac(kp_data, save_path, params)
         print('Finished %d' % (n_snip))

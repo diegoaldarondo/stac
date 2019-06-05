@@ -20,5 +20,6 @@ setup(
                       'h5py >= 2.9.0',
                       'scipy >= 1.2.1',
                       'yaml',
-                      'opencv-python']
+                      'opencv-python',
+                      're']
 )

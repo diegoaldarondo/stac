@@ -25,7 +25,7 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
     temporal_arm_regularizer = 0.
 
     # Optional regularization.
-    reg_term = reg_coef*np.sum(q[7:]**2)
+    reg_term = reg_coef * np.sum(q[7:]**2)
 
     # If only optimizing the root, set everything else to 0.
     if root_only:
@@ -44,8 +44,8 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
                 temporal_arm_regularizer += (q[id] - q_prev[id])**2
 
     residual = (kp_data.T - q_joints_to_markers(q, physics, sites))
-    return (.5*np.sum(residual**2) + reg_term
-            + params['temporal_reg_coef']*temporal_arm_regularizer)
+    return (.5 * np.sum(residual**2) + reg_term +
+            params['temporal_reg_coef'] * temporal_arm_regularizer)
 
 
 def q_joints_to_markers(q, physics, sites):
@@ -103,6 +103,8 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
     # limit the optimizer to that
     if qs_to_opt is not None:
         q0 = q0[qs_to_opt]
+        lb = lb[qs_to_opt]
+        ub = ub[qs_to_opt]
 
     # Use different tolerances for root vs normal optimization
     if root_only:
@@ -153,10 +155,10 @@ def m_loss(offset, physics, kp_data, time_indices, sites, q, initial_offsets,
 
         # Get the offset relative to the initial position, only for
         # markers you wish to regularize
-        reg_term += ((offset - initial_offsets.flatten())**2)*is_regularized
-        residual += (kp_data[i, :].T
-                     - m_joints_to_markers(offset, physics, sites))**2
-    return .5*np.sum(residual) + reg_coef*np.sum(reg_term)
+        reg_term += ((offset - initial_offsets.flatten())**2) * is_regularized
+        residual += \
+            (kp_data[i, :].T - m_joints_to_markers(offset, physics, sites))**2
+    return .5 * np.sum(residual) + reg_coef * np.sum(reg_term)
 
 
 def m_joints_to_markers(offset, physics, sites):
@@ -207,11 +209,12 @@ def m_phase(physics, kp_data, sites, time_indices, q, initial_offsets, params,
 
     # Optimize dm
     offset_opt_param = scipy.optimize.minimize(
-            lambda offset: m_loss(offset, physics, kp_data[time_indices, :],
-                                  time_indices, sites, q, initial_offsets,
-                                  is_regularized=is_regularized,
-                                  reg_coef=reg_coef),
-            offset0, options={'maxiter': maxiter})
+        lambda offset: m_loss(offset, physics, kp_data[time_indices, :],
+                              time_indices, sites, q, initial_offsets,
+                              is_regularized=is_regularized,
+                              reg_coef=reg_coef),
+        offset0, options={'maxiter': maxiter}
+    )
 
     # Set pose to the optimized m and step forward.
     physics.bind(sites).pos[:] = np.reshape(offset_opt_param.x, (-1, 3))

@@ -37,12 +37,11 @@ def load_kp_data_from_file(filename, struct_name='markers_preproc'):
 def load_snippets_from_file(folder):
     """Load snippets from file and return list of kp_data."""
     files = [f for f in os.listdir(folder)
-             if os.path.isfile(os.path.join(folder, f)) and
-             'params' not in f]
+             if os.path.isfile(os.path.join(folder, f)) and 'params' not in f]
     filenames = [os.path.join(folder, f) for f in files]
-    snippets = [None]*len(filenames)
-    behaviors = [None]*len(filenames)
-    com_vels = [None]*len(filenames)
+    snippets = [None] * len(filenames)
+    behaviors = [None] * len(filenames)
+    com_vels = [None] * len(filenames)
     for i, filename in enumerate(filenames):
         with h5py.File(filename, 'r') as f:
             try:

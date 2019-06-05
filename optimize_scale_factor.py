@@ -36,18 +36,18 @@ def preprocess_data(scale_factor, params, kp_data, kp_names,
     :param struct_name: Field name of .mat file to load
     """
     kp_data = kp_data[params['start_frame']:, :]
-    kp_data = kp_data/_MM_TO_METERS
+    kp_data = kp_data / _MM_TO_METERS
 
     spineM_id = np.argwhere([name == 'SpineM' for name in kp_names])
-    spineM = np.squeeze(kp_data[:, spineM_id*3 + np.array([0, 1, 2])])
+    spineM = np.squeeze(kp_data[:, spineM_id * 3 + np.array([0, 1, 2])])
 
     # Rescale by centering at spineM, scaling, and decentering
-    for dim in range(np.round(kp_data.shape[1]/3).astype('int32')):
-        kp_data[:, dim*3 + np.array([0, 1, 2])] -= spineM
+    for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
+        kp_data[:, dim * 3 + np.array([0, 1, 2])] -= spineM
     kp_data *= scale_factor
     spineM *= scale_factor
-    for dim in range(np.round(kp_data.shape[1]/3).astype('int32')):
-        kp_data[:, dim*3 + np.array([0, 1, 2])] += spineM
+    for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
+        kp_data[:, dim * 3 + np.array([0, 1, 2])] += spineM
 
     # Downsample
     kp_data = kp_data[::params['skip'], :]
@@ -88,7 +88,7 @@ def optimize_scale_factor(data_path, param_path,
     scale_opt = scipy.optimize.least_squares(
         lambda scale: scale_loss(scale, data_path, params, kp_data, kp_names),
         scale_factor0
-        )
+    )
     print(scale_opt.x)
     return scale_opt.x
 

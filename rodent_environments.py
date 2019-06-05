@@ -44,7 +44,7 @@ def rodent_mocap(kp_data, params, random_state=None):
         # Build a mocap viewing task
         task = ViewMocap(walker, arena, kp_data, params=params)
 
-    time_limit = params['_TIME_BINS']*(params['n_frames']-1)
+    time_limit = params['_TIME_BINS'] * (params['n_frames'] - 1)
     return composer.Environment(time_limit=time_limit,
                                 task=task,
                                 random_state=random_state,
@@ -105,7 +105,7 @@ class ViewMocap(composer.Task):
         else:
             self.video_name = video_name
         for id, name in enumerate(self.params['_KEYPOINT_MODEL_PAIRS']):
-            start = (np.random.rand(3)-.5)*.001
+            start = (np.random.rand(3) - .5) * .001
             rgba = self.params['_KEYPOINT_COLOR_PAIRS'][name]
             site = self._arena.mjcf_model.worldbody.add('site', name=name,
                                                         type='sphere',
@@ -189,7 +189,7 @@ class ViewMocap(composer.Task):
         # Get the frame
         self.frame = physics.time()
         self.frame = \
-            np.floor(self.frame/self.params['_TIME_BINS']).astype('int32')
+            np.floor(self.frame / self.params['_TIME_BINS']).astype('int32')
 
         # Set the mocap marker positions
         physics.bind(self.sites).pos[:] = \
@@ -279,7 +279,7 @@ class ViewMocap_Hfield(ViewMocap):
     def _load_hfield_image(self, params):
         with open(params['hfield_image_path'], 'rb') as f:
             in_dict = pickle.load(f)
-            image = in_dict['hfield']*params['scale_factor']/1000
+            image = in_dict['hfield'] * params['scale_factor'] / 1000
         return image
 
     def initialize_episode(self, physics, random_state):
@@ -294,7 +294,7 @@ class ViewMocap_Hfield(ViewMocap):
         # Find the size of the arena in the hfield
         hfield_size = physics.model.hfield_size[0][0]
         arena_px_size = \
-            int(np.floor(res*(self.params['_ARENA_DIAMETER']/hfield_size)))
+            int(np.floor(res * (self.params['_ARENA_DIAMETER'] / hfield_size)))
 
         # Load the arena height data
         hfield = self._load_hfield_image(self.params)
@@ -303,12 +303,12 @@ class ViewMocap_Hfield(ViewMocap):
         hfield = self._smooth_hfield_image(hfield, sigma=0.5)
 
         # Find the bounds of the arena in the hfield.
-        ar_start = int(np.floor((res-arena_px_size)/2))
-        ar_end = ar_start+arena_px_size
+        ar_start = int(np.floor((res - arena_px_size) / 2))
+        ar_end = ar_start + arena_px_size
         self.hfield_image = np.zeros((res, res))
         self.hfield_image[ar_start:ar_end, ar_start:ar_end] = hfield
         start_idx = physics.model.hfield_adr[_HEIGHTFIELD_ID]
-        physics.model.hfield_data[start_idx:start_idx+res**2] = \
+        physics.model.hfield_data[start_idx:start_idx + res**2] = \
             self.hfield_image.ravel()
 
         # super(ViewMocap_Hfield, self).initialize_episode(physics)
@@ -483,8 +483,7 @@ class RodentObservables(base.WalkerObservables):
     @property
     def proprioception(self):
         """Return proprioceptive information."""
-        return [
-                self.joints_pos,
+        return [self.joints_pos,
                 self.joints_vel,
                 self.actuator_activation,
                 self.body_height,
