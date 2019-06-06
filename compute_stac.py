@@ -11,6 +11,20 @@ import os
 _MM_TO_METERS = 1000
 
 
+def _downsample(kp_data, params, orig_freq=60.):
+    n_samples = kp_data.shape[0]
+    n_upsamples = \
+        int(np.round(n_samples / orig_freq * (1 / params['_TIME_BINS'])))
+    interp_x_vals = np.linspace(0, n_samples, n_upsamples)
+    kp_data_downsampled = np.zeros((interp_x_vals.size, kp_data.shape[1]))
+
+    # Linearly interpolate to downsample for each marker
+    for marker in range(kp_data.shape[1]):
+        kp_data_downsampled[:, marker] = \
+            np.interp(interp_x_vals, range(n_samples), kp_data[:, marker])
+    return kp_data_downsampled
+
+
 def preprocess_snippet(kp_data, kp_names, params):
     """Preprocess snippet data."""
     kp_data = kp_data / _MM_TO_METERS
@@ -26,7 +40,7 @@ def preprocess_snippet(kp_data, kp_names, params):
         kp_data[:, dim * 3 + np.array([0, 1, 2])] += spineM
 
     # Downsample
-    kp_data = kp_data[::params['skip'], :]
+    kp_data = _downsample(kp_data, params)
 
     # Handle z-offset conditions
     if params['adaptive_z_offset']:
@@ -183,7 +197,7 @@ def compute_stac(kp_data, save_path, params):
         out_dict[k] = v
     if file_extension == '.p':
         with open(save_path, "wb") as output_file:
-            pickle.dump(out_dict, output_file)
+            pickle.dump(out_dict, output_file, protocol=2)
     elif file_extension == '.mat':
         savemat(save_path, out_dict)
 
@@ -199,7 +213,8 @@ def handle_args(data_path, param_path, *,
                 adaptive_z_offset=True,
                 verbose=False,
                 visualize=False,
-                render_video=False):
+                render_video=False,
+                process_snippet=True):
     """Wrap compute_stac to perform appropriate processing.
 
     :param data_path: List of paths to .mat mocap data files
@@ -227,33 +242,24 @@ def handle_args(data_path, param_path, *,
     for key, v in kw.items():
         params[key] = v
 
-    # Support snippet-based processing
-    if n_snip is not None:
-        data, kp_names, files, behaviors, com_vels = \
+    if process_snippet:
+        data, kp_names, behavior, com_vel = \
             util.load_snippets_from_file(data_path)
 
-        # Handle seq offset
-        n_snip = int(n_snip) - 1
-        print(n_snip)
-
         # Put useful statistics into params dict for now. Consider stats dict
-        params['behavior'] = behaviors[n_snip]
-        params['com_vel'] = com_vels[n_snip]
+        params['behavior'] = behavior
+        params['com_vel'] = com_vel
 
         kp_data = \
-            preprocess_snippet(data[n_snip], kp_names, params)
+            preprocess_snippet(data, kp_names, params)
 
         # Save the file as a pickle with the same name as the input file in the
         # folder specified by save_path
-        if save_path is None:
-            save_path = os.path.join(os.getcwd(),
-                                     'results', 'JDM25_v4',
-                                     'snippet%d.p' % (n_snip))
-        else:
-            save_path = os.path.join(save_path, files[n_snip][:-4] + '.p')
+        file, ext = os.path.splitext(os.path.basename(data_path))
+        save_path = os.path.join(save_path, file + '.p')
         print(save_path, flush=True)
         compute_stac(kp_data, save_path, params)
-        print('Finished %d' % (n_snip))
+        print('Finished %s' % (save_path))
 
     # Support file-based processing
     else:

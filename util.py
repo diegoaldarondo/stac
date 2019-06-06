@@ -34,7 +34,23 @@ def load_kp_data_from_file(filename, struct_name='markers_preproc'):
         return kp_data, kp_names
 
 
-def load_snippets_from_file(folder):
+def load_snippets_from_file(filename):
+    """Load snippet."""
+    with h5py.File(filename, 'r') as f:
+        try:
+            data = f['data']
+        except KeyError:
+            data = f['preproc_mocap']
+        kp_names = [k for k in data.keys()]
+        # Concatenate the data for each keypoint,
+        # and format to (t x n_dims)
+        snippet = np.concatenate([data[name][:] for name in kp_names]).T
+        behavior = f['clustername']
+        com_vel = f['snippet_com_vel']
+    return snippet, kp_names, behavior, com_vel
+
+
+def load_snippets_from_folder(folder):
     """Load snippets from file and return list of kp_data."""
     files = [f for f in os.listdir(folder)
              if os.path.isfile(os.path.join(folder, f)) and 'params' not in f]
@@ -43,14 +59,6 @@ def load_snippets_from_file(folder):
     behaviors = [None] * len(filenames)
     com_vels = [None] * len(filenames)
     for i, filename in enumerate(filenames):
-        with h5py.File(filename, 'r') as f:
-            try:
-                data = f['data']
-            except KeyError:
-                data = f['preproc_mocap']
-            kp_names = [k for k in data.keys()]
-            # Concatenate the data for each keypoint,
-            # and format to (t x n_dims)
-            snippets[i] = \
-                np.concatenate([data[name][:] for name in kp_names]).T
+        snippets[i], kp_names, behaviors[i], com_vels[i] = \
+            load_snippets_from_file(filename)
     return snippets, kp_names, files, behaviors, com_vels

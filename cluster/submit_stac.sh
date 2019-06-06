@@ -1,16 +1,16 @@
 #!/bin/bash
-DATAPATH="/home/diego/data/dm/stac/snippets/JDM25_v5/reformatted"
+DATAPATH="/n/home02/daldarondo/LabDir/Diego/data/dm/stac/snippets/JDM25_v5/reformatted"
 VERBOSE="True"
-OFFSETPATH="/home/diego/data/dm/stac/offsets/JDM25_offset.p"
+OFFSETPATH="/n/home02/daldarondo/LabDir/Diego/data/dm/stac/offsets/JDM25_m_9_NoHip.p"
 VISUALIZE="False"
 NSNIPPETS=380
-SAVEPATH="/home/diego/data/dm/stac/results/JDM25_v5"
-PARAMPATH="/home/diego/code/olveczky/dm/stac/params/JDM25.yaml"
+SAVEPATH="/n/home02/daldarondo/LabDir/Diego/data/dm/stac/results/JDM25_v5"
+PARAMPATH="/n/home02/daldarondo/LabDir/Diego/code/stac/params/june3/JDM25.yaml"
 sbatch --array=1-$NSNIPPETS --wait cluster/stac.sh $DATAPATH $PARAMPATH $VERBOSE $VISUALIZE $SAVEPATH $OFFSETPATH
 
 ###### Rendering videos ######
 DATAFOLDER="$SAVEPATH/*.p"
-SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM33_v2/"
+SAVEFOLDER="/n/home02/daldarondo/LabDir/Diego/data/dm/stac/clips/JDM33_v2/"
 
 DATAPATHS=($(find $DATAFOLDER))
 FILES=($(find $DATAFOLDER -printf "%f\n"))

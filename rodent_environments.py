@@ -20,11 +20,13 @@ from scipy import ndimage
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
 
-# # Height of head above which the rat is considered standing.
+# Height of head above which the rat is considered standing.
 _TORQUE_THRESHOLD = 60
 _HEIGHTFIELD_ID = 0
 _TERRAIN_SMOOTHNESS = 0.15  # 0.0: maximally bumpy; 1.0: completely smooth.
 _TERRAIN_BUMP_SCALE = .4  # Spatial scale of terrain bumps (in meters).
+_TOP_CAMERA_DISTANCE = 100
+_TOP_CAMERA_Y_PADDING_FACTOR = 1.1
 
 
 def rodent_mocap(kp_data, params, random_state=None):
@@ -35,7 +37,7 @@ def rodent_mocap(kp_data, params, random_state=None):
 
     if params['_USE_HFIELD']:
         # Build a Floor arena that is obstructed by walls.
-        arena = arenas.VariableFloor(size=(1, 1))
+        arena = VariableFloor(size=(1, 1))
         # Build a mocap viewing task
         task = ViewMocap_Hfield(walker, arena, kp_data, params=params)
     else:
@@ -49,6 +51,55 @@ def rodent_mocap(kp_data, params, random_state=None):
                                 task=task,
                                 random_state=random_state,
                                 strip_singleton_obs_buffer_dim=True)
+
+
+class VariableFloor(composer.Arena):
+    """A floor arena supporting heightfields."""
+
+    def _build(self, size=(8, 8), name='terrain'):
+        super(VariableFloor, self)._build(name=name)
+        self._size = size
+
+        self._mjcf_root.visual.headlight.set_attributes(
+            ambient=[.4, .4, .4], diffuse=[.8, .8, .8], specular=[.1, .1, .1])
+
+        # Build heightfield.
+        self._ground_asset = self._mjcf_root.asset.add(
+            'hfield',
+            name='terrain',
+            nrow="501",
+            ncol="501",
+            size="6 6 0.5 0.1"
+        )
+
+        self._ground_geom = self._mjcf_root.worldbody.add(
+            'geom',
+            name='terrain',
+            type="hfield",
+            rgba="0.2 0.3 0.4 1",
+            pos="0 0 -0.01",
+            hfield="terrain"
+        )
+
+        # Choose the FOV so that the floor always fits nicely within the frame
+        # irrespective of actual floor size.
+        fovy_radians = 2 * np.arctan2(_TOP_CAMERA_Y_PADDING_FACTOR * size[1],
+                                      _TOP_CAMERA_DISTANCE)
+        self._top_camera = self._mjcf_root.worldbody.add(
+            'camera',
+            name='top_camera',
+            pos=[0, 0, _TOP_CAMERA_DISTANCE],
+            zaxis=[0, 0, 1],
+            fovy=np.rad2deg(fovy_radians))
+
+    @property
+    def ground_geoms(self):
+        """Return the ground geoms."""
+        return (self._ground_geom,)
+
+    def regenerate(self, random_state):
+        """."""
+        pass
 
 
 class ViewMocap(composer.Task):
@@ -311,8 +362,6 @@ class ViewMocap_Hfield(ViewMocap):
         physics.model.hfield_data[start_idx:start_idx + res**2] = \
             self.hfield_image.ravel()
 
-        # super(ViewMocap_Hfield, self).initialize_episode(physics)
-
         # If we have a rendering context, we need to re-upload the modified
         # heightfield data.
         if physics.contexts:
@@ -322,10 +371,6 @@ class ViewMocap_Hfield(ViewMocap):
                          physics.contexts.mujoco.ptr,
                          _HEIGHTFIELD_ID)
         self._walker.reinitialize_pose(physics, random_state)
-        # # Initial configuration.
-        # orientation = self.random.randn(4)
-        # orientation /= np.linalg.norm(orientation)
-        # _find_non_contacting_height(physics, orientation)
 
 
 class Rat(base.Walker):
