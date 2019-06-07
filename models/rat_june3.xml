@@ -168,6 +168,9 @@
       <light name="light" mode="trackcom" pos="0 0 3"/>
       <camera name="back" mode="trackcom" pos="-1 0 0.5" xyaxes="0 -1 0 1 0 2"/>
       <camera name="side" mode="trackcom" pos="0 -.75 0.5" xyaxes="1 0 0 0 1 2"/>
+      <!-- <camera name="close_profile" mode="fixed" pos="0 -.25 0.125" xyaxes="1 0 0 0 1 2"/> -->
+      <!-- <camera name="close_profile" mode="trackcom" pos="0 -.5 0.25" xyaxes="-1 0 0 0 1 2"/> -->
+      <camera name="close_profile" mode="trackcom" pos=".3 -.3 0.25" xyaxes="1 1 0 -1 1 2"/>
       <geom name="collision_torso" class="nonself_collision_primitive" type="ellipsoid" size="0.050000000000000003 0.024 0.025999999999999999" density="600.0" pos="-0.008199999999999999 0 0" euler="0 10 0"/>
       <body name="vertebra_1" pos="-0.019179443666608526 -1.8803355927589691e-07 0.016846456906490889">
         <geom name="vertebra_1_collision" class="nonself_collision_primitive" type="sphere" size="0.01" pos="0 0 -0.00164"/>

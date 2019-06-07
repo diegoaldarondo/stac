@@ -8,6 +8,7 @@ import util
 
 def view_model(*, param_path='./params/baseParams.yaml'):
     """View the model with base parameters."""
+    # Kp_data is just a placeholder, consider refactoring
     kp_data = np.zeros((100, 60))
     params = util.load_params(param_path)
     params['n_frames'] = kp_data.shape[0]

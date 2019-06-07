@@ -12,6 +12,7 @@ from dm_control.locomotion.walkers import initializers
 from dm_control.locomotion.arenas import floors as arenas
 from dm_control.locomotion.walkers import base
 from dm_control.composer.observation import observable
+from dm_control.mujoco.wrapper.mjbindings import enums
 import numpy as np
 import pickle
 import scipy.optimize
@@ -206,6 +207,8 @@ class ViewMocap(composer.Task):
         # Get RGB rendering of env
         scene_option = wrapper.MjvOption()
         scene_option.geomgroup[2] = 0
+        # scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT]
+        # = True
         rgbArr = physics.render(self.height, self.width,
                                 camera_id='walker/side',
                                 scene_option=scene_option)
@@ -390,6 +393,7 @@ class Rat(base.Walker):
             for geom in self.marker_geoms:
                 geom.set_attributes(rgba=marker_rgba)
         self.body_sites = []
+
         # Add keypoint sites to the mjcf model, and a reference to the sites as
         # an attribute for easier access
         for key, v in self.params['_KEYPOINT_MODEL_PAIRS'].items():

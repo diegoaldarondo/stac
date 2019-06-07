@@ -1,4 +1,4 @@
-"""Utility functions to convert from mocap positions to mujoco sensors."""
+"""Utility functions to load data from .mat .yaml and .h5 files."""
 import numpy as np
 import h5py
 import os
@@ -45,8 +45,8 @@ def load_snippets_from_file(filename):
         # Concatenate the data for each keypoint,
         # and format to (t x n_dims)
         snippet = np.concatenate([data[name][:] for name in kp_names]).T
-        behavior = f['clustername']
-        com_vel = f['snippet_com_vel']
+        behavior = ''.join(chr(x) for x in f['clustername'][:])
+        com_vel = f['snippet_com_vel'][:][0]
     return snippet, kp_names, behavior, com_vel
 
 

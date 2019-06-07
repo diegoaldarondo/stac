@@ -31,6 +31,7 @@ def view_stac(data_path, param_path, *,
             kp_data = np.zeros((n_frames, offsets.size))
     params = util.load_params(param_path)
     params['n_frames'] = n_frames
+
     # Build the environment, and set the offsets, and params
     env = rodent_environments.rodent_mocap(kp_data, params)
     sites = env.task._walker.body_sites
