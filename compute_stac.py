@@ -1,6 +1,7 @@
 """Compute stac optimization on data."""
 from dm_control import viewer
 from scipy.io import savemat
+import scipy.ndimage
 import clize
 import stac
 import rodent_environments
@@ -25,6 +26,16 @@ def _downsample(kp_data, params, orig_freq=60.):
     return kp_data_downsampled
 
 
+def _smooth(kp_data, kp_names, sigma=1):
+    parts_to_smooth = ['Arm', 'Elbow']
+    ids = np.argwhere([any(part in name for name in kp_names)
+                       for part in parts_to_smooth])
+    for id in ids:
+        kp_data[:, id] = scipy.ndimage.gaussian_filter1d(kp_data[:, id],
+                                                         sigma, axis=0)
+    return kp_data
+
+
 def preprocess_snippet(kp_data, kp_names, params):
     """Preprocess snippet data."""
     kp_data = kp_data / _MM_TO_METERS
@@ -41,6 +52,9 @@ def preprocess_snippet(kp_data, kp_names, params):
 
     # Downsample
     kp_data = _downsample(kp_data, params)
+
+    # Smooth
+    kp_data = _smooth(kp_data, kp_names, sigma=1)
 
     # Handle z-offset conditions
     if params['adaptive_z_offset']:
@@ -90,6 +104,7 @@ def q_clip(env, qs_to_opt, params):
     q = []
     walker_body_sites = []
     for i in range(params['n_frames']):
+        print(i)
         stac.q_phase(env.physics, env.task.kp_data[i, :],
                      env.task._walker.body_sites, params,
                      reg_coef=params['q_reg_coef'])
@@ -101,6 +116,52 @@ def q_clip(env, qs_to_opt, params):
                      env.task._walker.body_sites, params,
                      reg_coef=params['q_reg_coef'],
                      qs_to_opt=qs_to_opt, temporal_regularization=temp_reg)
+        q.append(np.copy(env.physics.named.data.qpos[:]))
+        walker_body_sites.append(
+            np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
+        )
+    return q, walker_body_sites
+
+
+def _get_part_ids(env, parts):
+    part_names = env.physics.named.data.qpos.axes.row.names
+    return np.array([any(part in name for part in parts)
+                     for name in part_names])
+
+
+def q_clip_iso(env, params):
+    """."""
+    q = []
+    walker_body_sites = []
+    for i in range(params['n_frames']):
+        print(i)
+        stac.q_phase(env.physics, env.task.kp_data[i, :],
+                     env.task._walker.body_sites, params,
+                     reg_coef=params['q_reg_coef'])
+        if i == 0:
+            temp_reg = False
+        else:
+            temp_reg = True
+        r_leg = _get_part_ids(env, ['hip_R', 'knee_R'])
+        l_leg = _get_part_ids(env, ['hip_L', 'knee_L'])
+        r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R'])
+        l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L'])
+        stac.q_phase(env.physics, env.task.kp_data[i, :],
+                     env.task._walker.body_sites, params,
+                     reg_coef=params['q_reg_coef'],
+                     qs_to_opt=r_leg)
+        stac.q_phase(env.physics, env.task.kp_data[i, :],
+                     env.task._walker.body_sites, params,
+                     reg_coef=params['q_reg_coef'],
+                     qs_to_opt=l_leg)
+        stac.q_phase(env.physics, env.task.kp_data[i, :],
+                     env.task._walker.body_sites, params,
+                     reg_coef=params['q_reg_coef'],
+                     qs_to_opt=r_arm, temporal_regularization=temp_reg)
+        stac.q_phase(env.physics, env.task.kp_data[i, :],
+                     env.task._walker.body_sites, params,
+                     reg_coef=params['q_reg_coef'],
+                     qs_to_opt=l_arm, temporal_regularization=temp_reg)
         q.append(np.copy(env.physics.named.data.qpos[:]))
         walker_body_sites.append(
             np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
@@ -163,7 +224,8 @@ def compute_stac(kp_data, save_path, params):
     # Q_phase optimization
     if params['verbose']:
         print('q-phase', flush=True)
-    q, walker_body_sites = q_clip(env, limbs, params)
+    # q, walker_body_sites = q_clip(env, limbs, params)
+    q, walker_body_sites = q_clip_iso(env, params)
 
     # If you've precomputed the offsets, stop here.
     # Otherwise do another m and q phase.

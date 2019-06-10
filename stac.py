@@ -31,17 +31,21 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
     if root_only:
         q[7:] = 0.
 
-    # If optimizing arbitrary sets of qpos, add the optimized qpos to the copy.
+    # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     if qs_to_opt is not None:
         q_copy[qs_to_opt] = q
         q = np.copy(q_copy)
 
     # Add temporal regularization for arms.
     if temporal_regularization:
-        part_names = physics.named.data.qpos.axes.row.names
-        for id, name in enumerate(part_names):
-            if any(part in name for part in params['_ARM_JOINTS']):
-                temporal_arm_regularizer += (q[id] - q_prev[id])**2
+        temporal_arm_regularizer += (q[qs_to_opt] - q_prev[qs_to_opt])**2
+
+    # TODO(temp_reg): Change behavior to apply to specified subset
+    # if temporal_regularization:
+    #     part_names = physics.named.data.qpos.axes.row.names
+    #     for id, name in enumerate(part_names):
+    #         if any(part in name for part in params['_ARM_JOINTS']):
+    #             temporal_arm_regularizer += (q[id] - q_prev[id])**2
 
     residual = (kp_data.T - q_joints_to_markers(q, physics, sites))
     return (.5 * np.sum(residual**2) + reg_term +
