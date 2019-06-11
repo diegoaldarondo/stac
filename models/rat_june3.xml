@@ -163,6 +163,7 @@
     <skin name="skin" file="rat_skin_walker.skn"/>
   </asset>
   <worldbody>
+    <camera name="fixed_cam" mode="trackcom" pos=".3 -.3 0.25" xyaxes="1 1 0 -1 1 2"/>
     <body name="torso" pos="0.030995260545782881 2.0585249376514574e-07 0.065089572631199674">
       <site name="root" size=".01" rgba="0.5 0.5 0.5 0"/>
       <light name="light" mode="trackcom" pos="0 0 3"/>

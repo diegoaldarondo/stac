@@ -207,10 +207,10 @@ class ViewMocap(composer.Task):
         # Get RGB rendering of env
         scene_option = wrapper.MjvOption()
         scene_option.geomgroup[2] = 0
-        # scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT]
-        # = True
+        scene_option._ptr.contents.flags[
+            enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
         rgbArr = physics.render(self.height, self.width,
-                                camera_id='walker/side',
+                                camera_id='walker/close_profile',
                                 scene_option=scene_option)
         return cv2.cvtColor(rgbArr, cv2.COLOR_BGR2RGB)
 

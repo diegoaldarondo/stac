@@ -146,22 +146,12 @@ def q_clip_iso(env, params):
         l_leg = _get_part_ids(env, ['hip_L', 'knee_L'])
         r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R'])
         l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L'])
-        stac.q_phase(env.physics, env.task.kp_data[i, :],
-                     env.task._walker.body_sites, params,
-                     reg_coef=params['q_reg_coef'],
-                     qs_to_opt=r_leg)
-        stac.q_phase(env.physics, env.task.kp_data[i, :],
-                     env.task._walker.body_sites, params,
-                     reg_coef=params['q_reg_coef'],
-                     qs_to_opt=l_leg)
-        stac.q_phase(env.physics, env.task.kp_data[i, :],
-                     env.task._walker.body_sites, params,
-                     reg_coef=params['q_reg_coef'],
-                     qs_to_opt=r_arm, temporal_regularization=temp_reg)
-        stac.q_phase(env.physics, env.task.kp_data[i, :],
-                     env.task._walker.body_sites, params,
-                     reg_coef=params['q_reg_coef'],
-                     qs_to_opt=l_arm, temporal_regularization=temp_reg)
+        head = _get_part_ids(env, ['atlas', 'cervical', 'atlant_extend', ])
+        for part in [r_leg, l_leg, r_arm, l_arm, head]:
+            stac.q_phase(env.physics, env.task.kp_data[i, :],
+                         env.task._walker.body_sites, params,
+                         reg_coef=params['q_reg_coef'],
+                         qs_to_opt=part, temporal_regularization=temp_reg)
         q.append(np.copy(env.physics.named.data.qpos[:]))
         walker_body_sites.append(
             np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
