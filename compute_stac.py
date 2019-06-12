@@ -130,32 +130,57 @@ def _get_part_ids(env, parts):
 
 
 def q_clip_iso(env, params):
-    """."""
+    """Perform q_phase over the entire clip.
+
+    Optimizes limbs and head independently.
+    Perform bidirectional temporal regularization.
+    :param env: Rodent environment.
+    :param params: Rodent parameters.
+    """
     q = []
     walker_body_sites = []
+    r_leg = _get_part_ids(env, ['hip_R', 'knee_R'])
+    l_leg = _get_part_ids(env, ['hip_L', 'knee_L'])
+    r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R'])
+    l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L'])
+    head = _get_part_ids(env, ['atlas', 'cervical', 'atlant_extend', ])
     for i in range(params['n_frames']):
         print(i)
+        # First optimize over all points to get gross estimate and trunk
         stac.q_phase(env.physics, env.task.kp_data[i, :],
                      env.task._walker.body_sites, params,
                      reg_coef=params['q_reg_coef'])
-        if i == 0:
-            temp_reg = False
-        else:
-            temp_reg = True
-        r_leg = _get_part_ids(env, ['hip_R', 'knee_R'])
-        l_leg = _get_part_ids(env, ['hip_L', 'knee_L'])
-        r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R'])
-        l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L'])
-        head = _get_part_ids(env, ['atlas', 'cervical', 'atlant_extend', ])
+
+        # Next optimize over the limbs individually to improve time and accur.
         for part in [r_leg, l_leg, r_arm, l_arm, head]:
             stac.q_phase(env.physics, env.task.kp_data[i, :],
                          env.task._walker.body_sites, params,
                          reg_coef=params['q_reg_coef'],
-                         qs_to_opt=part, temporal_regularization=temp_reg)
+                         qs_to_opt=part)
         q.append(np.copy(env.physics.named.data.qpos[:]))
         walker_body_sites.append(
             np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
         )
+
+    # Bidirectional temporal regularization
+    for i in range(1, params['n_frames'] - 1):
+        # Set model state to current frame
+        env.physics.named.data.qpos[:] = q[i]
+
+        # Recompute position of select parts with bidirectional
+        # temporal regularizer.
+        for part in [r_arm, l_arm]:
+            stac.q_phase(env.physics, env.task.kp_data[i, :],
+                         env.task._walker.body_sites, params,
+                         reg_coef=params['q_reg_coef'],
+                         qs_to_opt=part, temporal_regularization=True,
+                         q_prev=q[i - 1],
+                         q_next=q[i + 1])
+
+            # Update the parts for the current frame
+            q[i][part] = np.copy(env.physics.named.data.qpos[:][part])
+        walker_body_sites[i] = \
+            np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
     return q, walker_body_sites
 
 

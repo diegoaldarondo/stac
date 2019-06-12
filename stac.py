@@ -4,8 +4,13 @@ import numpy as np
 import scipy.optimize
 
 
+class _TestNoneArgs(BaseException):
+    pass
+
+
 def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
-           reg_coef=0., root_only=False, temporal_regularization=False):
+           reg_coef=0., root_only=False, temporal_regularization=False,
+           q_prev=None, q_next=None):
     """Compute the marker loss for q_phase optimization.
 
     :param physics: Physics of current environment.
@@ -18,11 +23,19 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
     :param reg_coef: L1 regularization coefficient during marker loss.
     :param root_only: If True, only regularize the root.
     :param temporal_regularization: If True, regularize arm joints over time.
+    :param q_prev: Copy of previous qpos frame for use in
+                   bidirectional temporal regularization.
+    :param q_next: Copy of next qpos frame for use in bidirectional temporal
+                   regularization.
     """
-    # Make copy of previous frame for temporal regularization
-    # TODO(refactor): Make more readable implementation of qpos copy
-    q_prev = q_copy.copy()
-    temporal_arm_regularizer = 0.
+    if temporal_regularization:
+        error_msg = ' cannot be None if using temporal regularization'
+        if qs_to_opt is None:
+            raise _TestNoneArgs('qs_to_opt' + error_msg)
+        if q_prev is None:
+            raise _TestNoneArgs('q_prev' + error_msg)
+        if q_next is None:
+            raise _TestNoneArgs('q_next' + error_msg)
 
     # Optional regularization.
     reg_term = reg_coef * np.sum(q[7:]**2)
@@ -37,19 +50,14 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
         q = np.copy(q_copy)
 
     # Add temporal regularization for arms.
+    temp_reg_term = 0.
     if temporal_regularization:
-        temporal_arm_regularizer += (q[qs_to_opt] - q_prev[qs_to_opt])**2
-
-    # TODO(temp_reg): Change behavior to apply to specified subset
-    # if temporal_regularization:
-    #     part_names = physics.named.data.qpos.axes.row.names
-    #     for id, name in enumerate(part_names):
-    #         if any(part in name for part in params['_ARM_JOINTS']):
-    #             temporal_arm_regularizer += (q[id] - q_prev[id])**2
+        temp_reg_term += (q[qs_to_opt] - q_prev[qs_to_opt])**2
+        temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt])**2
 
     residual = (kp_data.T - q_joints_to_markers(q, physics, sites))
     return (.5 * np.sum(residual**2) + reg_term +
-            params['temporal_reg_coef'] * temporal_arm_regularizer)
+            params['temporal_reg_coef'] * temp_reg_term)
 
 
 def q_joints_to_markers(q, physics, sites):
@@ -72,7 +80,8 @@ def q_joints_to_markers(q, physics, sites):
 
 
 def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
-            qs_to_opt=None, root_only=False, temporal_regularization=False):
+            qs_to_opt=None, root_only=False, temporal_regularization=False,
+            q_prev=None, q_next=None):
     """Update q_pose using estimated marker parameters.
 
     :param physics: Physics of current environment.
@@ -92,7 +101,6 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
 
     # Define initial position of the optimization
     q0 = np.copy(physics.named.data.qpos[:])
-
     q_copy = np.copy(q0)
 
     # Set the center to help with finding the optima
@@ -123,7 +131,9 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
                          q_copy=q_copy,
                          reg_coef=reg_coef,
                          root_only=root_only,
-                         temporal_regularization=temporal_regularization),
+                         temporal_regularization=temporal_regularization,
+                         q_prev=q_prev,
+                         q_next=q_next),
         q0, bounds=(lb, ub), ftol=ftol, diff_step=params['_DIFF_STEP'],
         verbose=0)
 

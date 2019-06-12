@@ -7,7 +7,7 @@ VERBOSE="True"
 OFFSETPATH="/home/diego/data/dm/stac/offsets/JDM25_m_9_NoHip.p"
 VISUALIZE="False"
 NSNIPPETS=380
-SAVEPATH="/home/diego/data/dm/stac/results/JDM25_v11"
+SAVEPATH="/home/diego/data/dm/stac/results/JDM25_v12"
 PARAMPATH="/home/diego/code/olveczky/dm/stac/params/june3/JDM25.yaml"
 echo ${DATAPATHS[0]} $PARAMPATH $SAVEPATH $OFFSETPATH
 

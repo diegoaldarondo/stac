@@ -210,7 +210,7 @@ class ViewMocap(composer.Task):
         scene_option._ptr.contents.flags[
             enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
         rgbArr = physics.render(self.height, self.width,
-                                camera_id='walker/close_profile',
+                                camera_id='walker/side',
                                 scene_option=scene_option)
         return cv2.cvtColor(rgbArr, cv2.COLOR_BGR2RGB)
 
