@@ -39,7 +39,7 @@ python view_model.py
 ```
 If installation was successful, an interface like the one below should appear.
 
-![alt text][/common/example_image.png]
+![Image][./common/example_image.png]
 
 ## Authors
 * [Diego Aldarondo](https://github.com/diegoaldarondo)
