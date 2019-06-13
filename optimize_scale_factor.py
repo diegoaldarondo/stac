@@ -3,6 +3,7 @@ import clize
 import rodent_environments
 import numpy as np
 import util
+import yaml
 import scipy.optimize
 import compute_stac
 _MM_TO_METERS = 1000
@@ -50,8 +51,12 @@ def preprocess_data(scale_factor, params, kp_data, kp_names,
         kp_data[:, dim * 3 + np.array([0, 1, 2])] += spineM
 
     # Downsample
-    kp_data = kp_data[::params['skip'], :]
+    kp_data = compute_stac._downsample(kp_data, params)
+
+    # Smooth
+    kp_data = compute_stac._smooth(kp_data, kp_names, sigma=1)
     kp_data = kp_data[:params['n_frames'], :]
+
     # Handle z-offset conditions
     if params['adaptive_z_offset']:
         kp_data[:, 2::3] -= \
@@ -86,10 +91,15 @@ def optimize_scale_factor(data_path, param_path,
     # scale_factor0 = params['scale_factor']
     scale_factor0 = 1.0
     scale_opt = scipy.optimize.least_squares(
-        lambda scale: scale_loss(scale, data_path, params, kp_data, kp_names),
+        lambda scale: scale_loss(scale, params, np.copy(kp_data), kp_names),
         scale_factor0
     )
-    print(scale_opt.x)
+
+    # Reload the original params for overwriting
+    params = util.load_params(param_path)
+    params['scale_factor'] = scale_opt.x.item()
+    with open(param_path, 'w') as f:
+        yaml.dump(params, f, default_flow_style=False)
     return scale_opt.x
 
 

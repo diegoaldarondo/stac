@@ -253,7 +253,7 @@ def compute_stac(kp_data, save_path, params):
                      initial_offsets, params, reg_coef=params['m_reg_coef'])
         if params['verbose']:
             print('q-phase', flush=True)
-        q, walker_body_sites = q_clip(env, limbs, params)
+        q, walker_body_sites = q_clip_iso(env, params)
 
     # Optional visualization
     if params['visualize']:
@@ -304,6 +304,8 @@ def handle_args(data_path, param_path, *,
     :param verbose: If True, display messages during optimization.
     :param visualize: If True, launch viewer
     :param render_video: If True, render_video
+    :param process_snippet: If True, process snippet,
+                            otherwise assume mocap struct.
     """
     # Aggregate optional cl arguments into params dict
     kw = {"offset_path": offset_path,
