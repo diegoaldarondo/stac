@@ -204,9 +204,6 @@ def compute_stac(kp_data, save_path, params):
     for i in range(6):
         part_names.insert(0, part_names[0])
 
-    limbs = np.array([any(part in name for part in params['_IS_LIMB'])
-                      for name in part_names])
-
     # If preloading offsets, set them now.
     if params['offset_path'] is not None:
         with open(params['offset_path'], 'rb') as f:

@@ -8,7 +8,7 @@ from dm_control import composer
 from dm_control import mjcf
 from dm_control.mujoco import wrapper
 from dm_control.mujoco.wrapper.mjbindings import mjlib
-from dm_control.locomotion.walkers import initializers
+from dm_control.locomotion.walkers.initializers import WalkerInitializer
 from dm_control.locomotion.arenas import floors as arenas
 from dm_control.locomotion.walkers import base
 from dm_control.composer.observation import observable
@@ -30,10 +30,22 @@ _TOP_CAMERA_DISTANCE = 100
 _TOP_CAMERA_Y_PADDING_FACTOR = 1.1
 
 
+class ZerosInitializer(WalkerInitializer):
+    """An initializer that uses the zeros pose."""
+
+    def initialize_pose(self, physics, walker, random_state):
+        """Initialize the pose to all zeros."""
+        qpos, xpos, xquat = walker.upright_pose
+        physics.bind(walker.mjcf_model.find_all('joint')).qpos = 0. * qpos
+        physics.bind(walker.mjcf_model.find_all('joint')).qvel = 0.
+        walker.set_velocity(
+            physics, velocity=np.zeros(3), angular_velocity=np.zeros(3))
+
+
 def rodent_mocap(kp_data, params, random_state=None):
     """View a rat with mocap sites."""
     # Build a position-controlled Rat
-    walker = Rat(initializer=initializers.ZerosInitializer(), params=params,
+    walker = Rat(initializer=ZerosInitializer(), params=params,
                  observable_options={'egocentric_camera': dict(enabled=True)})
 
     if params['_USE_HFIELD']:
