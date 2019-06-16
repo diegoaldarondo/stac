@@ -34,8 +34,8 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
             raise _TestNoneArgs('qs_to_opt' + error_msg)
         if q_prev is None:
             raise _TestNoneArgs('q_prev' + error_msg)
-        if q_next is None:
-            raise _TestNoneArgs('q_next' + error_msg)
+        # if q_next is None:
+        #     raise _TestNoneArgs('q_next' + error_msg)
 
     # Optional regularization.
     reg_term = reg_coef * np.sum(q[7:]**2)
@@ -53,7 +53,8 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
     temp_reg_term = 0.
     if temporal_regularization:
         temp_reg_term += (q[qs_to_opt] - q_prev[qs_to_opt])**2
-        temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt])**2
+        if q_next is not None:
+            temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt])**2
 
     residual = (kp_data.T - q_joints_to_markers(q, physics, sites))
     return (.5 * np.sum(residual**2) + reg_term +

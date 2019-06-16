@@ -150,13 +150,26 @@ def q_clip_iso(env, params):
         stac.q_phase(env.physics, env.task.kp_data[i, :],
                      env.task._walker.body_sites, params,
                      reg_coef=params['q_reg_coef'])
+        if i == 0:
+            temp_reg = False
+            q_prev = 0
+        else:
+            temp_reg = True
+            q_prev = q[i - 1]
 
         # Next optimize over the limbs individually to improve time and accur.
-        for part in [r_leg, l_leg, r_arm, l_arm, head]:
+        for part in [r_leg, l_leg, head]:
             stac.q_phase(env.physics, env.task.kp_data[i, :],
                          env.task._walker.body_sites, params,
                          reg_coef=params['q_reg_coef'],
                          qs_to_opt=part)
+        for part in [r_arm, l_arm]:
+            stac.q_phase(env.physics, env.task.kp_data[i, :],
+                         env.task._walker.body_sites, params,
+                         reg_coef=params['q_reg_coef'],
+                         qs_to_opt=part,
+                         q_prev=q_prev,
+                         temporal_regularization=temp_reg)
         q.append(np.copy(env.physics.named.data.qpos[:]))
         walker_body_sites.append(
             np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
@@ -169,7 +182,7 @@ def q_clip_iso(env, params):
 
         # Recompute position of select parts with bidirectional
         # temporal regularizer.
-        for part in [r_arm, l_arm]:
+        for part in [r_arm, l_arm, r_leg, l_leg]:
             stac.q_phase(env.physics, env.task.kp_data[i, :],
                          env.task._walker.body_sites, params,
                          reg_coef=params['q_reg_coef'],

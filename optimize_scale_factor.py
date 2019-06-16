@@ -22,8 +22,15 @@ def scale_loss(scale_factor, params, kp_data, kp_names):
     env = rodent_environments.rodent_mocap(kp_data, params)
     compute_stac.root_optimization(env, params)
     site_pos = np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
+    site_pos = site_pos.flatten()
     print(scale_factor)
-    return (site_pos.flatten() - np.nanmean(kp_data, axis=0).squeeze())**2
+
+    # # Don't count the head IDS
+    # Head_ids = np.argwhere(['Head' in name for name in kp_names])
+    # for id in Head_ids:
+    #     site_pos[id * 3 + np.array([0, 1, 2])] = 0
+    #     kp_data[:, id * 3 + np.array([0, 1, 2])] = 0
+    return (site_pos - np.nanmean(kp_data, axis=0).squeeze())**2
 
 
 def preprocess_data(scale_factor, params, kp_data, kp_names,
