@@ -1,6 +1,6 @@
 #!/bin/bash
-DATAFOLDER="/home/diego/data/dm/stac/results/JDM33_v5/*.p"
-SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM33_v5/"
+DATAFOLDER="/home/diego/data/dm/stac/results/JDM33_v6/*.p"
+SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM33_v6/"
 PARAMPATH="/home/diego/code/olveczky/dm/stac/params/june3/JDM33.yaml"
 
 DATAPATHS=($(find $DATAFOLDER))

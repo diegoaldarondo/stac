@@ -144,12 +144,22 @@ def q_clip_iso(env, params):
     r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R'])
     l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L'])
     head = _get_part_ids(env, ['atlas', 'cervical', 'atlant_extend', ])
+    if params['LIMBS_TO_TEMPORALLY_REGULARIZE'] == "arms":
+        temp_reg_indiv_parts = [r_arm, l_arm]
+        non_temp_reg_indiv_parts = [r_leg, l_leg, head]
+    elif params['LIMBS_TO_TEMPORALLY_REGULARIZE'] == "arms and legs":
+        temp_reg_indiv_parts = [r_leg, l_leg, r_arm, l_arm]
+        non_temp_reg_indiv_parts = [head]
+
+    # Iterate through all of the frames in the clip
     for i in range(params['n_frames']):
         print(i)
         # First optimize over all points to get gross estimate and trunk
         stac.q_phase(env.physics, env.task.kp_data[i, :],
                      env.task._walker.body_sites, params,
                      reg_coef=params['q_reg_coef'])
+
+        # Make sure to only use forward temporal regularization on frames 1...n
         if i == 0:
             temp_reg = False
             q_prev = 0
@@ -158,12 +168,12 @@ def q_clip_iso(env, params):
             q_prev = q[i - 1]
 
         # Next optimize over the limbs individually to improve time and accur.
-        for part in [r_leg, l_leg, head]:
+        for part in non_temp_reg_indiv_parts:
             stac.q_phase(env.physics, env.task.kp_data[i, :],
                          env.task._walker.body_sites, params,
                          reg_coef=params['q_reg_coef'],
                          qs_to_opt=part)
-        for part in [r_arm, l_arm]:
+        for part in temp_reg_indiv_parts:
             stac.q_phase(env.physics, env.task.kp_data[i, :],
                          env.task._walker.body_sites, params,
                          reg_coef=params['q_reg_coef'],
