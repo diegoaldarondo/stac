@@ -1,3 +1,6 @@
 __pycache__
 logs
+dist
 TestStac.ipynb
+stac.egg-info
+build

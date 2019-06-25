@@ -138,6 +138,7 @@ def q_clip_iso(env, params):
     :param params: Rodent parameters.
     """
     q = []
+    x = []
     walker_body_sites = []
     r_leg = _get_part_ids(env, ['hip_R', 'knee_R'])
     l_leg = _get_part_ids(env, ['hip_L', 'knee_L'])
@@ -181,6 +182,7 @@ def q_clip_iso(env, params):
                          q_prev=q_prev,
                          temporal_regularization=temp_reg)
         q.append(np.copy(env.physics.named.data.qpos[:]))
+        x.append(np.copy(env.physics.named.data.xpos[:]))
         walker_body_sites.append(
             np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
         )
@@ -202,9 +204,19 @@ def q_clip_iso(env, params):
 
             # Update the parts for the current frame
             q[i][part] = np.copy(env.physics.named.data.qpos[:][part])
+            x[i] = np.copy(env.physics.named.data.xpos[:])
         walker_body_sites[i] = \
             np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
-    return q, walker_body_sites
+    return q, walker_body_sites, x
+
+
+def qpos_z_offset(env, q, x):
+    """Add a z offset to the qpos root equal to the minimum of the hands/ankles.
+
+    :param q: List of qposes over a clip.
+    """
+    min_xpos = []
+    pass
 
 
 def compute_stac(kp_data, save_path, params):
@@ -260,7 +272,8 @@ def compute_stac(kp_data, save_path, params):
     if params['verbose']:
         print('q-phase', flush=True)
     # q, walker_body_sites = q_clip(env, limbs, params)
-    q, walker_body_sites = q_clip_iso(env, params)
+    q, walker_body_sites, x = q_clip_iso(env, params)
+    import pdb; pdb.set_trace()
 
     # If you've precomputed the offsets, stop here.
     # Otherwise do another m and q phase.
@@ -273,7 +286,7 @@ def compute_stac(kp_data, save_path, params):
                      initial_offsets, params, reg_coef=params['m_reg_coef'])
         if params['verbose']:
             print('q-phase', flush=True)
-        q, walker_body_sites = q_clip_iso(env, params)
+        q, walker_body_sites, x = q_clip_iso(env, params)
 
     # Optional visualization
     if params['visualize']:

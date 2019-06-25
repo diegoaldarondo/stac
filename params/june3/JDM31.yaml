@@ -91,6 +91,10 @@ _SITES_TO_REGULARIZE:
 - KneeR
 - ShinL
 - ShinR
+- HeadB
+- HeadF
+- HeadL
+LIMBS_TO_TEMPORALLY_REGULARIZE: arms
 _STAND_HEIGHT: 1.5
 _TIME_BINS: 0.02
 _USE_HFIELD: 0
@@ -100,7 +104,7 @@ hfield_image_path: ./params/floor_models/test_floormap.p
 m_reg_coef: 0.9
 offset_path: ./offsets/JDM33_june14.p
 q_reg_coef: 0.0
-scale_factor: 1.104834235463095
-temporal_reg_coef: 0.03
+scale_factor: 1.05
+temporal_reg_coef: 0.02
 z_offset: 0.02
 z_perc: 5

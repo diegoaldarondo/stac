@@ -49,12 +49,12 @@ def rodent_mocap(kp_data, params, random_state=None):
                  observable_options={'egocentric_camera': dict(enabled=True)})
 
     if params['_USE_HFIELD']:
-        # Build a Floor arena that is obstructed by walls.
+        # Build a Floor arena with bedding model
         arena = VariableFloor(size=(1, 1))
         # Build a mocap viewing task
         task = ViewMocap_Hfield(walker, arena, kp_data, params=params)
     else:
-        # Build a Floor arena that is obstructed by walls.
+        # Build a Floor arena
         arena = arenas.Floor(size=(1, 1))
         # Build a mocap viewing task
         task = ViewMocap(walker, arena, kp_data, params=params)
@@ -71,29 +71,27 @@ class VariableFloor(composer.Arena):
 
     def _build(self, size=(8, 8), name='terrain'):
         super(VariableFloor, self)._build(name=name)
-        self._size = size
 
+        self._size = size
         self._mjcf_root.visual.headlight.set_attributes(
             ambient=[.4, .4, .4], diffuse=[.8, .8, .8], specular=[.1, .1, .1])
 
         # Build heightfield.
         self._ground_asset = self._mjcf_root.asset.add(
             'hfield',
-            name='terrain',
+            name=name,
             nrow="501",
             ncol="501",
             size="6 6 0.5 0.1"
         )
-
         self._ground_geom = self._mjcf_root.worldbody.add(
             'geom',
-            name='terrain',
+            name=name,
             type="hfield",
             rgba="0.2 0.3 0.4 1",
             pos="0 0 -0.01",
-            hfield="terrain"
+            hfield=name
         )
-
         # Choose the FOV so that the floor always fits nicely within the frame
         # irrespective of actual floor size.
         fovy_radians = 2 * np.arctan2(_TOP_CAMERA_Y_PADDING_FACTOR * size[1],
@@ -177,7 +175,6 @@ class ViewMocap(composer.Task):
                                                         rgba=rgba,
                                                         pos=start,
                                                         group=2)
-
             self.sites.append(site)
         enabled_observables = []
         enabled_observables += self._walker.observables.proprioception
