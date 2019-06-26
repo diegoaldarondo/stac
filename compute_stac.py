@@ -213,10 +213,28 @@ def q_clip_iso(env, params):
 def qpos_z_offset(env, q, x):
     """Add a z offset to the qpos root equal to the minimum of the hands/ankles.
 
+    :param env: Rat mocap environment.
     :param q: List of qposes over a clip.
+    :param x: List of xposes over a clip.
     """
-    min_xpos = []
-    pass
+    # Find the indices of hands and feet xpositions
+    ground_parts = ['foot', 'hand']
+    part_names = env.physics.named.data.xpos.axes.row.names
+    ground_ids = [any(part in name for part in ground_parts)
+                  for name in part_names]
+
+    # Estimate the ground position by the 2nd percentile of the hands/
+    ground_part_pos = np.zeros((len(x), np.sum(ground_ids)))
+
+    for i, xpos in enumerate(x):
+        ground_part_pos[i, :] = xpos[ground_ids, 2]
+
+    # Set the minimum position over the clip to be the ground_pos
+    ground_pos = np.min(np.nanpercentile(ground_part_pos, .5, axis=0))
+    for i, qpos in enumerate(q):
+        qpos[2] -= ground_pos
+        q[i] = qpos
+    return q
 
 
 def compute_stac(kp_data, save_path, params):
@@ -273,7 +291,6 @@ def compute_stac(kp_data, save_path, params):
         print('q-phase', flush=True)
     # q, walker_body_sites = q_clip(env, limbs, params)
     q, walker_body_sites, x = q_clip_iso(env, params)
-    import pdb; pdb.set_trace()
 
     # If you've precomputed the offsets, stop here.
     # Otherwise do another m and q phase.
@@ -287,6 +304,9 @@ def compute_stac(kp_data, save_path, params):
         if params['verbose']:
             print('q-phase', flush=True)
         q, walker_body_sites, x = q_clip_iso(env, params)
+
+    # Fix z offsets using the model positions
+    q = qpos_z_offset(env, q, x)
 
     # Optional visualization
     if params['visualize']:
