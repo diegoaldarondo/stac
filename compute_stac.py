@@ -230,7 +230,7 @@ def qpos_z_offset(env, q, x):
         ground_part_pos[i, :] = xpos[ground_ids, 2]
 
     # Set the minimum position over the clip to be the ground_pos
-    ground_pos = np.min(np.nanpercentile(ground_part_pos, .5, axis=0))
+    ground_pos = np.min(np.nanpercentile(ground_part_pos, .05, axis=0))
     for i, qpos in enumerate(q):
         qpos[2] -= ground_pos
         q[i] = qpos
