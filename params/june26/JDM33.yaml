@@ -1,0 +1,108 @@
+_ARENA_DIAMETER: 0.5842
+_ARM_JOINTS:
+- shoulder
+- scapula
+- elbow
+- wrist
+- finger
+_DIFF_STEP: 3.0e-08
+_FTOL: 0.001
+_IS_LIMB:
+- scapula
+- hip
+- knee
+- shoulder
+- elbow
+_KEYPOINT_COLOR_PAIRS:
+  ArmL: 0 0 .8 1
+  ArmR: .8 0 0 1
+  ElbowL: 0 0 .8 1
+  ElbowR: .8 0 0 1
+  HeadB: .8 .8 0 1
+  HeadF: .8 .8 0 1
+  HeadL: .8 .8 0 1
+  HipL: 0 0 .3 1
+  HipR: .3 0 0 1
+  KneeL: 0 0 .3 1
+  KneeR: .3 0 0 1
+  Offset1: .8 .8 .8 1
+  Offset2: .8 .8 .8 1
+  ShinL: 0 0 .3 1
+  ShinR: .3 0 0 1
+  ShoulderL: 0 0 .8 1
+  ShoulderR: .8 0 0 1
+  SpineF: .8 .8 .8 1
+  SpineL: .8 .8 .8 1
+  SpineM: .8 .8 .8 1
+_KEYPOINT_INITIAL_OFFSETS:
+  ArmL: -0.01 0.005 0.01
+  ArmR: -0.01 -0.005 0.01
+  ElbowL: 0. 0.01 0.
+  ElbowR: 0. -0.01 0.
+  HeadB: 0. -.025 .04
+  HeadF: .025 -.025 .04
+  HeadL: 0. .025 .04
+  HipL: 0. 0.015 0.015
+  HipR: 0. -0.015 0.015
+  KneeL: 0.01 0.015 0.015
+  KneeR: 0.01 -0.015 0.015
+  Offset1: 0.015 .025 -0.005
+  Offset2: -0.015 .025 -0.005
+  ShinL: 0.02 0.015 0.02
+  ShinR: 0.02 -0.015 0.02
+  ShoulderL: 0. 0. 0.
+  ShoulderR: 0. 0. 0.
+  SpineF: 0. 0. 0.0225
+  SpineL: 0. 0. 0.02
+  SpineM: 0. 0. 0.015
+_KEYPOINT_MODEL_PAIRS:
+  ArmL: hand_L
+  ArmR: hand_R
+  ElbowL: lower_arm_L
+  ElbowR: lower_arm_R
+  HeadB: skull
+  HeadF: skull
+  HeadL: skull
+  HipL: upper_leg_L
+  HipR: upper_leg_R
+  KneeL: lower_leg_L
+  KneeR: lower_leg_R
+  Offset1: vertebra_1
+  Offset2: vertebra_1
+  ShinL: foot_L
+  ShinR: foot_R
+  ShoulderL: upper_arm_L
+  ShoulderR: upper_arm_R
+  SpineF: vertebra_cervical_5
+  SpineL: pelvis
+  SpineM: vertebra_1
+_LIMB_FTOL: 1.0e-07
+_MANDIBLE_POS: -0.297
+_PARTS_TO_ZERO:
+- toe
+- ankle
+_ROOT_FTOL: 1.0e-08
+LIMBS_TO_TEMPORALLY_REGULARIZE: arms and legs
+_SITES_TO_REGULARIZE:
+- ArmL
+- ArmR
+- ElbowL
+- ElbowR
+- ShinL
+- ShinR
+- HeadL
+- HeadF
+- HeadB
+_STAND_HEIGHT: 1.5
+_TIME_BINS: 0.02
+_USE_HFIELD: 0
+_XML_PATH: ./models/rat_june26.xml
+adaptive_z_offset_value: 0.02
+hfield_image_path: ./params/floor_models/test_floormap.p
+m_reg_coef: 0.9
+q_reg_coef: 0.0
+scale_factor: 1.15
+temporal_reg_coef: 0.02
+z_offset: 0.02
+z_perc: 5
+offset_path: ./offsets/JDM33_june18.p
