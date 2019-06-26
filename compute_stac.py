@@ -234,7 +234,7 @@ def qpos_z_offset(env, q, x):
     for i, qpos in enumerate(q):
         qpos[2] -= ground_pos
         q[i] = qpos
-    return q
+    return q, ground_pos
 
 
 def compute_stac(kp_data, save_path, params):
@@ -306,7 +306,8 @@ def compute_stac(kp_data, save_path, params):
         q, walker_body_sites, x = q_clip_iso(env, params)
 
     # Fix z offsets using the model positions
-    q = qpos_z_offset(env, q, x)
+    q, ground_pos = qpos_z_offset(env, q, x)
+    kp_data[:, 2::3] -= ground_pos
 
     # Optional visualization
     if params['visualize']:
@@ -322,6 +323,7 @@ def compute_stac(kp_data, save_path, params):
     out_dict = {'qpos': q,
                 'walker_body_sites': walker_body_sites,
                 'offsets': offsets,
+                'ground_pos': ground_pos,
                 'kp_data': np.copy(kp_data[:params['n_frames'], :])}
     for k, v in params.items():
         out_dict[k] = v
