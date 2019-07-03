@@ -17,10 +17,11 @@ import numpy as np
 import pickle
 import scipy.optimize
 from scipy import ndimage
-
+import h5py
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
 
+MM_TO_METER = 1000
 # Height of head above which the rat is considered standing.
 _TORQUE_THRESHOLD = 60
 _HEIGHTFIELD_ID = 0
@@ -28,6 +29,8 @@ _TERRAIN_SMOOTHNESS = 0.15  # 0.0: maximally bumpy; 1.0: completely smooth.
 _TERRAIN_BUMP_SCALE = .4  # Spatial scale of terrain bumps (in meters).
 _TOP_CAMERA_DISTANCE = 100
 _TOP_CAMERA_Y_PADDING_FACTOR = 1.1
+PEDESTAL_WIDTH = .0968375
+PEDESTAL_HEIGHT = .053975
 
 
 class ZerosInitializer(WalkerInitializer):
@@ -335,20 +338,34 @@ class ViewMocap_Hfield(ViewMocap):
                                                params=params,
                                                fps=fps)
 
-    def _smooth_hfield_image(self, image, sigma=1):
+    def _smooth_hfield(self, image, sigma=1):
         image = ndimage.gaussian_filter(image, sigma)
         return image
 
-    def _load_hfield_image(self, params):
-        with open(params['hfield_image_path'], 'rb') as f:
-            in_dict = pickle.load(f)
-            image = in_dict['hfield'] * params['scale_factor'] / 1000
-        return image
+    # def _load_hfield_image(self, params):
+    #     with open(params['hfield_image_path'], 'rb') as f:
+    #         in_dict = pickle.load(f)
+    #         image = in_dict['hfield'] * params['scale_factor'] / MM_TO_METER
+    #     return image
 
-    def initialize_episode(self, physics, random_state):
-        """Set the state of the environment at the start of each episode.
+    def _load_hfield(self):
+        """Load the floor_map from the snippet file."""
+        with h5py.File(self.params['data_path']) as f:
+                floormap = f['floormap'][:]
+                floormap = floormap * self.params['scale_factor'] / MM_TO_METER
+        return floormap
 
-        :param physics: An instance of `Physics`.
+    def argmax2d(self, X):
+        n, m = X.shape
+        x_ = np.ravel(X)
+        k = np.argmax(x_)
+        i, j = k // m, k % m
+        return i, j
+
+    def get_heightfield(self, physics):
+        """Set up the heightfield for the task.
+
+        :param physics: Physics from the rodent environment.
         """
         # Get heightfield resolution, assert that it is square.
         res = physics.model.hfield_nrow[_HEIGHTFIELD_ID]
@@ -356,23 +373,68 @@ class ViewMocap_Hfield(ViewMocap):
 
         # Find the size of the arena in the hfield
         hfield_size = physics.model.hfield_size[0][0]
+        scale = self.params['scale_factor']
+        floor_prop = 51 / 47
+        self.arena_diameter = self.params['_ARENA_DIAMETER'] * scale
+        im_length = self.arena_diameter * floor_prop
         arena_px_size = \
-            int(np.floor(res * (self.params['_ARENA_DIAMETER'] / hfield_size)))
+            int(np.floor(res * (im_length / hfield_size)))
 
         # Load the arena height data
-        hfield = self._load_hfield_image(self.params)
+        hfield = self._load_hfield()
+
+        # Save the min and max to deal with value problems in resize
+        min_val = np.min(np.min(hfield))
+        max_val = np.max(np.max(hfield))
         hfield = cv2.resize(hfield, (arena_px_size, arena_px_size),
                             interpolation=cv2.INTER_LINEAR)
-        hfield = self._smooth_hfield_image(hfield, sigma=0.5)
+
+        # Rescale the z dim to fix xy scaling and account for global scaling
+        resized_min = np.min(np.min(hfield))
+        resized_max = np.max(np.max(hfield))
+        hfield = (hfield - resized_min) / (resized_max - resized_min)
+        hfield = ((hfield * (max_val - min_val)) + min_val) * scale
+
+        # Smooth the heightfield
+        hfield = self._smooth_hfield(hfield, sigma=0.5)
+
+        # Get pedestal parameters
+        self.pedestal_radius = (PEDESTAL_WIDTH / 2) * scale
+        self.pedestal_height = PEDESTAL_HEIGHT * scale
+
+        pedestal_i, pedestal_j = \
+            self.argmax2d(self._smooth_hfield(hfield, sigma=1))
+        pedestal_x = (im_length / 2) - (pedestal_i / arena_px_size * im_length)
+        pedestal_y = (im_length / 2) - (pedestal_j / arena_px_size * im_length)
+        pedestal_z = np.max(np.max(hfield)) - PEDESTAL_HEIGHT / 2
+        self.pedestal_center = [pedestal_x, pedestal_y, pedestal_z]
+
+        # m_per_px = im_length / arena_px_size
+        # pedestal_radius_px = (PEDESTAL_WIDTH / 2) * scale / m_per_px
+        # for i in range(arena_px_size):
+        #     for j in range(arena_px_size):
+        #         dist = np.sqrt((i - pedestal_i)**2 + (j - pedestal_j)**2)
+        #         if dist < pedestal_radius_px:
+        #             hfield[i, j] = PEDESTAL_HEIGHT * scale
+        # import pdb; pdb.set_trace()
 
         # Find the bounds of the arena in the hfield.
         ar_start = int(np.floor((res - arena_px_size) / 2))
         ar_end = ar_start + arena_px_size
+
         self.hfield_image = np.zeros((res, res))
         self.hfield_image[ar_start:ar_end, ar_start:ar_end] = hfield
+        self.hfield_image[self.hfield_image < .001] = 0.
         start_idx = physics.model.hfield_adr[_HEIGHTFIELD_ID]
         physics.model.hfield_data[start_idx:start_idx + res**2] = \
             self.hfield_image.ravel()
+
+    def initialize_episode(self, physics, random_state):
+        """Set the state of the environment at the start of each episode.
+
+        :param physics: An instance of `Physics`.
+        """
+        self.get_heightfield(physics)
 
         # If we have a rendering context, we need to re-upload the modified
         # heightfield data.

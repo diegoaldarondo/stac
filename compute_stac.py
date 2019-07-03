@@ -305,9 +305,9 @@ def compute_stac(kp_data, save_path, params):
             print('q-phase', flush=True)
         q, walker_body_sites, x = q_clip_iso(env, params)
 
-    # Fix z offsets using the model positions
-    q, ground_pos = qpos_z_offset(env, q, x)
-    kp_data[:, 2::3] -= ground_pos
+    # # Fix z offsets using the model positions
+    # q, ground_pos = qpos_z_offset(env, q, x)
+    # kp_data[:, 2::3] -= ground_pos
 
     # Optional visualization
     if params['visualize']:
@@ -323,10 +323,19 @@ def compute_stac(kp_data, save_path, params):
     out_dict = {'qpos': q,
                 'walker_body_sites': walker_body_sites,
                 'offsets': offsets,
-                'ground_pos': ground_pos,
+                # 'ground_pos': ground_pos,
                 'kp_data': np.copy(kp_data[:params['n_frames'], :])}
+
+    if params['_USE_HFIELD']:
+        env.task.get_heightfield(env.physics)
+        out_dict['pedestal_radius'] = env.task.pedestal_radius
+        out_dict['pedestal_center'] = env.task.pedestal_center
+        out_dict['pedestal_height'] = env.task.pedestal_height
+        out_dict['hfield_image'] = env.task.hfield_image
+
     for k, v in params.items():
         out_dict[k] = v
+
     if file_extension == '.p':
         with open(save_path, "wb") as output_file:
             pickle.dump(out_dict, output_file, protocol=2)
@@ -363,7 +372,8 @@ def handle_args(data_path, param_path, *,
                             otherwise assume mocap struct.
     """
     # Aggregate optional cl arguments into params dict
-    kw = {"offset_path": offset_path,
+    kw = {"data_path": data_path,
+          "offset_path": offset_path,
           "start_frame": start_frame,
           "n_frames": n_frames,
           "n_sample_frames": n_sample_frames,
