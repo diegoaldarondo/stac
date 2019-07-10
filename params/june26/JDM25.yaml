@@ -101,6 +101,6 @@ adaptive_z_offset_value: 0.02
 m_reg_coef: 0.9
 q_reg_coef: 0.0
 scale_factor: 1.08
-temporal_reg_coef: 0.02
+temporal_reg_coef: 0.015
 z_offset: 0.00
 z_perc: 5

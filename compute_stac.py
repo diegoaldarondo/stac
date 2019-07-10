@@ -223,7 +223,7 @@ def qpos_z_offset(env, q, x):
     ground_ids = [any(part in name for part in ground_parts)
                   for name in part_names]
 
-    # Estimate the ground position by the 2nd percentile of the hands/
+    # Estimate the ground position by the 2nd percentile of the hands/feet
     ground_part_pos = np.zeros((len(x), np.sum(ground_ids)))
 
     for i, xpos in enumerate(x):
@@ -231,6 +231,7 @@ def qpos_z_offset(env, q, x):
 
     # Set the minimum position over the clip to be the ground_pos
     ground_pos = np.min(np.nanpercentile(ground_part_pos, .05, axis=0))
+    # ground_pos = ground_pos - .013
     for i, qpos in enumerate(q):
         qpos[2] -= ground_pos
         q[i] = qpos
@@ -305,7 +306,7 @@ def compute_stac(kp_data, save_path, params):
             print('q-phase', flush=True)
         q, walker_body_sites, x = q_clip_iso(env, params)
 
-    # # Fix z offsets using the model positions
+    # Fix z offsets using the model positions
     # q, ground_pos = qpos_z_offset(env, q, x)
     # kp_data[:, 2::3] -= ground_pos
 
@@ -332,6 +333,7 @@ def compute_stac(kp_data, save_path, params):
         out_dict['pedestal_center'] = env.task.pedestal_center
         out_dict['pedestal_height'] = env.task.pedestal_height
         out_dict['hfield_image'] = env.task.hfield_image
+        out_dict['scaled_arena_diameter'] = env.task.arena_diameter
 
     for k, v in params.items():
         out_dict[k] = v

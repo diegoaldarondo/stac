@@ -1,8 +1,8 @@
 #!/bin/bash
-DATAFOLDER="/home/diego/data/dm/stac/results/JDM31_v4/*.p"
-SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM31_v4"
+DATAFOLDER="/home/diego/data/dm/stac/results/JDM25_v18/*.p"
+SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM25_v18"
 mkdir $SAVEFOLDER
-PARAMPATH="/home/diego/code/olveczky/dm/stac/params/june3/JDM33.yaml"
+PARAMPATH="/home/diego/code/olveczky/dm/stac/params/june26/JDM25.yaml"
 
 DATAPATHS=($(find $DATAFOLDER))
 FILES=($(find $DATAFOLDER -printf "%f\n"))

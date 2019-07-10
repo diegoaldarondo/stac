@@ -45,7 +45,7 @@ class ZerosInitializer(WalkerInitializer):
             physics, velocity=np.zeros(3), angular_velocity=np.zeros(3))
 
 
-def rodent_mocap(kp_data, params, random_state=None):
+def rodent_mocap(kp_data, params, random_state=None, hfield_image=None):
     """View a rat with mocap sites."""
     # Build a position-controlled Rat
     walker = Rat(initializer=ZerosInitializer(), params=params,
@@ -55,7 +55,8 @@ def rodent_mocap(kp_data, params, random_state=None):
         # Build a Floor arena with bedding model
         arena = VariableFloor(size=(1, 1))
         # Build a mocap viewing task
-        task = ViewMocap_Hfield(walker, arena, kp_data, params=params)
+        task = ViewMocap_Hfield(
+            walker, arena, kp_data, params=params, hfield_image=hfield_image)
     else:
         # Build a Floor arena
         arena = arenas.Floor(size=(1, 1))
@@ -198,7 +199,7 @@ class ViewMocap(composer.Task):
 
     def initialize_episode_mjcf(self, random_state):
         """Initialize an arena episode."""
-        self._arena.regenerate(random_state)
+        # self._arena.regenerate(random_state)
         self._arena.mjcf_model.visual.map.znear = 0.0002
         # self._arena.mjcf_model.visual.map.zfar = 4.
 
@@ -311,7 +312,8 @@ class ViewMocap_Hfield(ViewMocap):
                  height=480,
                  video_name=None,
                  params=None,
-                 fps=30.0):
+                 fps=30.0,
+                 hfield_image=None):
         """Initialize ViewMocap environment with heightfield.
 
         :param walker: Rodent walker
@@ -328,7 +330,7 @@ class ViewMocap_Hfield(ViewMocap):
         :param video_name: Name of video
         :param fps: Frame rate of video
         """
-        self.hfield_image = None
+        self.hfield_image = hfield_image
         super(ViewMocap_Hfield, self).__init__(walker, arena, kp_data,
                                                precomp_qpos=precomp_qpos,
                                                render_video=render_video,
@@ -361,6 +363,15 @@ class ViewMocap_Hfield(ViewMocap):
         k = np.argmax(x_)
         i, j = k // m, k % m
         return i, j
+
+    def set_heightfield(self, physics):
+        res = physics.model.hfield_nrow[_HEIGHTFIELD_ID]
+        assert res == physics.model.hfield_ncol[_HEIGHTFIELD_ID]
+
+        # Find the bounds of the arena in the hfield.
+        start_idx = physics.model.hfield_adr[_HEIGHTFIELD_ID]
+        physics.model.hfield_data[start_idx:start_idx + res**2] = \
+            self.hfield_image.ravel()
 
     def get_heightfield(self, physics):
         """Set up the heightfield for the task.
@@ -409,15 +420,6 @@ class ViewMocap_Hfield(ViewMocap):
         pedestal_z = np.max(np.max(hfield)) - PEDESTAL_HEIGHT / 2
         self.pedestal_center = [pedestal_x, pedestal_y, pedestal_z]
 
-        # m_per_px = im_length / arena_px_size
-        # pedestal_radius_px = (PEDESTAL_WIDTH / 2) * scale / m_per_px
-        # for i in range(arena_px_size):
-        #     for j in range(arena_px_size):
-        #         dist = np.sqrt((i - pedestal_i)**2 + (j - pedestal_j)**2)
-        #         if dist < pedestal_radius_px:
-        #             hfield[i, j] = PEDESTAL_HEIGHT * scale
-        # import pdb; pdb.set_trace()
-
         # Find the bounds of the arena in the hfield.
         ar_start = int(np.floor((res - arena_px_size) / 2))
         ar_end = ar_start + arena_px_size
@@ -434,7 +436,10 @@ class ViewMocap_Hfield(ViewMocap):
 
         :param physics: An instance of `Physics`.
         """
-        self.get_heightfield(physics)
+        if self.hfield_image is None:
+            self.get_heightfield(physics)
+        else:
+            self.set_heightfield(physics)
 
         # If we have a rendering context, we need to re-upload the modified
         # heightfield data.
