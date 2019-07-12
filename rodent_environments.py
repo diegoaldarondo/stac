@@ -358,6 +358,7 @@ class ViewMocap_Hfield(ViewMocap):
         return floormap
 
     def argmax2d(self, X):
+        """Two-dimensional arg max."""
         n, m = X.shape
         x_ = np.ravel(X)
         k = np.argmax(x_)
@@ -365,6 +366,7 @@ class ViewMocap_Hfield(ViewMocap):
         return i, j
 
     def set_heightfield(self, physics):
+        """Set the physics.hfield_data to self.hfield_image."""
         res = physics.model.hfield_nrow[_HEIGHTFIELD_ID]
         assert res == physics.model.hfield_ncol[_HEIGHTFIELD_ID]
 
@@ -385,15 +387,26 @@ class ViewMocap_Hfield(ViewMocap):
         # Find the size of the arena in the hfield
         hfield_size = physics.model.hfield_size[0][0]
         scale = self.params['scale_factor']
-        floor_prop = 51 / 47
         self.arena_diameter = self.params['_ARENA_DIAMETER'] * scale
-        im_length = self.arena_diameter * floor_prop
+        im_length = self.arena_diameter
         arena_px_size = \
             int(np.floor(res * (im_length / hfield_size)))
 
         # Load the arena height data
         hfield = self._load_hfield()
-
+        hfield_mask = hfield > .0001
+        hfield_mask = \
+            scipy.ndimage.morphology.binary_closing(hfield_mask, iterations=1)
+        obj_slice = scipy.ndimage.measurements.find_objects(hfield_mask)
+        hfield = hfield[obj_slice[0]]
+        desired_size = np.max(hfield.shape)
+        delta_w = desired_size - hfield.shape[1]
+        delta_h = desired_size - hfield.shape[0]
+        top, bottom = delta_h // 2, delta_h - (delta_h // 2)
+        left, right = delta_w // 2, delta_w - (delta_w // 2)
+        hfield = cv2.copyMakeBorder(
+            hfield, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0.])
+        # import pdb; pdb.set_trace()
         # Save the min and max to deal with value problems in resize
         min_val = np.min(np.min(hfield))
         max_val = np.max(np.max(hfield))
@@ -415,11 +428,12 @@ class ViewMocap_Hfield(ViewMocap):
 
         pedestal_i, pedestal_j = \
             self.argmax2d(self._smooth_hfield(hfield, sigma=1))
-        pedestal_x = (im_length / 2) - (pedestal_i / arena_px_size * im_length)
-        pedestal_y = (im_length / 2) - (pedestal_j / arena_px_size * im_length)
-        pedestal_z = np.max(np.max(hfield)) - PEDESTAL_HEIGHT / 2
+        pedestal_x = (pedestal_i / arena_px_size * im_length) - (im_length / 2)
+        pedestal_y = (pedestal_j / arena_px_size * im_length) - (im_length / 2)
+        pedestal_z = np.max(np.max(hfield)) - self.pedestal_height / 2
         self.pedestal_center = [pedestal_x, pedestal_y, pedestal_z]
 
+        # import pdb; pdb.set_trace()
         # Find the bounds of the arena in the hfield.
         ar_start = int(np.floor((res - arena_px_size) / 2))
         ar_end = ar_start + arena_px_size
