@@ -327,7 +327,8 @@ def compute_stac(kp_data, save_path, params):
                 # 'ground_pos': ground_pos,
                 'kp_data': np.copy(kp_data[:params['n_frames'], :])}
 
-    if params['_USE_HFIELD']:
+    if params['_USE_HFIELD'] and isinstance(
+            env.task, rodent_environments.ViewMocap_Hfield):
         env.task.get_heightfield(env.physics)
         out_dict['pedestal_radius'] = env.task.pedestal_radius
         out_dict['pedestal_center'] = env.task.pedestal_center

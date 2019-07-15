@@ -1,6 +1,6 @@
 #!/bin/bash
-DATAFOLDER="/home/diego/data/dm/stac/results/JDM25_v18/*.p"
-SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM25_v18"
+DATAFOLDER="/home/diego/data/dm/stac/results/JDM25_v20/*.p"
+SAVEFOLDER="/home/diego/data/dm/stac/clips/JDM25_v20"
 mkdir $SAVEFOLDER
 PARAMPATH="/home/diego/code/olveczky/dm/stac/params/june26/JDM25.yaml"
 

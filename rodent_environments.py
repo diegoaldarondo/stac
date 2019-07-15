@@ -51,7 +51,7 @@ def rodent_mocap(kp_data, params, random_state=None, hfield_image=None):
     walker = Rat(initializer=ZerosInitializer(), params=params,
                  observable_options={'egocentric_camera': dict(enabled=True)})
 
-    if params['_USE_HFIELD']:
+    if params['_USE_HFIELD'] and hfield_image is not None:
         # Build a Floor arena with bedding model
         arena = VariableFloor(size=(1, 1))
         # Build a mocap viewing task
