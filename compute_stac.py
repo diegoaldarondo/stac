@@ -249,7 +249,8 @@ def compute_stac(kp_data, save_path, params):
         params['n_frames'] = kp_data.shape[0]
     params['n_frames'] = int(params['n_frames'])
     # Build the environment
-    env = rodent_environments.rodent_mocap(kp_data, params)
+    env = rodent_environments.rodent_mocap(
+        kp_data, params, use_hfield=params['_USE_HFIELD'])
 
     # Get the ids of the limbs
     # TODO(partnames): This currently changes the list everywhere.
@@ -338,7 +339,6 @@ def compute_stac(kp_data, save_path, params):
 
     for k, v in params.items():
         out_dict[k] = v
-
     if file_extension == '.p':
         with open(save_path, "wb") as output_file:
             pickle.dump(out_dict, output_file, protocol=2)

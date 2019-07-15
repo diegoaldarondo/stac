@@ -45,13 +45,15 @@ class ZerosInitializer(WalkerInitializer):
             physics, velocity=np.zeros(3), angular_velocity=np.zeros(3))
 
 
-def rodent_mocap(kp_data, params, random_state=None, hfield_image=None):
+def rodent_mocap(
+        kp_data, params, random_state=None,
+        use_hfield=False, hfield_image=None):
     """View a rat with mocap sites."""
     # Build a position-controlled Rat
     walker = Rat(initializer=ZerosInitializer(), params=params,
                  observable_options={'egocentric_camera': dict(enabled=True)})
 
-    if params['_USE_HFIELD'] and hfield_image is not None:
+    if use_hfield:
         # Build a Floor arena with bedding model
         arena = VariableFloor(size=(1, 1))
         # Build a mocap viewing task
