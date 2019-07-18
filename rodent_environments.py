@@ -390,13 +390,13 @@ class ViewMocap_Hfield(ViewMocap):
         hfield_size = physics.model.hfield_size[0][0]
         scale = self.params['scale_factor']
         self.arena_diameter = self.params['_ARENA_DIAMETER'] * scale
-        im_length = self.arena_diameter
+        im_length = self.arena_diameter / 2
         arena_px_size = \
             int(np.floor(res * (im_length / hfield_size)))
 
         # Load the arena height data
         hfield = self._load_hfield()
-        hfield_mask = hfield > .0001
+        hfield_mask = hfield != 0.
         hfield_mask = \
             scipy.ndimage.morphology.binary_closing(hfield_mask, iterations=1)
         obj_slice = scipy.ndimage.measurements.find_objects(hfield_mask)
@@ -442,7 +442,7 @@ class ViewMocap_Hfield(ViewMocap):
 
         self.hfield_image = np.zeros((res, res))
         self.hfield_image[ar_start:ar_end, ar_start:ar_end] = hfield
-        self.hfield_image[self.hfield_image < .001] = 0.
+        # self.hfield_image[self.hfield_image < .001] = 0.
         start_idx = physics.model.hfield_adr[_HEIGHTFIELD_ID]
         physics.model.hfield_data[start_idx:start_idx + res**2] = \
             self.hfield_image.ravel()

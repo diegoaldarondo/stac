@@ -34,7 +34,8 @@ def view_stac(data_path, param_path, *,
 
     # Build the environment, and set the offsets, and params
     env = rodent_environments.rodent_mocap(
-        kp_data, params, hfield_image=in_dict['hfield_image'])
+        kp_data, params, use_hfield=params['_USE_HFIELD'],
+        hfield_image=in_dict['hfield_image'])
     sites = env.task._walker.body_sites
     env.physics.bind(sites).pos[:] = offsets
     for id, site in enumerate(sites):
