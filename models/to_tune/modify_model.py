@@ -111,10 +111,10 @@ def scale_model(model, global_scale_ratio=.82):
         if g.pos is not None and 'eye' not in g.name:
             g.pos *= global_scale_ratio
     for b in model.find_all('body'):
-        if b.pos is not None and 'eye' not in g.name:
+        if b.pos is not None and 'eye' not in b.name:
             b.pos *= global_scale_ratio
     for s in model.find_all('site'):
-        if s.pos is not None and 'eye' not in g.name:
+        if s.pos is not None and 'eye' not in s.name:
             s.pos *= global_scale_ratio
     return model
 

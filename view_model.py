@@ -6,7 +6,7 @@ import numpy as np
 import util
 
 
-def view_model(*, param_path='./params/baseParams.yaml'):
+def view_model(*, param_path='./params/july15/JDM25.yaml'):
     """View the model with base parameters."""
     # Kp_data is just a placeholder, consider refactoring
     kp_data = np.zeros((100, 60))
