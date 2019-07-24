@@ -122,14 +122,14 @@ class RatArena(composer.Arena):
             name=name,
             nrow="501",
             ncol="501",
-            size="6 6 1 0.1"
+            size=".5 .5 1 0.1"
         )
         self._ground_geom = self._mjcf_root.worldbody.add(
             'geom',
             name=name,
             type="hfield",
             rgba="0.2 0.3 0.4 1",
-            pos="0 0 -0.0125",
+            pos="0 0 -0.02",
             hfield=name
         )
         if add_geoms:
@@ -503,6 +503,8 @@ class ViewMocap_Hfield(ViewMocap):
         max_val = np.max(np.max(hfield))
         hfield = cv2.resize(hfield, (arena_px_size, arena_px_size),
                             interpolation=cv2.INTER_LINEAR)
+        # Smooth the hfield
+        hfield = self._smooth_hfield(hfield, sigma=10)
 
         # Find the pedestal.
         pedestal_i, pedestal_j = self.argmax2d(hfield)
@@ -510,9 +512,6 @@ class ViewMocap_Hfield(ViewMocap):
         pedestal_x = (pedestal_j / arena_px_size * self.arena_diameter) - (self.arena_diameter / 2)
         pedestal_z = self.pedestal_height / 2 + self._arena._ground_geom.pos[2]
         self.pedestal_center = [pedestal_x, pedestal_y, pedestal_z]
-
-        # Smooth the hfield
-        hfield = self._smooth_hfield(hfield, sigma=1.)
 
         # Rescale the z dim to fix xy scaling and account for global scaling
         resized_min = np.min(np.min(hfield))
