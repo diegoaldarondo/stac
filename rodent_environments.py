@@ -18,6 +18,14 @@ import pickle
 import scipy.optimize
 from scipy import ndimage
 import h5py
+import matplotlib
+import matplotlib.pyplot as plt
+from skimage import io, color, measure, draw, img_as_bool
+import numpy as np
+from scipy import optimize
+import matplotlib.pyplot as plt
+
+
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
 
@@ -29,8 +37,8 @@ _TERRAIN_SMOOTHNESS = 0.15  # 0.0: maximally bumpy; 1.0: completely smooth.
 _TERRAIN_BUMP_SCALE = .4  # Spatial scale of terrain bumps (in meters).
 _TOP_CAMERA_DISTANCE = 100
 _TOP_CAMERA_Y_PADDING_FACTOR = 1.1
-PEDESTAL_WIDTH = .0968375
-PEDESTAL_HEIGHT = .053975
+PEDESTAL_WIDTH = .099
+PEDESTAL_HEIGHT = .054
 
 
 class ZerosInitializer(WalkerInitializer):
@@ -47,18 +55,49 @@ class ZerosInitializer(WalkerInitializer):
 
 def rodent_mocap(
         kp_data, params, random_state=None,
-        use_hfield=False, hfield_image=None):
+        use_hfield=False, hfield_image=None, pedestal_center=None,
+        pedestal_radius=None, pedestal_height=None,
+        arena_diameter=None):
     """View a rat with mocap sites."""
     # Build a position-controlled Rat
     walker = Rat(initializer=ZerosInitializer(), params=params,
                  observable_options={'egocentric_camera': dict(enabled=True)})
 
-    if use_hfield:
+    if use_hfield and (pedestal_center is None):
         # Build a Floor arena with bedding model
-        arena = VariableFloor(size=(1, 1))
         # Build a mocap viewing task
+
+        # Hack of the century. Gets the physics and params needed to calculate
+        # the enviroment object positions.
+        _walker = Rat(
+            initializer=ZerosInitializer(), params=params,
+            observable_options={'egocentric_camera': dict(enabled=True)})
+        _arena = RatArena(
+            None, None,
+            None, None, size=(1, 1))
+        task = ViewMocap_Hfield(
+            _walker, _arena, kp_data, params=params, hfield_image=hfield_image)
+        time_limit = params['_TIME_BINS'] * (params['n_frames'] - 1)
+        env = composer.Environment(time_limit=time_limit,
+                                   task=task,
+                                   random_state=random_state,
+                                   strip_singleton_obs_buffer_dim=True)
+        task.get_heightfield(env.physics)
+
+        arena = RatArena(
+            task.pedestal_center, task.pedestal_radius,
+            task.pedestal_height, task.arena_diameter,
+            size=(1, 1), add_geoms=True)
         task = ViewMocap_Hfield(
             walker, arena, kp_data, params=params, hfield_image=hfield_image)
+
+    elif use_hfield:
+        arena = RatArena(
+            pedestal_center, pedestal_radius,
+            pedestal_height, arena_diameter, size=(1, 1), add_geoms=True)
+        task = ViewMocap_Hfield(
+            walker, arena, kp_data, params=params, hfield_image=hfield_image)
+
     else:
         # Build a Floor arena
         arena = arenas.Floor(size=(1, 1))
@@ -72,11 +111,13 @@ def rodent_mocap(
                                 strip_singleton_obs_buffer_dim=True)
 
 
-class VariableFloor(composer.Arena):
+class RatArena(composer.Arena):
     """A floor arena supporting heightfields."""
 
-    def _build(self, size=(8, 8), name='terrain'):
-        super(VariableFloor, self)._build(name=name)
+    def _build(
+            self, pedestal_center, pedestal_radius, pedestal_height,
+            scaled_arena_diameter, add_geoms=False, size=(8, 8), name='terrain'):
+        super(RatArena, self)._build(name=name)
 
         self._size = size
         self._mjcf_root.visual.headlight.set_attributes(
@@ -88,16 +129,39 @@ class VariableFloor(composer.Arena):
             name=name,
             nrow="501",
             ncol="501",
-            size="6 6 0.5 0.1"
+            size="6 6 1 0.1"
         )
         self._ground_geom = self._mjcf_root.worldbody.add(
             'geom',
             name=name,
             type="hfield",
             rgba="0.2 0.3 0.4 1",
-            pos="0 0 -0.01",
+            pos="0 0 -0.0125",
             hfield=name
         )
+        if add_geoms:
+            self._pedestal = self._mjcf_root.worldbody.add(
+                'geom',
+                name='pedestal',
+                type='cylinder',
+                pos=pedestal_center,
+                size=[pedestal_radius, pedestal_height / 2])
+
+            num_cylinder_segments = 20
+            cylinder_segments = []
+            radius = scaled_arena_diameter / 2
+            height = .5
+            chord = 2 * radius * np.tan(np.pi / num_cylinder_segments)
+            for ii in range(num_cylinder_segments):
+                ang = ii * 2 * np.pi / num_cylinder_segments
+                cylinder_segments.append(self._mjcf_root.worldbody.add(
+                    'geom',
+                    name='plane_{}'.format(ii),
+                    type='plane',
+                    pos=[radius * np.cos(ang), radius * np.sin(ang), height + self._ground_geom.pos[2]],
+                    size=[chord / 2, height, 1],
+                    euler=[np.pi / 2, -np.pi / 2 + ang, 0],
+                    rgba=[0.5, 0.5, 0.5, .2]))
         # Choose the FOV so that the floor always fits nicely within the frame
         # irrespective of actual floor size.
         fovy_radians = 2 * np.arctan2(_TOP_CAMERA_Y_PADDING_FACTOR * size[1],
@@ -343,7 +407,7 @@ class ViewMocap_Hfield(ViewMocap):
                                                fps=fps)
 
     def _smooth_hfield(self, image, sigma=1):
-        image = ndimage.gaussian_filter(image, sigma)
+        image = ndimage.gaussian_filter(image, sigma, mode='nearest')
         return image
 
     # def _load_hfield_image(self, params):
@@ -390,17 +454,49 @@ class ViewMocap_Hfield(ViewMocap):
         hfield_size = physics.model.hfield_size[0][0]
         scale = self.params['scale_factor']
         self.arena_diameter = self.params['_ARENA_DIAMETER'] * scale
-        im_length = self.arena_diameter / 2
         arena_px_size = \
-            int(np.floor(res * (im_length / hfield_size)))
+            int(np.floor(res * (self.arena_diameter / (hfield_size * 2))))
+        # Get pedestal parameters
+        self.pedestal_radius = (PEDESTAL_WIDTH / 2) * scale
+        self.pedestal_height = PEDESTAL_HEIGHT * scale
 
         # Load the arena height data
         hfield = self._load_hfield()
+        hfield = hfield[::-1, :]
         hfield_mask = hfield != 0.
+        # hfield_mask = hfield >= 0.075
         hfield_mask = \
             scipy.ndimage.morphology.binary_closing(hfield_mask, iterations=1)
+
+        # def cost(params):
+        #     x0, y0, r = params
+        #     coords = draw.circle(y0, x0, r, shape=hfield_mask.shape)
+        #     template = np.zeros_like(hfield_mask)
+        #     template[coords] = 1
+        #     return -np.sum(template == hfield_mask)
+        #
+        # regions = measure.regionprops(hfield_mask.astype('int32'))
+        # bubble = regions[0]
+        #
+        # y0, x0 = bubble.centroid
+        # r = bubble.major_axis_length / 2.
+        # x0, y0, r = optimize.fmin(cost, (x0, y0, r))
+        # f, ax = plt.subplots()
+        # circle = plt.Circle((x0, y0), r)
+        # ax.imshow(hfield_mask, cmap='gray', interpolation='nearest')
+        # ax.add_artist(circle)
+        # plt.show()
+        # import pdb; pdb.set_trace()
+        # r = np.round(r).astype('int32')
+        # i_start = np.round(x0).astype('int32') - r
+        # i_end = np.round(x0).astype('int32') + r
+        # j_start = np.round(y0).astype('int32') - r
+        # j_end = np.round(y0).astype('int32') + r
+        #
+        # hfield = hfield[i_start:i_end, j_start:j_end]
         obj_slice = scipy.ndimage.measurements.find_objects(hfield_mask)
         hfield = hfield[obj_slice[0]]
+
         desired_size = np.max(hfield.shape)
         delta_w = desired_size - hfield.shape[1]
         delta_h = desired_size - hfield.shape[0]
@@ -408,34 +504,37 @@ class ViewMocap_Hfield(ViewMocap):
         left, right = delta_w // 2, delta_w - (delta_w // 2)
         hfield = cv2.copyMakeBorder(
             hfield, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0.])
-        # import pdb; pdb.set_trace()
+
         # Save the min and max to deal with value problems in resize
         min_val = np.min(np.min(hfield))
         max_val = np.max(np.max(hfield))
         hfield = cv2.resize(hfield, (arena_px_size, arena_px_size),
                             interpolation=cv2.INTER_LINEAR)
 
+        # Find the pedestal.
+        pedestal_i, pedestal_j = self.argmax2d(hfield)
+        pedestal_y = (pedestal_i / arena_px_size * self.arena_diameter) - (self.arena_diameter / 2)
+        pedestal_x = (pedestal_j / arena_px_size * self.arena_diameter) - (self.arena_diameter / 2)
+        pedestal_z = self.pedestal_height / 2 + self._arena._ground_geom.pos[2]
+        self.pedestal_center = [pedestal_x, pedestal_y, pedestal_z]
+
+        # Smooth the hfield
+        hfield = self._smooth_hfield(hfield, sigma=1.)
+
         # Rescale the z dim to fix xy scaling and account for global scaling
         resized_min = np.min(np.min(hfield))
         resized_max = np.max(np.max(hfield))
         hfield = (hfield - resized_min) / (resized_max - resized_min)
-        hfield = ((hfield * (max_val - min_val)) + min_val) * scale
 
-        # Smooth the heightfield
-        hfield = self._smooth_hfield(hfield, sigma=0.5)
-
-        # Get pedestal parameters
-        self.pedestal_radius = (PEDESTAL_WIDTH / 2) * scale
-        self.pedestal_height = PEDESTAL_HEIGHT * scale
-
-        pedestal_i, pedestal_j = \
-            self.argmax2d(self._smooth_hfield(hfield, sigma=1))
-        pedestal_x = (pedestal_i / arena_px_size * im_length) - (im_length / 2)
-        pedestal_y = (pedestal_j / arena_px_size * im_length) - (im_length / 2)
-        pedestal_z = np.max(np.max(hfield)) - self.pedestal_height / 2
-        self.pedestal_center = [pedestal_x, pedestal_y, pedestal_z]
-
+        # Clamp such that the 80th percentile of heights is 20 mm
+        hfield = hfield - hfield[0, 0]
+        hfield = hfield / np.percentile(hfield[:], 80) * .02
+        # hfield = ((hfield * (max_val - min_val)) + min_val) * scale
         # import pdb; pdb.set_trace()
+
+        # # Smooth the heightfield
+        # hfield[0,5] = 1
+
         # Find the bounds of the arena in the hfield.
         ar_start = int(np.floor((res - arena_px_size) / 2))
         ar_end = ar_start + arena_px_size

@@ -35,7 +35,12 @@ def view_stac(data_path, param_path, *,
     # Build the environment, and set the offsets, and params
     env = rodent_environments.rodent_mocap(
         kp_data, params, use_hfield=params['_USE_HFIELD'],
-        hfield_image=in_dict['hfield_image'])
+        hfield_image=in_dict['hfield_image'],
+        pedestal_center=in_dict['pedestal_center'],
+        pedestal_radius=in_dict['pedestal_radius'],
+        pedestal_height=in_dict['pedestal_height'],
+        arena_diameter=in_dict['scaled_arena_diameter'])
+
     sites = env.task._walker.body_sites
     env.physics.bind(sites).pos[:] = offsets
     for id, site in enumerate(sites):
@@ -47,6 +52,7 @@ def view_stac(data_path, param_path, *,
         print('Rendering: ', env.task.video_name)
 
     # Render a video in headless mode
+    env.task.initialize_episode(env.physics, 0)
     prev_time = env.physics.time()
     if headless & render_video:
         while prev_time < env._time_limit:
