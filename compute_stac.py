@@ -9,6 +9,7 @@ import numpy as np
 import util
 import pickle
 import os
+import tasks
 _MM_TO_METERS = 1000
 
 
@@ -329,13 +330,13 @@ def compute_stac(kp_data, save_path, params):
                 'kp_data': np.copy(kp_data[:params['n_frames'], :])}
 
     if params['_USE_HFIELD'] and isinstance(
-            env.task, rodent_environments.ViewMocap_Hfield):
-        env.task.get_heightfield(env.physics)
-        out_dict['pedestal_radius'] = env.task.pedestal_radius
-        out_dict['pedestal_center'] = env.task.pedestal_center
-        out_dict['pedestal_height'] = env.task.pedestal_height
-        out_dict['hfield_image'] = env.task.hfield_image
-        out_dict['scaled_arena_diameter'] = env.task.arena_diameter
+            env.task, tasks.ViewMocap_Hfield):
+        # env.task.get_heightfield(env.physics)
+        out_dict['pedestal_radius'] = env.task._arena.pedestal_radius
+        out_dict['pedestal_center'] = env.task._arena.pedestal_center
+        out_dict['pedestal_height'] = env.task._arena.pedestal_height
+        out_dict['hfield_image'] = env.task._arena.hfield
+        out_dict['scaled_arena_diameter'] = env.task._arena.arena_diameter
 
     for k, v in params.items():
         out_dict[k] = v
