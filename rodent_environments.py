@@ -18,6 +18,8 @@ import pickle
 import scipy.optimize
 from scipy import ndimage
 import h5py
+from scipy import optimize
+from skimage import io, color, measure, draw, img_as_bool
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
@@ -120,8 +122,8 @@ class RatArena(composer.Arena):
         self._ground_asset = self._mjcf_root.asset.add(
             'hfield',
             name=name,
-            nrow="501",
-            ncol="501",
+            nrow="101",
+            ncol="101",
             size=".5 .5 1 0.1"
         )
         self._ground_geom = self._mjcf_root.worldbody.add(
@@ -455,48 +457,48 @@ class ViewMocap_Hfield(ViewMocap):
 
         # Load the arena height data
         hfield = self._load_hfield()
-        hfield = hfield[::-1, :]
+        # hfield = hfield[::-1, :]
         hfield_mask = hfield != 0.
         # hfield_mask = hfield >= 0.075
         hfield_mask = \
             scipy.ndimage.morphology.binary_closing(hfield_mask, iterations=1)
 
-        # def cost(params):
-        #     x0, y0, r = params
-        #     coords = draw.circle(y0, x0, r, shape=hfield_mask.shape)
-        #     template = np.zeros_like(hfield_mask)
-        #     template[coords] = 1
-        #     return -np.sum(template == hfield_mask)
-        #
-        # regions = measure.regionprops(hfield_mask.astype('int32'))
-        # bubble = regions[0]
-        #
-        # y0, x0 = bubble.centroid
-        # r = bubble.major_axis_length / 2.
-        # x0, y0, r = optimize.fmin(cost, (x0, y0, r))
+        def cost(params):
+            x0, y0, r = params
+            coords = draw.circle(y0, x0, r, shape=hfield_mask.shape)
+            template = np.zeros_like(hfield_mask)
+            template[coords] = 1
+            return -np.sum(template == hfield_mask)
+
+        regions = measure.regionprops(hfield_mask.astype('int32'))
+        bubble = regions[0]
+
+        y0, x0 = bubble.centroid
+        r = bubble.major_axis_length / 2.
+        x0, y0, r = optimize.fmin(cost, (x0, y0, r))
         # f, ax = plt.subplots()
         # circle = plt.Circle((x0, y0), r)
         # ax.imshow(hfield_mask, cmap='gray', interpolation='nearest')
         # ax.add_artist(circle)
         # plt.show()
         # import pdb; pdb.set_trace()
-        # r = np.round(r).astype('int32')
-        # i_start = np.round(x0).astype('int32') - r
-        # i_end = np.round(x0).astype('int32') + r
-        # j_start = np.round(y0).astype('int32') - r
-        # j_end = np.round(y0).astype('int32') + r
-        #
-        # hfield = hfield[i_start:i_end, j_start:j_end]
-        obj_slice = scipy.ndimage.measurements.find_objects(hfield_mask)
-        hfield = hfield[obj_slice[0]]
+        r = np.round(r).astype('int32')
+        i_start = np.round(x0).astype('int32') - r
+        i_end = np.round(x0).astype('int32') + r
+        j_start = np.round(y0).astype('int32') - r
+        j_end = np.round(y0).astype('int32') + r
 
-        desired_size = np.max(hfield.shape)
-        delta_w = desired_size - hfield.shape[1]
-        delta_h = desired_size - hfield.shape[0]
-        top, bottom = delta_h // 2, delta_h - (delta_h // 2)
-        left, right = delta_w // 2, delta_w - (delta_w // 2)
-        hfield = cv2.copyMakeBorder(
-            hfield, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0.])
+        hfield = hfield[i_start:i_end, j_start:j_end]
+        # obj_slice = scipy.ndimage.measurements.find_objects(hfield_mask)
+        # hfield = hfield[obj_slice[0]]
+        #
+        # desired_size = np.max(hfield.shape)
+        # delta_w = desired_size - hfield.shape[1]
+        # delta_h = desired_size - hfield.shape[0]
+        # top, bottom = delta_h // 2, delta_h - (delta_h // 2)
+        # left, right = delta_w // 2, delta_w - (delta_w // 2)
+        # hfield = cv2.copyMakeBorder(
+        #     hfield, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0.])
 
         # Save the min and max to deal with value problems in resize
         min_val = np.min(np.min(hfield))
@@ -504,7 +506,7 @@ class ViewMocap_Hfield(ViewMocap):
         hfield = cv2.resize(hfield, (arena_px_size, arena_px_size),
                             interpolation=cv2.INTER_LINEAR)
         # Smooth the hfield
-        hfield = self._smooth_hfield(hfield, sigma=10)
+        hfield = self._smooth_hfield(hfield, sigma=2.5)
 
         # Find the pedestal.
         pedestal_i, pedestal_j = self.argmax2d(hfield)
