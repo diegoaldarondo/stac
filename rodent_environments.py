@@ -18,13 +18,6 @@ import pickle
 import scipy.optimize
 from scipy import ndimage
 import h5py
-import matplotlib
-import matplotlib.pyplot as plt
-from skimage import io, color, measure, draw, img_as_bool
-import numpy as np
-from scipy import optimize
-import matplotlib.pyplot as plt
-
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
