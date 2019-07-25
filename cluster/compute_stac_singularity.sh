@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
-base_folder=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/results/july25
+base_folder=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/results/july26
 mkdir $base_folder
 
 
-data_folder=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/snippets/snippets_snippet_v6_JDM25/reformatted/*.mat
+data_folder=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/snippets/snippets_snippet_v7_JDM25/reformatted/*.mat
 data_paths=($(find $data_folder))
 files=($(find $data_folder -printf "%f\n"))
 offset_path=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/offsets/july22/JDM25.p

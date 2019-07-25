@@ -162,7 +162,10 @@ class RatArena(composer.Arena):
         pedestal_radius = (PEDESTAL_WIDTH / 2) * scale
         pedestal_height = PEDESTAL_HEIGHT * scale
 
-        pedestal_i, pedestal_j = self.argmax2d(self.hfield)
+        cropped_hfield = self.hfield.copy()
+        cropped_hfield[:, :int(cropped_hfield.shape[1] / 2)] = 0.
+        # import pdb; pdb.set_trace()
+        pedestal_i, pedestal_j = self.argmax2d(cropped_hfield)
         pedestal_y = (pedestal_i * px_to_m) - arena_radius
         pedestal_x = (pedestal_j * px_to_m) - arena_radius
         pedestal_z = pedestal_height / 2 + self._ground_geom.pos[2]
