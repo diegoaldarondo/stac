@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-base_folder=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/results/july24
+base_folder=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/results/july25
 mkdir $base_folder
 
 

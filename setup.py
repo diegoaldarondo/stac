@@ -9,7 +9,7 @@ setup(
                       'absl-py >= 0.7.1',
                       'enum34',
                       'future',
-                      'futures',
+                      # 'futures',
                       'glfw',
                       'lxml',
                       'numpy',
