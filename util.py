@@ -31,7 +31,7 @@ def load_kp_data_from_file(filename, struct_name='markers_preproc'):
         # Concatenate the data for each keypoint, and format to (t x n_dims)
         kp_data = \
             np.concatenate([data[name][:] for name in kp_names]).T
-        return kp_data, kp_names
+    return kp_data, kp_names
 
 
 def load_snippets_from_file(filename):

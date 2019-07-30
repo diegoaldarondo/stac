@@ -67,20 +67,21 @@ def preprocess_snippet(kp_data, kp_names, params):
     return kp_data
 
 
-def preprocess_data(data_path, start_frame, params,
-                    struct_name='markers_preproc'):
+def preprocess_data(data_path, start_frame, end_frame, skip, params,
+                    struct_name='markers_preproc',):
     """Preprocess mocap data for stac fitting.
 
     :param data_path: Path to .mat mocap file
     :param start_frame: Frame to start stac tracing
     :param skip: Subsampling rate for the frames
     :param scale_factor: Multiplier for mocap data
-    :param z_offset: Subtractive offset for mocap_data
     :param struct_name: Field name of .mat file to load
     """
     kp_data, kp_names = util.load_kp_data_from_file(data_path,
                                                     struct_name=struct_name)
-    kp_data = preprocess_snippet(kp_data[start_frame:], kp_names, params)
+    kp_data = kp_data[::skip, :]
+    kp_data = preprocess_snippet(
+        kp_data[start_frame:end_frame, :], kp_names, params)
     return kp_data, kp_names
 
 
@@ -351,10 +352,11 @@ def handle_args(data_path, param_path, *,
                 save_path=None,
                 offset_path=None,
                 start_frame=0,
+                end_frame=None,
                 n_snip=None,
                 n_frames=None,
                 n_sample_frames=50,
-                skip=2,
+                skip=5,
                 adaptive_z_offset=False,
                 verbose=False,
                 visualize=False,
@@ -411,8 +413,10 @@ def handle_args(data_path, param_path, *,
 
     # Support file-based processing
     else:
+        if end_frame is None:
+            end_frame = start_frame + 500
         kp_data, kp_names = \
-            preprocess_data(data_path, start_frame, params)
+            preprocess_data(data_path, start_frame, end_frame, skip, params)
         if save_path is None:
             save_path = os.path.join(os.getcwd(),
                                      'results',
