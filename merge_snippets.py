@@ -24,7 +24,7 @@ def merge(folder, *, save_path=None):
 
     out_dict = in_dict
     out_dict['qpos'] = q
-    out_dict['kp_data'] = q
+    out_dict['kp_data'] = kp_data
     if save_path is None:
         save_path = os.path.join(folder, 'total.p')
     with open(save_path, 'wb') as f:
