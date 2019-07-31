@@ -6,4 +6,4 @@ export MJLIB_PATH="/home/.mujoco/mujoco200_linux/bin/libmujoco200.so"
 export MJKEY_PATH="/home/.mujoco/mjkey.txt"
 cd /home/code/stac
 data_path=$1
-python3 merge_stac.py $data_path
+python3 merge_snippets.py $data_path
