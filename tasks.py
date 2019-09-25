@@ -40,7 +40,7 @@ class ViewMocap(composer.Task):
                  height=480,
                  video_name=None,
                  params=None,
-                 fps=30.0):
+                 fps=80.0):
         """Initialize ViewMocap environment.
 
         :param walker: Rodent walker

@@ -10,6 +10,8 @@ _HEIGHTFIELD_ID = 0
 _ARENA_DIAMETER: 0.5842
 PEDESTAL_WIDTH = .099
 PEDESTAL_HEIGHT = .054
+FLOOR_PCTILE_CLAMP = 90
+FLOOR_CLAMP_VALUE = .02
 _TOP_CAMERA_DISTANCE = 100
 _TOP_CAMERA_Y_PADDING_FACTOR = 1.1
 _NUM_CYLINDER_SEGMENTS = 20
@@ -52,7 +54,7 @@ class RatArena(composer.Arena):
             name=name,
             type="hfield",
             rgba="0.2 0.3 0.4 1",
-            pos="0 0 -0.02",
+            pos="0 0 -0.045",
             hfield=name
         )
 
@@ -149,9 +151,10 @@ class RatArena(composer.Arena):
         resized_max = np.max(np.max(hfield))
         hfield = (hfield - resized_min) / (resized_max - resized_min)
 
-        # Clamp such that the 80th percentile of heights is 20 mm
-        hfield = hfield - hfield[0, 0]
-        hfield = hfield / np.percentile(hfield[:], 80) * .02
+        # Clamp such that the 90th percentile of heights is 20 mm
+        hfield -= hfield[0, 0]
+        hfield /= np.percentile(hfield[:], FLOOR_PCTILE_CLAMP)
+        hfield *= FLOOR_CLAMP_VALUE
         # hfield = ((hfield * (max_val - min_val)) + min_val) * scale
         return hfield
 

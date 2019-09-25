@@ -5,11 +5,15 @@ import clize
 import os
 
 
+def _sort_fn(file):
+    return int(file.split('.p')[0])
+
+
 def merge(folder, *, save_path=None):
     """Merge snippets into a contiguous file."""
     files = [f for f in os.listdir(folder)
              if ('.p' in f) and ('total' not in f)]
-    files.sort()
+    files = sorted(files, key=_sort_fn)
 
     q = []
     kp_data = []
@@ -28,7 +32,7 @@ def merge(folder, *, save_path=None):
     if save_path is None:
         save_path = os.path.join(folder, 'total.p')
     with open(save_path, 'wb') as f:
-        pickle.dump(out_dict, f)
+        pickle.dump(out_dict, f, protocol=2)
 
 
 if __name__ == "__main__":

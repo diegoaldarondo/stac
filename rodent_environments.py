@@ -46,6 +46,7 @@ def rodent_mocap(
     else:
         # Build a Floor arena
         arena = floors.Floor(size=(1, 1))
+        arena._ground_geom.pos = [0., 0., -.02]
         # Build a mocap viewing task
         task = tasks.ViewMocap(walker, arena, kp_data, params=params)
 

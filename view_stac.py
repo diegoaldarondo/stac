@@ -31,7 +31,7 @@ def view_stac(data_path, param_path, *,
             kp_data = np.zeros((n_frames, offsets.size))
     params = util.load_params(param_path)
     params['n_frames'] = n_frames
-    import pdb; pdb.set_trace()
+
     # Build the environment, and set the offsets, and params
     if params['_USE_HFIELD']:
         env = rodent_environments.rodent_mocap(
