@@ -10,12 +10,13 @@ _HEIGHTFIELD_ID = 0
 _ARENA_DIAMETER: 0.5842
 PEDESTAL_WIDTH = .099
 PEDESTAL_HEIGHT = .054
-FLOOR_PCTILE_CLAMP = 90
+FLOOR_PCTILE_CLAMP = 95
 FLOOR_CLAMP_VALUE = .02
 _TOP_CAMERA_DISTANCE = 100
 _TOP_CAMERA_Y_PADDING_FACTOR = 1.1
 _NUM_CYLINDER_SEGMENTS = 20
 MM_TO_METER = 1000
+GROUND_GEOM_POS = "0 0 -0.025"
 
 
 def _load_hfield(data_path, scale):
@@ -54,7 +55,7 @@ class RatArena(composer.Arena):
             name=name,
             type="hfield",
             rgba="0.2 0.3 0.4 1",
-            pos="0 0 -0.045",
+            pos=GROUND_GEOM_POS,
             hfield=name
         )
 

@@ -36,7 +36,7 @@ def rodent_mocap(
         process_objects = False
         if hfield_image is None:
             hfield_image = arenas._load_hfield(
-                params['data_path'], params['scale_factor'])
+                params['_snippet_path'], params['scale_factor'])
             process_objects = True
         arena = arenas.RatArena(
             hfield_image, params, process_objects,

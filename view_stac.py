@@ -36,7 +36,8 @@ def view_stac(data_path, param_path, *,
     if params['_USE_HFIELD']:
         env = rodent_environments.rodent_mocap(
             kp_data, params, use_hfield=params['_USE_HFIELD'],
-            hfield_image=in_dict['hfield_image'],
+            # hfield_image=in_dict['hfield_image'],
+            hfield_image=None,
             pedestal_center=in_dict['pedestal_center'],
             pedestal_radius=in_dict['pedestal_radius'],
             pedestal_height=in_dict['pedestal_height'],
