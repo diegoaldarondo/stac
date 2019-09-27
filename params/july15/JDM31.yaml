@@ -98,7 +98,7 @@ _SITES_TO_REGULARIZE:
 _STAND_HEIGHT: 1.5
 _TIME_BINS: 0.02
 _USE_HFIELD: 1
-_snippet_path: /home/diego/data/dm/stac/snippets/snippets_snippet_v7_JDM31/reformatted/snippet_280_Walk.mat
+_snippet_path: /n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/snippets/snippets_snippet_v7_JDM31/reformatted/snippet_280_Walk.mat
 _XML_PATH: ./models/rat_july22.xml
 adaptive_z_offset_value: 0.02
 hfield_image_path: ./params/floor_models/test_floormap.p
