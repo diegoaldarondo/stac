@@ -46,7 +46,8 @@ def load_snippets_from_file(filename):
         # and format to (t x n_dims)
         snippet = np.concatenate([data[name][:] for name in kp_names]).T
         behavior = ''.join(chr(x) for x in f['clustername'][:])
-        com_vel = f['snippet_com_vel'][:][0]
+        # com_vel = f['snippet_com_vel'][:][0]
+        com_vel = 0
     return snippet, kp_names, behavior, com_vel
 
 
