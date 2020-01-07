@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-base_folder=/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/results/sept27
+base_folder=/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/results/jan6
 mkdir $base_folder
 
 
@@ -29,7 +29,7 @@ mkdir $base_folder
 #
 #
 
-data_folder=/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/snippets/snippets_snippet_v7_JDM31/reformatted/*.mat
+data_folder=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/snippets/snippets_snippet_v8_JDM31_Day_8/reformatted/*.mat
 data_paths=($(find $data_folder))
 files=($(find $data_folder -printf "%f\n"))
 offset_path=/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/offsets/july22/JDM31.p
