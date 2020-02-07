@@ -15,13 +15,13 @@ _NUM_CYLINDER_SEGMENTS = 20
 MM_TO_METER = 1000
 
 FLOOR_PCTILE_CLAMP = 95
-FLOOR_CLAMP_VALUE = .02
+FLOOR_CLAMP_VALUE = .01
 GROUND_GEOM_POS = "0 0 -0.025"
 
 
 def _load_hfield(data_path, scale):
     """Load the floor_map from the snippet file."""
-    with h5py.File(data_path) as f:
+    with h5py.File(data_path, 'r') as f:
             floormap = f['floormap'][:]
             floormap = floormap * scale / MM_TO_METER
     return floormap

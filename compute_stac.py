@@ -13,7 +13,7 @@ import tasks
 _MM_TO_METERS = 1000
 
 
-def _downsample(kp_data, params, orig_freq=60.):
+def _downsample(kp_data, params, orig_freq=300.):
     n_samples = kp_data.shape[0]
     n_upsamples = \
         int(np.round(n_samples / orig_freq * (1 / params['_TIME_BINS'])))

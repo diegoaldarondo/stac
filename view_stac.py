@@ -33,6 +33,7 @@ def view_stac(data_path, param_path, *,
     params['n_frames'] = n_frames
 
     # Build the environment, and set the offsets, and params
+    params['data_path'] = '/home/diego/data/dm/stac/snippets/snippets_snippet_v8_JDM31_Day_8/reformatted/snippet_3_AdjustPosture.mat'
     if params['_USE_HFIELD']:
         env = rodent_environments.rodent_mocap(
             kp_data, params, use_hfield=params['_USE_HFIELD'],
