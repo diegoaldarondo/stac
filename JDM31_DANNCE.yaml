@@ -105,6 +105,6 @@ m_reg_coef: 0.9
 offset_path: ./offsets/JDM33_june14.p
 q_reg_coef: 0.0
 scale_factor: 1.05
-temporal_reg_coef: 0.02
+temporal_reg_coef: 0.0
 z_offset: 0.00
 z_perc: 5

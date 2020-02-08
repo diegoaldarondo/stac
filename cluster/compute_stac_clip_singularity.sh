@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
-base_folder=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/results/long_clips/JDM25
+base_folder=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/results/long_clips/JDM31
 mkdir $base_folder
 
-data_path=/n/home02/daldarondo/LabDir/Jesse/Data/Motionanalysis_captures/JDM25/20170921/Preprocessed/nolj_Recording_day8_caff2_nolj_imputed.mat
-offset_path=/n/home02/daldarondo/LabDir/Diego/data/dm/stac/offsets/july22/JDM25.p
-param_path=/n/home02/daldarondo/LabDir/Diego/code/dm/stac/params/long_clips/JDM25.yaml
+data_path=/n/home02/daldarondo/LabDir/Jesse/Data/Motionanalysis_captures/DANNCE_animals/DANNCE_mujoco_test/predictions_preprocessed_J31.mat
+offset_path=/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/offsets/july22/JDM31.p
+param_path=/n/home02/daldarondo/LabDir/Diego/code/dm/stac/params/july15/JDM31_DANNCE.yaml
 snippet_duration=500
-clip_duration=500000
+clip_duration=100000
 start_frame=($(seq 0 $snippet_duration $clip_duration))
 cnt=${#start_frame[@]}
 cnt=$(($cnt - 1))

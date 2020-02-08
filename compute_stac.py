@@ -55,7 +55,7 @@ def preprocess_snippet(kp_data, kp_names, params):
     kp_data = _downsample(kp_data, params)
 
     # Smooth
-    kp_data = _smooth(kp_data, kp_names, sigma=1)
+    kp_data = _smooth(kp_data, kp_names, sigma=.1)
 
     # Handle z-offset conditions
     if params['adaptive_z_offset']:
