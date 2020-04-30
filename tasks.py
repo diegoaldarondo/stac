@@ -40,7 +40,7 @@ class ViewMocap(composer.Task):
                  height=480,
                  video_name=None,
                  params=None,
-                 fps=80.0):
+                 fps=30.0):
         """Initialize ViewMocap environment.
 
         :param walker: Rodent walker
@@ -121,6 +121,50 @@ class ViewMocap(composer.Task):
         """Get discount."""
         return 1.
 
+    def grab_frame_and_seg(self, physics):
+        """Grab a frame from the simulation using render and opencv."""
+        # Get RGB rendering of env
+        scene_option = wrapper.MjvOption()
+        # scene_option.geomgroup[3] = 0
+        # scene_option.geomgroup[1] = 0
+        # scene_option.geomgroup[2] = 0
+        # import pdb;
+        # pdb.set_trace()
+
+        # for i in range(len(scene_option._ptr.contents.geomgroup)):
+        #     scene_option.geomgroup[i] = False
+        #     scene_option._ptr.contents.geomgroup[i] = False
+        # import pdb;
+        # pdb.set_trace()
+        physics.model.skin_rgba[0][3] = 0.
+        scene_option._ptr.contents.flags[
+            enums.mjtVisFlag.mjVIS_TRANSPARENT] = False
+        scene_option._ptr.contents.flags[
+            enums.mjtVisFlag.mjVIS_LIGHT] = False
+        scene_option._ptr.contents.flags[
+            enums.mjtVisFlag.mjVIS_TEXTURE] = False
+
+
+        rgbArr = physics.render(self.height, self.width,
+                                camera_id='CameraE',
+                                scene_option=scene_option)
+        seg = physics.render(self.height, self.width,
+                             camera_id='CameraE',
+                             scene_option=scene_option,
+                             segmentation=True)
+
+        # import pdb
+        # pdb.set_trace()
+        bkgrd = (seg[:, :, 0] == -1) & (seg[:, :, 1] == -1)
+        floor = (seg[:, :, 0] == 0) & (seg[:, :, 1] == 5)
+        rgbArr[:, :, 0] *= ~bkgrd[:, :]
+        rgbArr[:, :, 1] *= ~bkgrd[:, :]
+        rgbArr[:, :, 2] *= ~bkgrd[:, :]
+        rgbArr[:, :, 0] *= ~floor[:, :]
+        rgbArr[:, :, 1] *= ~floor[:, :]
+        rgbArr[:, :, 2] *= ~floor[:, :]
+        return cv2.cvtColor(rgbArr, cv2.COLOR_BGR2RGB)
+
     def grab_frame(self, physics):
         """Grab a frame from the simulation using render and opencv."""
         # Get RGB rendering of env
@@ -163,7 +207,6 @@ class ViewMocap(composer.Task):
         self.frame = physics.time()
         self.frame = \
             np.floor(self.frame / self.params['_TIME_BINS']).astype('int32')
-
         # Set the mocap marker positions
         physics.bind(self.sites).pos[:] = \
             np.reshape(self.kp_data[self.frame, :].T, (-1, 3))
@@ -196,7 +239,7 @@ class ViewMocap(composer.Task):
                                          cv2.VideoWriter_fourcc(*'mp4v'),
                                          self.fps,
                                          (self.width, self.height))
-            self.V.write(self.grab_frame(physics))
+            self.V.write(self.grab_frame_and_seg(physics))
 
 
 class ViewMocap_Hfield(ViewMocap):

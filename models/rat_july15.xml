@@ -163,6 +163,7 @@
     <material name="target_highlight" rgba="0.59999999999999998 0.29999999999999999 0.29999999999999999 0.40000000000000002"/>
     <skin name="skin" file="rat_skin_walker.skn"/>
   </asset>
+
   <worldbody>
     <camera name="fixed_cam" mode="trackcom" pos=".3 -.3 0.25" xyaxes="1 1 0 -1 1 2"/>
     <body name="torso" pos="0.030995260545782881 2.0585249376514574e-07 0.065089572631199674">
@@ -585,4 +586,3 @@
   </sensor>
   <compiler angle="radian" meshdir="./"/>
 </mujoco>
-

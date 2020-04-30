@@ -1,5 +1,6 @@
 """View stac results."""
 from dm_control import viewer
+from dm_control import viewer
 import clize
 import rodent_environments
 import numpy as np
@@ -31,7 +32,9 @@ def view_stac(data_path, param_path, *,
             kp_data = np.zeros((n_frames, offsets.size))
     params = util.load_params(param_path)
     params['n_frames'] = n_frames
-
+    # params['n_frames'] = 5000
+    # import pdb
+    # pdb.set_trace()
     # Build the environment, and set the offsets, and params
     params['data_path'] = '/home/diego/data/dm/stac/snippets/snippets_snippet_v8_JDM31_Day_8/reformatted/snippet_3_AdjustPosture.mat'
     if params['_USE_HFIELD']:
@@ -46,7 +49,14 @@ def view_stac(data_path, param_path, *,
     else:
         env = rodent_environments.rodent_mocap(
             kp_data, params, use_hfield=params['_USE_HFIELD'])
-
+    env.task._arena._mjcf_root.worldbody.add(
+        'camera', name='CameraE',
+        pos=[-0.0452, 1.5151, 0.3174],
+        fovy=50,
+        quat="0.0010 -0.0202 -0.7422 -0.6699")
+    env.reset()
+    # import pdb;
+    # pdb.set_trace()
     sites = env.task._walker.body_sites
     env.physics.bind(sites).pos[:] = offsets
     for id, site in enumerate(sites):
@@ -60,18 +70,21 @@ def view_stac(data_path, param_path, *,
     # Render a video in headless mode
     env.task.initialize_episode(env.physics, 0)
     prev_time = env.physics.time()
+    n_frame = 0
+
     if headless & render_video:
         while prev_time < env._time_limit:
-            while (env.physics.time() - prev_time) < params['_TIME_BINS']:
+            while (np.round(env.physics.time() - prev_time, decimals=5)) < params['_TIME_BINS']:
                 env.physics.step()
             env.task.after_step(env.physics, None)
-            prev_time = env.physics.time()
-
+            n_frame += 1
+            prev_time = np.round(env.physics.time(), decimals=2)
     # Otherwise, use the viewer
     else:
         viewer.launch(env)
     if env.task.V is not None:
         env.task.V.release()
+    print(n_frame, flush=True)
 
 
 if __name__ == "__main__":

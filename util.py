@@ -25,7 +25,7 @@ def load_kp_data_from_file(filename, struct_name='markers_preproc'):
     :param struct_name: Name of the struct to load.
     """
     with h5py.File(filename, 'r') as f:
-        data = f[struct_name]
+        data = f['mocapstruct_here'][struct_name]
         kp_names = [k for k in data.keys()]
 
         # Concatenate the data for each keypoint, and format to (t x n_dims)

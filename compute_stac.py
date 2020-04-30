@@ -56,7 +56,7 @@ def preprocess_snippet(kp_data, kp_names, params):
 
     # Smooth
     kp_data = _smooth(kp_data, kp_names, sigma=.1)
-
+    print(kp_data.shape)
     # Handle z-offset conditions
     if params['adaptive_z_offset']:
         kp_data[:, 2::3] -= \
@@ -114,10 +114,11 @@ def q_clip(env, qs_to_opt, params):
             temp_reg = False
         else:
             temp_reg = True
-        stac.q_phase(env.physics, env.task.kp_data[i, :],
-                     env.task._walker.body_sites, params,
-                     reg_coef=params['q_reg_coef'],
-                     qs_to_opt=qs_to_opt, temporal_regularization=temp_reg)
+        if params['temporal_reg_coef'] > 0.:
+            stac.q_phase(env.physics, env.task.kp_data[i, :],
+                         env.task._walker.body_sites, params,
+                         reg_coef=params['q_reg_coef'],
+                         qs_to_opt=qs_to_opt, temporal_regularization=temp_reg)
         q.append(np.copy(env.physics.named.data.qpos[:]))
         walker_body_sites.append(
             np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
@@ -142,10 +143,12 @@ def q_clip_iso(env, params):
     q = []
     x = []
     walker_body_sites = []
-    r_leg = _get_part_ids(env, ['hip_R', 'knee_R'])
-    l_leg = _get_part_ids(env, ['hip_L', 'knee_L'])
-    r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R'])
-    l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L'])
+    r_leg = _get_part_ids(env, ['vertebra_1', 'vertebra_2', 'vertebra_3', 'vertebra_4', 'vertebra_5', 'vertebra_6', 'hip_R', 'knee_R', 'ankle_R', 'foot_R'])
+    # import pdb
+    # pdb.set_trace()
+    l_leg = _get_part_ids(env, ['vertebra_1', 'vertebra_2', 'vertebra_3', 'vertebra_4', 'vertebra_5', 'vertebra_6', 'hip_L', 'knee_L', 'ankle_L', 'foot_L'])
+    r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R', 'hand_R'])
+    l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L', 'hand_L'])
     head = _get_part_ids(env, ['atlas', 'cervical', 'atlant_extend', ])
     if params['LIMBS_TO_TEMPORALLY_REGULARIZE'] == "arms":
         temp_reg_indiv_parts = [r_arm, l_arm]
@@ -190,25 +193,26 @@ def q_clip_iso(env, params):
         )
 
     # Bidirectional temporal regularization
-    for i in range(1, params['n_frames'] - 1):
-        # Set model state to current frame
-        env.physics.named.data.qpos[:] = q[i]
+    if params['temporal_reg_coef'] > 0.:
+        for i in range(1, params['n_frames'] - 1):
+            # Set model state to current frame
+            env.physics.named.data.qpos[:] = q[i]
 
-        # Recompute position of select parts with bidirectional
-        # temporal regularizer.
-        for part in [r_arm, l_arm, r_leg, l_leg]:
-            stac.q_phase(env.physics, env.task.kp_data[i, :],
-                         env.task._walker.body_sites, params,
-                         reg_coef=params['q_reg_coef'],
-                         qs_to_opt=part, temporal_regularization=True,
-                         q_prev=q[i - 1],
-                         q_next=q[i + 1])
+            # Recompute position of select parts with bidirectional
+            # temporal regularizer.
+            for part in [r_arm, l_arm, r_leg, l_leg]:
+                stac.q_phase(env.physics, env.task.kp_data[i, :],
+                             env.task._walker.body_sites, params,
+                             reg_coef=params['q_reg_coef'],
+                             qs_to_opt=part, temporal_regularization=True,
+                             q_prev=q[i - 1],
+                             q_next=q[i + 1])
 
-            # Update the parts for the current frame
-            q[i][part] = np.copy(env.physics.named.data.qpos[:][part])
-            x[i] = np.copy(env.physics.named.data.xpos[:])
-        walker_body_sites[i] = \
-            np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
+                # Update the parts for the current frame
+                q[i][part] = np.copy(env.physics.named.data.qpos[:][part])
+                x[i] = np.copy(env.physics.named.data.xpos[:])
+            walker_body_sites[i] = \
+                np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
     return q, walker_body_sites, x
 
 
@@ -352,7 +356,7 @@ def handle_args(data_path, param_path, *,
                 save_path=None,
                 offset_path=None,
                 start_frame=0,
-                end_frame=None,
+                end_frame=0,
                 n_snip=None,
                 n_frames=None,
                 n_sample_frames=50,
@@ -413,7 +417,7 @@ def handle_args(data_path, param_path, *,
 
     # Support file-based processing
     else:
-        if end_frame is None:
+        if end_frame == 0:
             end_frame = start_frame + 500
         kp_data, kp_names = \
             preprocess_data(data_path, start_frame, end_frame, skip, params)
