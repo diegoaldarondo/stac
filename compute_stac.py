@@ -78,10 +78,12 @@ def preprocess_data(data_path, start_frame, end_frame, skip, params,
     :param struct_name: Field name of .mat file to load
     """
     kp_data, kp_names = util.load_kp_data_from_file(data_path,
-                                                    struct_name=struct_name)
+                                                    struct_name=struct_name,
+                                                    start_frame=start_frame,
+                                                    end_frame=end_frame)
     kp_data = kp_data[::skip, :]
-    kp_data = preprocess_snippet(
-        kp_data[start_frame:end_frame, :], kp_names, params)
+    # kp_data = kp_data[start_frame:end_frame, :]
+    kp_data = preprocess_snippet(kp_data, kp_names, params)
     return kp_data, kp_names
 
 
@@ -418,7 +420,7 @@ def handle_args(data_path, param_path, *,
     # Support file-based processing
     else:
         if end_frame == 0:
-            end_frame = start_frame + 500
+            end_frame = start_frame + 3600
         kp_data, kp_names = \
             preprocess_data(data_path, start_frame, end_frame, skip, params)
         if save_path is None:

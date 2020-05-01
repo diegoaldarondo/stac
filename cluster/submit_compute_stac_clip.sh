@@ -3,8 +3,8 @@
 #SBATCH -N 1                # number of nodes
 #SBATCH -n 1                # number of tasks
 #SBATCH -c 8               # Number of threads (cores)
-#SBATCH --mem 3000        # memory for all cores
-#SBATCH -t 0-00:45          # time (D-HH:MM)
+#SBATCH --mem 20000        # memory for all cores
+#SBATCH -t 0-05:00          # time (D-HH:MM)
 #SBATCH --export=ALL
 #SBATCH -o logs/Job.compute_stac.%N.%j.out    # STDOUT
 #SBATCH -e logs/Job.compute_stac.%N.%j.err    # STDERR
