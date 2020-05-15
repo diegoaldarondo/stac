@@ -145,7 +145,7 @@ class Rat(legacy_base.Walker):
         return RodentObservables(self)
 
 
-class RodentObservables(base.WalkerObservables):
+class RodentObservables(legacy_base.WalkerObservables):
     """Observables for the Rat."""
 
     @composer.observable

@@ -4,7 +4,6 @@ from __future__ import division
 from __future__ import print_function
 from dm_control import composer
 from dm_control.locomotion.arenas import floors
-import dm_control.locomotion.walkers as dm_walkers
 import walkers
 import tasks
 import arenas
@@ -30,8 +29,8 @@ def rodent_mocap(
         pedestal_height=None, pedestal_radius=None, arena_diameter=None):
     """View a rat with mocap sites."""
     # Build a position-controlled Rat
-    walker = dm_walkers.Rat(
-        initializer=walkers.ZerosInitializer(), params=params,
+    walker = walkers.Rat(
+        initializer=None, params=params,
         observable_options={'egocentric_camera': dict(enabled=True)})
     if use_hfield:
         process_objects = False

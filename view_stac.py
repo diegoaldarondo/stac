@@ -23,9 +23,12 @@ def view_stac(data_path, param_path, *,
     # Load in the qpos, offsets, and markers
     with open(data_path, 'rb') as f:
         in_dict = pickle.load(f)
-        offsets = in_dict['offsets']
         q = in_dict['qpos']
         n_frames = len(q)
+        if 'offsets' not in in_dict.keys():
+            offsets = np.zeros((20, 3))
+        else:
+            offsets = in_dict['offsets']
         if 'kp_data' in in_dict.keys():
             kp_data = in_dict['kp_data']
         else:
