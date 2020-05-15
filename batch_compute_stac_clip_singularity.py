@@ -52,7 +52,7 @@ if __name__ == "__main__":
             save_variables(params['temp_file_name'], start_frames, end_frames)
             n_jobs = len(start_frames)
             print('Number of jobs: ', n_jobs)
-            cmd = 'sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_compute_stac_clip.sh' % (n_jobs - 1)
+            cmd = 'sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_compute_stac_clip.sh %s' % (n_jobs - 1, param_path)
             print(cmd)
             os.system(cmd)
 
@@ -67,7 +67,7 @@ if __name__ == "__main__":
             save_variables(params['temp_file_name'], start_frames, end_frames)
             n_jobs = len(start_frames)
             print('Number of jobs: ', n_jobs)
-            cmd = 'sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_compute_stac_clip.sh' % (n_jobs - 1)
+            cmd = 'sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_compute_stac_clip.sh %s' % (n_jobs - 1, param_path)
             print(cmd)
             # print(start_frames)
             # print(end_frames)
@@ -82,11 +82,11 @@ if __name__ == "__main__":
         start_frames, end_frames = load_variables(params['temp_file_name'])
         start_frame = start_frames[task_id]
         end_frame = end_frames[task_id]
-        save_path = os.path.join(base_folder, '%d.p' % (start_frame))
-        compute_stac.handle_args(data_path,
-                                 param_path,
+        save_path = os.path.join(params['base_folder'], '%d.p' % (start_frame))
+        compute_stac.handle_args(params['data_path'],
+                                 params['param_path'],
                                  save_path=save_path,
-                                 offset_path=offset_path,
+                                 offset_path=params['offset_path'],
                                  verbose=True,
                                  process_snippet=False,
                                  start_frame=start_frame,
