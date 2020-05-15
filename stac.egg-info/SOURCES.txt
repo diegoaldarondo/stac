@@ -1,3 +1,4 @@
+README.md
 setup.py
 stac.egg-info/PKG-INFO
 stac.egg-info/SOURCES.txt

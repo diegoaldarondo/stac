@@ -3,7 +3,6 @@ clize>=4.0.3
 absl-py>=0.7.1
 enum34
 future
-futures
 glfw
 lxml
 numpy

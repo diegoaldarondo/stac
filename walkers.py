@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from dm_control import composer
 from dm_control import mjcf
-from dm_control.locomotion.walkers import base
+from dm_control.locomotion.walkers import base, legacy_base
 from dm_control.composer.observation import observable
 from dm_control.locomotion.walkers.initializers import WalkerInitializer
 import numpy as np
@@ -28,7 +28,7 @@ class ZerosInitializer(WalkerInitializer):
             physics, velocity=np.zeros(3), angular_velocity=np.zeros(3))
 
 
-class Rat(base.Walker):
+class Rat(legacy_base.Walker):
     """A position-controlled rat with control range scaled to [-1, 1]."""
 
     def _build(self, params=None,
