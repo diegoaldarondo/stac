@@ -4,24 +4,6 @@ import numpy as np
 import pickle
 import h5py
 
-# base_folder = "/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/results/long_clips/JDM31_day8"
-base_folder = "/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/results/long_clips/Baseline1_JDM25/"
-if not os.path.exists(base_folder):
-    os.makedirs(base_folder)
-# data_path = "/n/home02/daldarondo/LabDir/Jesse/Data/Dropbox_curated_sharefolders/mocap_data_diego/diego_mocap_files_rat_JDM31_day_8.mat"
-data_path = "/n/home02/daldarondo/LabDir/Jesse/Data/Dropbox_curated_sharefolders/mocap_data_diego/Baseline1_JDM25.mat"
-offset_path = "/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/offsets/july22/JDM25.p"
-# param_path = "/n/home02/daldarondo/LabDir/Diego/code/dm/stac/params/july15/JDM31_DANNCE.yaml"
-param_path = "/n/home02/daldarondo/LabDir/Diego/code/dm/stac/params/july15/JDM25.yaml"
-temp_file_name = 'run_variables.p'
-
-snippet_duration = 7200
-clip_duration = 26460000
-start_frames = np.arange(0, clip_duration, snippet_duration)
-end_frames = start_frames + snippet_duration
-# start_frames = start_frames[1000:1002]
-# end_frames = end_frames[1000:10002]
-
 def load_params(param_path):
     with open(param_path, 'rb') as f:
         params = yaml.safe_load(f)
