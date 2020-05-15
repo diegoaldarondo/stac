@@ -18,7 +18,7 @@ def load_params(param_path):
     return params
 
 
-def load_kp_data_from_file(filename, struct_name='markers_preproc'):
+def load_kp_data_from_file(filename, struct_name='markers_preproc', start_frame=None, end_frame=None):
     """Format kp_data files from matlab to python through hdf5.
 
     :param filename: Path to v7.3 mat file containing
@@ -29,8 +29,16 @@ def load_kp_data_from_file(filename, struct_name='markers_preproc'):
         kp_names = [k for k in data.keys()]
 
         # Concatenate the data for each keypoint, and format to (t x n_dims)
-        kp_data = \
-            np.concatenate([data[name][:] for name in kp_names]).T
+        if start_frame is None:
+            kp_data = \
+                np.concatenate([data[name][:] for name in kp_names]).T
+        else:
+            markers = []
+            for name in kp_names:
+                print(name, flush=True)
+                m = data[name][:]
+                markers.append(m[:, start_frame:end_frame])
+            kp_data = np.concatenate(markers).T
     return kp_data, kp_names
 
 

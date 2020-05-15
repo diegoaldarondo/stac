@@ -1,5 +1,3 @@
-LIMBS_TO_TEMPORALLY_REGULARIZE: arms
-_ARENA_DIAMETER: 0.5842
 _ARM_JOINTS:
 - shoulder
 - scapula
@@ -7,7 +5,7 @@ _ARM_JOINTS:
 - wrist
 - finger
 _DIFF_STEP: 3.0e-08
-_FTOL: 0.001
+_FTOL: 0.0001
 _IS_LIMB:
 - scapula
 - hip
@@ -36,26 +34,26 @@ _KEYPOINT_COLOR_PAIRS:
   SpineL: .8 .8 .8 1
   SpineM: .8 .8 .8 1
 _KEYPOINT_INITIAL_OFFSETS:
-  ArmL: -0.01 0.005 0.01
-  ArmR: -0.01 -0.005 0.01
-  ElbowL: 0. 0.01 0.
-  ElbowR: 0. -0.01 0.
-  HeadB: 0. -.025 .04
-  HeadF: .025 -.025 .04
-  HeadL: 0. .025 .04
-  HipL: 0. 0.015 0.015
-  HipR: 0. -0.015 0.015
-  KneeL: 0.01 0.015 0.015
-  KneeR: 0.01 -0.015 0.015
-  Offset1: 0.015 .025 -0.005
-  Offset2: -0.015 .025 -0.005
-  ShinL: 0.02 0.015 0.02
-  ShinR: 0.02 -0.015 0.02
+  ArmL: 0. 0. 0.
+  ArmR: 0. 0. 0.
+  ElbowL: 0. 0. 0.
+  ElbowR: 0. 0. 0.
+  HeadB: 0. -.025 .045
+  HeadF: .025 -.025 .045
+  HeadL: 0. .025 .045
+  HipL: 0.03 0. 0.04
+  HipR: 0. 0. 0.005
+  KneeL: 0. 0. 0.03
+  KneeR: 0. 0. 0.
+  Offset1: 0.015 .0155 -0.005
+  Offset2: -0.015 .015 -0.005
+  ShinL: 0.02 0. 0.015
+  ShinR: 0.015 -0.01 0.0125
   ShoulderL: 0. 0. 0.
   ShoulderR: 0. 0. 0.
-  SpineF: 0. 0. 0.0225
-  SpineL: 0. 0. 0.02
-  SpineM: 0. 0. 0.015
+  SpineF: 0. 0. 0.005
+  SpineL: 0. 0. 0.005
+  SpineM: 0. 0. 0.005
 _KEYPOINT_MODEL_PAIRS:
   ArmL: hand_L
   ArmR: hand_R
@@ -77,8 +75,6 @@ _KEYPOINT_MODEL_PAIRS:
   SpineF: vertebra_cervical_5
   SpineL: pelvis
   SpineM: vertebra_1
-_LIMB_FTOL: 1.0e-07
-_MANDIBLE_POS: -0.297
 _PARTS_TO_ZERO:
 - toe
 - ankle
@@ -88,19 +84,22 @@ _SITES_TO_REGULARIZE:
 - ArmR
 - ElbowL
 - ElbowR
+- ShoulderL
+- ShoulderR
+- HipL
+- HipR
 - KneeL
 - KneeR
 - ShinL
 - ShinR
 _STAND_HEIGHT: 1.5
-_TIME_BINS: 0.02
-_USE_HFIELD: 0
-_XML_PATH: ./models/rat_july22.xml
+_TIME_BINS: 0.03
+_MANDIBLE_POS: -.297
+_XML_PATH: /home/diego/code/olveczky/dm/stac/models/rat_may17.xml
 adaptive_z_offset_value: 0.02
-hfield_image_path: ./params/floor_models/test_floormap.p
-m_reg_coef: 0.9
+m_reg_coef: 0.25
 q_reg_coef: 0.0
-scale_factor: 1.08
-temporal_reg_coef: 0.005
-z_offset: 0.0
+scale_factor: 1.2
+temporal_reg_coef: 0.2
+z_offset: 0.02
 z_perc: 5

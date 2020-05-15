@@ -78,10 +78,12 @@ def preprocess_data(data_path, start_frame, end_frame, skip, params,
     :param struct_name: Field name of .mat file to load
     """
     kp_data, kp_names = util.load_kp_data_from_file(data_path,
-                                                    struct_name=struct_name)
+                                                    struct_name=struct_name,
+                                                    start_frame=start_frame,
+                                                    end_frame=end_frame)
     kp_data = kp_data[::skip, :]
-    kp_data = preprocess_snippet(
-        kp_data[start_frame:end_frame, :], kp_names, params)
+    # kp_data = kp_data[start_frame:end_frame, :]
+    kp_data = preprocess_snippet(kp_data, kp_names, params)
     return kp_data, kp_names
 
 
@@ -159,7 +161,7 @@ def q_clip_iso(env, params):
 
     # Iterate through all of the frames in the clip
     for i in range(params['n_frames']):
-        print(i)
+        print(i, flush=True)
         # First optimize over all points to get gross estimate and trunk
         stac.q_phase(env.physics, env.task.kp_data[i, :],
                      env.task._walker.body_sites, params,
@@ -328,9 +330,13 @@ def compute_stac(kp_data, save_path, params):
     # Save the pose, offsets, data, and all parameters
     filename, file_extension = os.path.splitext(save_path)
     offsets = env.physics.bind(env.task._walker.body_sites).pos[:].copy()
+    names_xpos = env.physics.named.data.xpos.axes.row.names
     out_dict = {'qpos': q,
+                'xpos': x,
                 'walker_body_sites': walker_body_sites,
                 'offsets': offsets,
+                'names_qpos': part_names,
+                'names_xpos': names_xpos,
                 # 'ground_pos': ground_pos,
                 'kp_data': np.copy(kp_data[:params['n_frames'], :])}
 
@@ -360,7 +366,7 @@ def handle_args(data_path, param_path, *,
                 n_snip=None,
                 n_frames=None,
                 n_sample_frames=50,
-                skip=5,
+                skip=1,
                 adaptive_z_offset=False,
                 verbose=False,
                 visualize=False,
@@ -418,7 +424,7 @@ def handle_args(data_path, param_path, *,
     # Support file-based processing
     else:
         if end_frame == 0:
-            end_frame = start_frame + 500
+            end_frame = start_frame + 3600
         kp_data, kp_names = \
             preprocess_data(data_path, start_frame, end_frame, skip, params)
         if save_path is None:
