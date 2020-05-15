@@ -126,26 +126,33 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
         ftol = params['_LIMB_FTOL']
     else:
         ftol = params['_FTOL']
-    q_opt_param = scipy.optimize.least_squares(
-        lambda q: q_loss(q, physics, marker_ref_arr, sites, params,
-                         qs_to_opt=qs_to_opt,
-                         q_copy=q_copy,
-                         reg_coef=reg_coef,
-                         root_only=root_only,
-                         temporal_regularization=temporal_regularization,
-                         q_prev=q_prev,
-                         q_next=q_next),
-        q0, bounds=(lb, ub), ftol=ftol, diff_step=params['_DIFF_STEP'],
-        verbose=0)
+    try:
+        q_opt_param = scipy.optimize.least_squares(
+            lambda q: q_loss(q, physics, marker_ref_arr, sites, params,
+                             qs_to_opt=qs_to_opt,
+                             q_copy=q_copy,
+                             reg_coef=reg_coef,
+                             root_only=root_only,
+                             temporal_regularization=temporal_regularization,
+                             q_prev=q_prev,
+                             q_next=q_next),
+            q0, bounds=(lb, ub), ftol=ftol, diff_step=params['_DIFF_STEP'],
+            verbose=0)
 
-    # Set pose to the optimized q and step forward.
-    if qs_to_opt is None:
-        physics.named.data.qpos[:] = q_opt_param.x
-    else:
-        q_copy[qs_to_opt] = q_opt_param.x
+        # Set pose to the optimized q and step forward.
+        if qs_to_opt is None:
+            physics.named.data.qpos[:] = q_opt_param.x
+        else:
+            q_copy[qs_to_opt] = q_opt_param.x
+            physics.named.data.qpos[:] = q_copy.copy()
+
+        mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
+
+    except ValueError:
+        print('Warning: optimization failed.', flush=True)
+        q_copy[np.isnan(q_copy)] = 0.
         physics.named.data.qpos[:] = q_copy.copy()
-
-    mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
+        mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
 
 
 def m_loss(offset, physics, kp_data, time_indices, sites, q, initial_offsets,

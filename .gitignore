@@ -1,6 +1,11 @@
 __pycache__
 logs
+logs/*
 dist
 TestStac.ipynb
 stac.egg-info
 build
+run_variables.p
+test.p
+TestStac.ipynb
+nohup.out

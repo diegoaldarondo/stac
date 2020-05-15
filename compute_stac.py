@@ -161,7 +161,7 @@ def q_clip_iso(env, params):
 
     # Iterate through all of the frames in the clip
     for i in range(params['n_frames']):
-        print(i)
+        print(i, flush=True)
         # First optimize over all points to get gross estimate and trunk
         stac.q_phase(env.physics, env.task.kp_data[i, :],
                      env.task._walker.body_sites, params,
@@ -330,9 +330,13 @@ def compute_stac(kp_data, save_path, params):
     # Save the pose, offsets, data, and all parameters
     filename, file_extension = os.path.splitext(save_path)
     offsets = env.physics.bind(env.task._walker.body_sites).pos[:].copy()
+    names_xpos = env.physics.named.data.xpos.axes.row.names
     out_dict = {'qpos': q,
+                'xpos': x,
                 'walker_body_sites': walker_body_sites,
                 'offsets': offsets,
+                'names_qpos': part_names,
+                'names_xpos': names_xpos,
                 # 'ground_pos': ground_pos,
                 'kp_data': np.copy(kp_data[:params['n_frames'], :])}
 
