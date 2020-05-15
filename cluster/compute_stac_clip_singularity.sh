@@ -8,8 +8,13 @@ data_path=/n/home02/daldarondo/LabDir/Jesse/Data/Dropbox_curated_sharefolders/mo
 offset_path=/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/offsets/july22/JDM31.p
 param_path=/n/home02/daldarondo/LabDir/Diego/code/dm/stac/params/july15/JDM31_DANNCE.yaml
 snippet_duration=3600
+<<<<<<< HEAD
 clip_duration=28080000
 # clip_duration=3600
+=======
+# clip_duration=28080000
+clip_duration=3600
+>>>>>>> 493409a8c72119d325f865113f7962d6ca15e888
 start_frame=($(seq 0 $snippet_duration $clip_duration))
 cnt=${#start_frame[@]}
 cnt=$(($cnt - 1))
