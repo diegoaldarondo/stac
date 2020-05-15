@@ -239,7 +239,7 @@ class ViewMocap(composer.Task):
                                          cv2.VideoWriter_fourcc(*'mp4v'),
                                          self.fps,
                                          (self.width, self.height))
-            self.V.write(self.grab_frame_and_seg(physics))
+            self.V.write(self.grab_frame(physics))
 
 
 class ViewMocap_Hfield(ViewMocap):
