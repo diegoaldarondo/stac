@@ -1,6 +1,7 @@
 """Compute stac optimization on data."""
 from dm_control import viewer
 from scipy.io import savemat
+from dm_control.locomotion.walkers import rescale
 import scipy.ndimage
 import clize
 import stac
@@ -278,7 +279,7 @@ def compute_stac(kp_data, save_path, params):
         with open(params['offset_path'], 'rb') as f:
             in_dict = pickle.load(f)
 
-        sites = env.task._walker.body_sites
+        sites = env.task._walker.bo
         env.physics.bind(sites).pos[:] = in_dict['offsets']
 
         for id, p in enumerate(env.physics.bind(sites).pos):
