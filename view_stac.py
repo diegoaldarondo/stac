@@ -7,22 +7,7 @@ import numpy as np
 import pickle
 import util
 
-
-def view_stac(data_path, param_path, *,
-              render_video=False,
-              save_path=None,
-              headless=False,
-              start_frame=0,
-              end_frame=-1):
-    """View the output of stac.
-
-    :param data_path: Path to .p file containing qpos, offsets,
-                      and optionally kp_data.
-    :param render_video: If True, make a video and put it in clips.
-    :param save_path: Save any rendered videos to this path.
-    :param headless: If True, make a video in headless mode.
-    """
-    # Load in the qpos, offsets, and markers
+def load_data(data_path, start_frame=0, end_frame=-1):
     with open(data_path, 'rb') as f:
         in_dict = pickle.load(f)
         q = in_dict['qpos']
@@ -39,11 +24,32 @@ def view_stac(data_path, param_path, *,
             kp_data = in_dict['kp_data']
         else:
             kp_data = np.zeros((n_frames, offsets.size))
+    return q, offsets, kp_data, n_frames
+
+def view_stac(data_path, param_path, *,
+              render_video=False,
+              save_path=None,
+              headless=False,
+              start_frame=0,
+              end_frame=-1):
+    """View the output of stac.
+
+    :param data_path: Path to .p file containing qpos, offsets,
+                      and optionally kp_data.
+    :param render_video: If True, make a video and put it in clips.
+    :param save_path: Save any rendered videos to this path.
+    :param headless: If True, make a video in headless mode.
+    """
+    # Load in the qpos, offsets, and markers
+    q, offsets, kp_data, n_frames = load_data(data_path, start_frame=start_frame, end_frame=end_frame)
+    print(len(q[0]))
+    setup_visualization(param_path, q, offsets, kp_data, n_frames, render_video=render_video, save_path=save_path, headless=headless)
+
+
+def setup_visualization(param_path, q, offsets, kp_data, n_frames, render_video=False, save_path=None, headless=False):
     params = util.load_params(param_path)
-    params['n_frames'] = n_frames-1
-    # params['n_frames'] = 5000
-    # import pdb
-    # pdb.set_trace()
+    params['n_frames'] = n_frames - 1
+
     # Build the environment, and set the offsets, and params
     params['data_path'] = '/home/diego/data/dm/stac/snippets/snippets_snippet_v8_JDM31_Day_8/reformatted/snippet_3_AdjustPosture.mat'
     if params['_USE_HFIELD']:

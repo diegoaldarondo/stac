@@ -40,22 +40,27 @@ def _smooth(kp_data, kp_names, sigma=1):
 def preprocess_snippet(kp_data, kp_names, params):
     """Preprocess snippet data."""
     kp_data = kp_data / _MM_TO_METERS
-    spineM_id = np.argwhere([name == 'SpineM' for name in kp_names])
-    spineM = np.squeeze(kp_data[:, spineM_id * 3 + np.array([0, 1, 2])])
+
+    # spineM_id = np.argwhere([name == 'SpineM' for name in kp_names])
+    # reference = np.squeeze(kp_data[:, spineM_id * 3 + np.array([0, 1, 2])])
+
+    reference = np.reshape(kp_data, (kp_data.shape[0], 3, -1))
+    reference = np.mean(reference, axis=2)
+
 
     # Rescale by centering at spineM, scaling, and decentering
     for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
-        kp_data[:, dim * 3 + np.array([0, 1, 2])] -= spineM
+        kp_data[:, dim * 3 + np.array([0, 1, 2])] -= reference
     kp_data *= params['scale_factor']
-    spineM *= params['scale_factor']
+    reference *= params['scale_factor']
     for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
-        kp_data[:, dim * 3 + np.array([0, 1, 2])] += spineM
+        kp_data[:, dim * 3 + np.array([0, 1, 2])] += reference
 
     # Downsample
-    kp_data = _downsample(kp_data, params)
+    kp_data = _downsample(kp_data, params, orig_freq=30.)
 
     # Smooth
-    kp_data = _smooth(kp_data, kp_names, sigma=.1)
+    # kp_data = _smooth(kp_data, kp_names, sigma=.1)
     print(kp_data.shape)
     # Handle z-offset conditions
     if params['adaptive_z_offset']:
@@ -329,6 +334,8 @@ def compute_stac(kp_data, save_path, params):
 
     # Save the pose, offsets, data, and all parameters
     filename, file_extension = os.path.splitext(save_path)
+    # if not os.path.exists(os.path.dirname(save_path)):
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     offsets = env.physics.bind(env.task._walker.body_sites).pos[:].copy()
     names_xpos = env.physics.named.data.xpos.axes.row.names
     out_dict = {'qpos': q,

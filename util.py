@@ -3,7 +3,7 @@ import numpy as np
 import h5py
 import os
 import yaml
-
+from scipy.io import loadmat
 
 def load_params(param_path):
     """Load parameters for the animal.
@@ -24,9 +24,10 @@ def load_kp_data_from_file(filename, struct_name='markers_preproc', start_frame=
     :param filename: Path to v7.3 mat file containing
     :param struct_name: Name of the struct to load.
     """
-    with h5py.File(filename, 'r') as f:
-        data = f['mocapstruct_here'][struct_name]
-        kp_names = [k for k in data.keys()]
+    try:
+        with h5py.File(filename, 'r') as f:
+            data = f['mocapstruct_here'][struct_name]
+            kp_names = [k for k in data.keys()]
 
         # Concatenate the data for each keypoint, and format to (t x n_dims)
         if start_frame is None:
@@ -39,6 +40,15 @@ def load_kp_data_from_file(filename, struct_name='markers_preproc', start_frame=
                 m = data[name][:]
                 markers.append(m[:, start_frame:end_frame])
             kp_data = np.concatenate(markers).T
+    except OSError:
+        data = loadmat(filename)
+        data = data["predictions"] 
+        kp_names = [k for k in data.dtype.names if 'Shin' not in k]
+        kp_names.sort()
+        if start_frame is None:
+            kp_data = np.concatenate([data[name][0, 0] for name in kp_names], axis=1)
+        else:
+            kp_data = np.concatenate([data[name][0, 0][start_frame:end_frame, :] for name in kp_names], axis=1)
     return kp_data, kp_names
 
 

@@ -30,17 +30,22 @@ def merge(folder, *, save_path=None):
 
     # Get the sizes of data from first chunk
     q, x, kp_data, in_dict = get_chunk_data(os.path.join(folder, files[0]))
+    q_rem, _, _, _ = get_chunk_data(os.path.join(folder, files[-1]))
+
     n_frames = q.shape[0]
-    q = np.zeros((n_frames * len(files), q.shape[1]))
-    x = np.zeros((n_frames * len(files), x.shape[1], x.shape[2]))
-    kp_data = np.zeros((n_frames * len(files), kp_data.shape[1]))
+    remainder = q_rem.shape[0]
+    q = np.zeros((n_frames * (len(files)-1) + remainder, q.shape[1]))
+    x = np.zeros((n_frames * (len(files)-1) + remainder, x.shape[1], x.shape[2]))
+    kp_data = np.zeros((n_frames * (len(files)-1) + remainder, kp_data.shape[1]))
 
     for i, file in enumerate(files):
         print('%d of %d' % (i, len(files)), flush=True)
         q_i, x_i, kp_data_i, _ = get_chunk_data(os.path.join(folder, file))
-        q[(i * n_frames):((i + 1) * n_frames), ...] = q_i
-        x[(i * n_frames):((i + 1) * n_frames), ...] = x_i
-        kp_data[(i * n_frames):((i + 1) * n_frames), ...] = kp_data_i
+        start_frame = (i * n_frames)
+        end_frame = np.min([((i + 1) * n_frames), q.shape[0]])
+        q[start_frame:end_frame, ...] = q_i
+        x[start_frame:end_frame, ...] = x_i
+        kp_data[start_frame:end_frame, ...] = kp_data_i
 
     out_dict = in_dict
     out_dict['qpos'] = q

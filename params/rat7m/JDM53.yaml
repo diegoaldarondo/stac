@@ -126,13 +126,13 @@ LIMBS_TO_TEMPORALLY_REGULARIZE: arms
 _STAND_HEIGHT: 1.5
 _TIME_BINS: 0.02
 _USE_HFIELD: 0
-_XML_PATH: ./models/rat_july15.xml
+_XML_PATH: ./models/rodent.xml
 adaptive_z_offset_value: 0.02
 hfield_image_path: ./params/floor_models/test_floormap.p
 m_reg_coef: 10
 offset_path: ./offsets/JDM33_june14.p
 q_reg_coef: 0.0
-scale_factor: 1.05
+scale_factor: 1.2
 temporal_reg_coef: 0.0
 z_offset: 0.00
 z_perc: 5
