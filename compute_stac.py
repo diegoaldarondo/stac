@@ -44,17 +44,17 @@ def preprocess_snippet(kp_data, kp_names, params):
     # spineM_id = np.argwhere([name == 'SpineM' for name in kp_names])
     # reference = np.squeeze(kp_data[:, spineM_id * 3 + np.array([0, 1, 2])])
 
-    reference = np.reshape(kp_data, (kp_data.shape[0], 3, -1))
-    reference = np.mean(reference, axis=2)
+    # reference = np.reshape(kp_data, (kp_data.shape[0], 3, -1))
+    # reference = np.mean(reference, axis=2)
 
 
-    # Rescale by centering at spineM, scaling, and decentering
-    for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
-        kp_data[:, dim * 3 + np.array([0, 1, 2])] -= reference
-    kp_data *= params['scale_factor']
-    reference *= params['scale_factor']
-    for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
-        kp_data[:, dim * 3 + np.array([0, 1, 2])] += reference
+    # # Rescale by centering at spineM, scaling, and decentering
+    # for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
+    #     kp_data[:, dim * 3 + np.array([0, 1, 2])] -= reference
+    # kp_data *= params['scale_factor']
+    # reference *= params['scale_factor']
+    # for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
+    #     kp_data[:, dim * 3 + np.array([0, 1, 2])] += reference
 
     # Downsample
     kp_data = _downsample(kp_data, params, orig_freq=30.)
@@ -264,7 +264,8 @@ def compute_stac(kp_data, save_path, params):
     # Build the environment
     env = rodent_environments.rodent_mocap(
         kp_data, params, use_hfield=params['_USE_HFIELD'])
-
+    rescale.rescale_subtree(env.task._walker._mjcf_root, params['scale_factor'], params['scale_factor'])
+    
     # Get the ids of the limbs
     # TODO(partnames): This currently changes the list everywhere.
     # Technically this is what we always want, but consider changing.

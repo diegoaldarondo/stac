@@ -5,4 +5,4 @@ export MUJOCO_GL="osmesa"
 export MJLIB_PATH="/home/.mujoco/mujoco200_linux/bin/libmujoco200.so"
 export MJKEY_PATH="/home/.mujoco/mjkey.txt"
 stac_path="/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac"
-python3 $stac_path/batch_compute_stac_clip_singularity.py
+python3 $stac_path/batch_compute_stac_clip_singularity.py $1

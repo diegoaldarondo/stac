@@ -132,7 +132,7 @@ hfield_image_path: ./params/floor_models/test_floormap.p
 m_reg_coef: 10
 offset_path: ./offsets/JDM33_june14.p
 q_reg_coef: 0.0
-scale_factor: 1.05
+scale_factor: .9
 temporal_reg_coef: 0.0
 z_offset: 0.00
 z_perc: 5

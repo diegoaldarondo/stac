@@ -59,6 +59,11 @@ class Rat(legacy_base.Walker):
             self.body_sites.append(site)
         super(Rat, self)._build(initializer=initializer)
 
+
+    # def reinitialize_pose(self, physics, random_state):
+    #     for initializer in self._initializers:
+    #         initializer.initialize_pose(physics, self, random_state)
+
     @property
     def upright_pose(self):
         """Reset pose to upright position."""

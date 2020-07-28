@@ -1,6 +1,7 @@
 """View stac results."""
 from dm_control import viewer
 from dm_control import viewer
+from dm_control.locomotion.walkers import rescale
 import clize
 import rodent_environments
 import numpy as np
@@ -64,14 +65,15 @@ def setup_visualization(param_path, q, offsets, kp_data, n_frames, render_video=
     else:
         env = rodent_environments.rodent_mocap(
             kp_data, params, use_hfield=params['_USE_HFIELD'])
+    # import pdb;
+    # pdb.set_trace()
+    rescale.rescale_subtree(env.task._walker._mjcf_root, params['scale_factor'], params['scale_factor'])
     env.task._arena._mjcf_root.worldbody.add(
         'camera', name='CameraE',
         pos=[-0.0452, 1.5151, 0.3174],
         fovy=50,
         quat="0.0010 -0.0202 -0.7422 -0.6699")
     env.reset()
-    # import pdb;
-    # pdb.set_trace()
     sites = env.task._walker.body_sites
     env.physics.bind(sites).pos[:] = offsets
     for id, site in enumerate(sites):
