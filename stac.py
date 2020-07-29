@@ -10,7 +10,7 @@ class _TestNoneArgs(BaseException):
 
 def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
            reg_coef=0., root_only=False, temporal_regularization=False,
-           q_prev=None, q_next=None):
+           q_prev=None, q_next=None, kps_to_opt=None):
     """Compute the marker loss for q_phase optimization.
 
     :param physics: Physics of current environment.
@@ -57,7 +57,9 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
             temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt])
 
     residual = kp_data.T - q_joints_to_markers(q, physics, sites)
-    return np.sum(np.abs(residual))
+    if kps_to_opt is not None:
+        residual = residual[kps_to_opt]
+    return np.sqrt(np.sum(residual**2))
     # # return residual + reg_term + params['temporal_reg_coef'] * temp_reg_term
         # Optional regularization.
 
@@ -105,7 +107,7 @@ def q_joints_to_markers(q, physics, sites):
 
 
 def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
-            qs_to_opt=None, root_only=False, temporal_regularization=False,
+            qs_to_opt=None, kps_to_opt=None, root_only=False, temporal_regularization=False,
             q_prev=None, q_next=None):
     """Update q_pose using estimated marker parameters.
 
@@ -159,7 +161,8 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
                              root_only=root_only,
                              temporal_regularization=temporal_regularization,
                              q_prev=q_prev,
-                             q_next=q_next),
+                             q_next=q_next,
+                             kps_to_opt=kps_to_opt),
             q0, bounds=(lb, ub), ftol=ftol, diff_step=params['_DIFF_STEP'],
             verbose=0)
 
@@ -219,7 +222,7 @@ def m_loss(offset, physics, kp_data, time_indices, sites, q, initial_offsets,
         reg_term += ((offset - initial_offsets.flatten())**2) * is_regularized
         residual += \
             (kp_data[i, :].T - m_joints_to_markers(offset, physics, sites))**2
-    return .5 * np.sum(residual) + reg_coef * np.sum(reg_term)
+    return np.sum(residual) + reg_coef * np.sum(reg_term)
 
 def m_joints_to_markers(offset, physics, sites):
     """Convert site information to marker information.

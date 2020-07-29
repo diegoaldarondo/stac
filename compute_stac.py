@@ -95,13 +95,27 @@ def preprocess_data(data_path, start_frame, end_frame, skip, params,
 
 def initial_optimization(env, initial_offsets, params, maxiter=100):
     """Optimize the first frame with alternating q and m phase."""
-    stac.q_phase(env.physics, env.task.kp_data[0, :],
-                 env.task._walker.body_sites, params, root_only=True)
-    # q, _, _ = q_clip_iso(env, params)
-    q = [env.physics.named.data.qpos[:].copy()]
+    # for i in range(params['n_frames']):
+    q, _, _ = q_clip_iso(env, params)
+        # stac.q_phase(env.physics, env.task.kp_data[0, :],
+        #              env.task._walker.body_sites, params, root_only=True)
+        # q  = [env.physics.named.data.qpos[:].copy()]
+        # Optional visualization
+    # if params['visualize']:
+    #     env.task.precomp_qpos = q
+    #     env.task.render_video = params['render_video']
+    #     viewer.launch(env)
+    #     if env.task.V is not None:
+    #         env.task.V.release()
     stac.m_phase(env.physics, env.task.kp_data, env.task._walker.body_sites,
-                 [0], q, initial_offsets, params,
+                 np.arange(params['n_frames']), q, initial_offsets, params,
                  reg_coef=params['m_reg_coef'], maxiter=maxiter)
+    # if params['visualize']:
+    #     env.task.precomp_qpos = q
+    #     env.task.render_video = params['render_video']
+    #     viewer.launch(env)
+    #     if env.task.V is not None:
+    #         env.task.V.release()
 
 
 def root_optimization(env, params):
@@ -152,13 +166,14 @@ def q_clip_iso(env, params):
     q = []
     x = []
     walker_body_sites = []
+    trunk_kps = [any([n in kp_name for n in ['Spine' ,'Hip', 'Shoulder', 'Offset']]) 
+                 for kp_name in params['kp_names']]
+    trunk_kps = np.repeat(np.array(trunk_kps), 3)
     r_leg = _get_part_ids(env, ['vertebra_1', 'vertebra_2', 'vertebra_3', 'vertebra_4', 'vertebra_5', 'vertebra_6', 'hip_R', 'knee_R', 'ankle_R', 'foot_R'])
-    # import pdb
-    # pdb.set_trace()
     l_leg = _get_part_ids(env, ['vertebra_1', 'vertebra_2', 'vertebra_3', 'vertebra_4', 'vertebra_5', 'vertebra_6', 'hip_L', 'knee_L', 'ankle_L', 'foot_L'])
-    r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R', 'hand_R', 'finger_R'])
-    l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L', 'hand_L', 'finger_L'])
-    head = _get_part_ids(env, ['atlas', 'cervical', 'atlant_extend', ])
+    r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'shoulder_s', 'elbow_R', 'hand_R', 'finger_R'])
+    l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'shoulder_s', 'elbow_L', 'hand_L', 'finger_L'])
+    head = _get_part_ids(env, ['atlas', 'cervical', 'atlant_extend'])
     if params['LIMBS_TO_TEMPORALLY_REGULARIZE'] == "arms":
         temp_reg_indiv_parts = [r_arm, l_arm]
         non_temp_reg_indiv_parts = [r_leg, l_leg, head]
@@ -166,13 +181,20 @@ def q_clip_iso(env, params):
         temp_reg_indiv_parts = [r_leg, l_leg, r_arm, l_arm]
         non_temp_reg_indiv_parts = [head]
 
+
     # Iterate through all of the frames in the clip
     for i in range(params['n_frames']):
         print(i, flush=True)
+
         # First optimize over all points to get gross estimate and trunk
         stac.q_phase(env.physics, env.task.kp_data[i, :],
                      env.task._walker.body_sites, params,
                      reg_coef=params['q_reg_coef'])
+
+        stac.q_phase(env.physics, env.task.kp_data[i, :],
+             env.task._walker.body_sites, params,
+             reg_coef=params['q_reg_coef'],
+             kps_to_opt=trunk_kps)
 
         # Make sure to only use forward temporal regularization on frames 1...n
         if i == 0:
@@ -441,6 +463,7 @@ def handle_args(data_path, param_path, *,
             save_path = os.path.join(os.getcwd(),
                                      'results',
                                      'snippet' + data_path[:-4] + '.p')
+        params['kp_names'] = kp_names
         compute_stac(kp_data, save_path, params)
 
 
