@@ -97,9 +97,10 @@ def initial_optimization(env, initial_offsets, params, maxiter=100):
     """Optimize the first frame with alternating q and m phase."""
     stac.q_phase(env.physics, env.task.kp_data[0, :],
                  env.task._walker.body_sites, params, root_only=True)
-    root_q = [env.physics.named.data.qpos[:].copy()]
+    # q, _, _ = q_clip_iso(env, params)
+    q = [env.physics.named.data.qpos[:].copy()]
     stac.m_phase(env.physics, env.task.kp_data, env.task._walker.body_sites,
-                 [0], root_q, initial_offsets, params,
+                 [0], q, initial_offsets, params,
                  reg_coef=params['m_reg_coef'], maxiter=maxiter)
 
 
@@ -155,8 +156,8 @@ def q_clip_iso(env, params):
     # import pdb
     # pdb.set_trace()
     l_leg = _get_part_ids(env, ['vertebra_1', 'vertebra_2', 'vertebra_3', 'vertebra_4', 'vertebra_5', 'vertebra_6', 'hip_L', 'knee_L', 'ankle_L', 'foot_L'])
-    r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R', 'hand_R'])
-    l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L', 'hand_L'])
+    r_arm = _get_part_ids(env, ['scapula_R', 'shoulder_R', 'elbow_R', 'hand_R', 'finger_R'])
+    l_arm = _get_part_ids(env, ['scapula_L', 'shoulder_L', 'elbow_L', 'hand_L', 'finger_L'])
     head = _get_part_ids(env, ['atlas', 'cervical', 'atlant_extend', ])
     if params['LIMBS_TO_TEMPORALLY_REGULARIZE'] == "arms":
         temp_reg_indiv_parts = [r_arm, l_arm]

@@ -38,7 +38,7 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
         #     raise _TestNoneArgs('q_next' + error_msg)
 
     # Optional regularization.
-    reg_term = reg_coef * np.sum(q[7:]**2)
+    reg_term = reg_coef * np.sum(q[7:])
 
     # If only optimizing the root, set everything else to 0.
     if root_only:
@@ -52,13 +52,37 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
     # Add temporal regularization for arms.
     temp_reg_term = 0.
     if temporal_regularization:
-        temp_reg_term += (q[qs_to_opt] - q_prev[qs_to_opt])**2
+        temp_reg_term += (q[qs_to_opt] - q_prev[qs_to_opt])
         if q_next is not None:
-            temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt])**2
+            temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt])
 
-    residual = (kp_data.T - q_joints_to_markers(q, physics, sites))
-    return (.5 * np.sum(residual**2) + reg_term +
-            params['temporal_reg_coef'] * temp_reg_term)
+    residual = kp_data.T - q_joints_to_markers(q, physics, sites)
+    return np.sum(np.abs(residual))
+    # # return residual + reg_term + params['temporal_reg_coef'] * temp_reg_term
+        # Optional regularization.
+
+    # reg_term = reg_coef * np.sum(q[7:]**2)
+
+    # # If only optimizing the root, set everything else to 0.
+    # if root_only:
+    #     q[7:] = 0.
+
+    # # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
+    # if qs_to_opt is not None:
+    #     q_copy[qs_to_opt] = q
+    #     q = np.copy(q_copy)
+
+    # # Add temporal regularization for arms.
+    # temp_reg_term = 0.
+    # if temporal_regularization:
+    #     temp_reg_term += (q[qs_to_opt] - q_prev[qs_to_opt])**2
+    #     if q_next is not None:
+    #         temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt])**2
+
+    # residual = (kp_data.T - q_joints_to_markers(q, physics, sites))
+    # return (.5 * np.sum(residual))
+    # # return (.5 * np.sum(residual) + reg_term +
+    # #         params['temporal_reg_coef'] * temp_reg_term)
 
 
 def q_joints_to_markers(q, physics, sites):
@@ -170,6 +194,21 @@ def m_loss(offset, physics, kp_data, time_indices, sites, q, initial_offsets,
     :param is_regularized: binary vector of offsets to regularize.
     :param reg_coef: L1 regularization coefficient during marker loss.
     """
+
+    # # Get the sum of distances over time for each marker
+    # residual = []
+    # reg_term = np.zeros_like(offset)
+    # reg_term = np.zeros_like(offset)
+    # for i, frame in enumerate(time_indices):
+    #     physics.named.data.qpos[:] = q[frame].copy()
+
+    #     # Get the offset relative to the initial position, only for
+    #     # markers you wish to regularize
+    #     reg_term += (offset - initial_offsets.flatten()) * is_regularized
+    #     diff += kp_data[i, :].T - m_joints_to_markers(offset, physics, sites)
+    # residual = diff + reg_term * reg_coef
+
+    # return np.array(residual)
     residual = 0
     reg_term = 0
     for i, frame in enumerate(time_indices):
@@ -181,7 +220,6 @@ def m_loss(offset, physics, kp_data, time_indices, sites, q, initial_offsets,
         residual += \
             (kp_data[i, :].T - m_joints_to_markers(offset, physics, sites))**2
     return .5 * np.sum(residual) + reg_coef * np.sum(reg_term)
-
 
 def m_joints_to_markers(offset, physics, sites):
     """Convert site information to marker information.

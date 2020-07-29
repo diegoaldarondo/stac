@@ -43,7 +43,7 @@ def load_kp_data_from_file(filename, struct_name='markers_preproc', start_frame=
     except OSError:
         data = loadmat(filename)
         data = data["predictions"] 
-        kp_names = [k for k in data.dtype.names if 'Shin' not in k]
+        kp_names = [k for k in data.dtype.names if not any([n in k for n in ['Shin', 'Elbow']])]
         kp_names.sort()
         if start_frame is None:
             kp_data = np.concatenate([data[name][0, 0] for name in kp_names], axis=1)
