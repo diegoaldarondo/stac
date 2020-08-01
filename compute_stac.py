@@ -43,20 +43,6 @@ def preprocess_snippet(kp_data, kp_names, params):
     """Preprocess snippet data."""
     kp_data = kp_data / _MM_TO_METERS
 
-    # spineM_id = np.argwhere([name == 'SpineM' for name in kp_names])
-    # reference = np.squeeze(kp_data[:, spineM_id * 3 + np.array([0, 1, 2])])
-
-    # reference = np.reshape(kp_data, (kp_data.shape[0], 3, -1))
-    # reference = np.mean(reference, axis=2)
-
-    # # Rescale by centering at spineM, scaling, and decentering
-    # for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
-    #     kp_data[:, dim * 3 + np.array([0, 1, 2])] -= reference
-    # kp_data *= params['scale_factor']
-    # reference *= params['scale_factor']
-    # for dim in range(np.round(kp_data.shape[1] / 3).astype('int32')):
-    #     kp_data[:, dim * 3 + np.array([0, 1, 2])] += reference
-
     # Downsample
     kp_data = _downsample(kp_data, params, orig_freq=30.0)
 
@@ -95,19 +81,16 @@ def preprocess_data(
 
 
 def initial_optimization(env, initial_offsets, params, maxiter=100):
-    """Optimize the first frame with alternating q and m phase."""
-    # for i in range(params['n_frames']):
+    """Optimize the first frame with alternating q and m phase.
+    :params env: Environment
+    :params initial_offsets: Vector of starting offsets for initial q_phase
+    :params params: parameter dictionary
+    :params maxiter: Maximum number of iterations for m-phase optimization
+    """
+    # Initial q-phase optimization to get joints into approximate position.
     q, _, _ = q_clip_iso(env, params)
-    # stac.q_phase(env.physics, env.task.kp_data[0, :],
-    #              env.task._walker.body_sites, params, root_only=True)
-    # q  = [env.physics.named.data.qpos[:].copy()]
-    # Optional visualization
-    # if params['visualize']:
-    #     env.task.precomp_qpos = q
-    #     env.task.render_video = params['render_video']
-    #     viewer.launch(env)
-    #     if env.task.V is not None:
-    #         env.task.V.release()
+
+    # Initial m-phase optimization to calibrate offsets
     stac.m_phase(
         env.physics,
         env.task.kp_data,
@@ -119,12 +102,6 @@ def initial_optimization(env, initial_offsets, params, maxiter=100):
         reg_coef=params["m_reg_coef"],
         maxiter=maxiter,
     )
-    # if params['visualize']:
-    #     env.task.precomp_qpos = q
-    #     env.task.render_video = params['render_video']
-    #     viewer.launch(env)
-    #     if env.task.V is not None:
-    #         env.task.V.release()
 
 
 def root_optimization(env, params):
