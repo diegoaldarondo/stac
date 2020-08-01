@@ -169,7 +169,7 @@ class ViewMocap(composer.Task):
         """Grab a frame from the simulation using render and opencv."""
         # Get RGB rendering of env
         scene_option = wrapper.MjvOption()
-        scene_option.geomgroup[2] = 0
+        # scene_option.geomgroup[2] = 0
         scene_option._ptr.contents.flags[
             enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
         rgbArr = physics.render(self.height, self.width,
