@@ -8,9 +8,21 @@ class _TestNoneArgs(BaseException):
     pass
 
 
-def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
-           reg_coef=0., root_only=False, temporal_regularization=False,
-           q_prev=None, q_next=None, kps_to_opt=None):
+def q_loss(
+    q,
+    physics,
+    kp_data,
+    sites,
+    params,
+    qs_to_opt=None,
+    q_copy=None,
+    reg_coef=0.0,
+    root_only=False,
+    temporal_regularization=False,
+    q_prev=None,
+    q_next=None,
+    kps_to_opt=None,
+):
     """Compute the marker loss for q_phase optimization.
 
     :param physics: Physics of current environment.
@@ -29,11 +41,11 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
                    regularization.
     """
     if temporal_regularization:
-        error_msg = ' cannot be None if using temporal regularization'
+        error_msg = " cannot be None if using temporal regularization"
         if qs_to_opt is None:
-            raise _TestNoneArgs('qs_to_opt' + error_msg)
+            raise _TestNoneArgs("qs_to_opt" + error_msg)
         if q_prev is None:
-            raise _TestNoneArgs('q_prev' + error_msg)
+            raise _TestNoneArgs("q_prev" + error_msg)
         # if q_next is None:
         #     raise _TestNoneArgs('q_next' + error_msg)
 
@@ -42,7 +54,7 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
 
     # If only optimizing the root, set everything else to 0.
     if root_only:
-        q[7:] = 0.
+        q[7:] = 0.0
 
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     if qs_to_opt is not None:
@@ -50,18 +62,18 @@ def q_loss(q, physics, kp_data, sites, params, qs_to_opt=None, q_copy=None,
         q = np.copy(q_copy)
 
     # Add temporal regularization for arms.
-    temp_reg_term = 0.
+    temp_reg_term = 0.0
     if temporal_regularization:
-        temp_reg_term += (q[qs_to_opt] - q_prev[qs_to_opt])
+        temp_reg_term += q[qs_to_opt] - q_prev[qs_to_opt]
         if q_next is not None:
-            temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt])
+            temp_reg_term += q[qs_to_opt] - q_next[qs_to_opt]
 
     residual = kp_data.T - q_joints_to_markers(q, physics, sites)
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
-    return np.sqrt(np.sum(residual**2))
+    return np.sqrt(np.sum(residual ** 2))
     # # return residual + reg_term + params['temporal_reg_coef'] * temp_reg_term
-        # Optional regularization.
+    # Optional regularization.
 
     # reg_term = reg_coef * np.sum(q[7:]**2)
 
@@ -106,9 +118,19 @@ def q_joints_to_markers(q, physics, sites):
     return return_value.flatten()
 
 
-def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
-            qs_to_opt=None, kps_to_opt=None, root_only=False, temporal_regularization=False,
-            q_prev=None, q_next=None):
+def q_phase(
+    physics,
+    marker_ref_arr,
+    sites,
+    params,
+    reg_coef=0.0,
+    qs_to_opt=None,
+    kps_to_opt=None,
+    root_only=False,
+    temporal_regularization=False,
+    q_prev=None,
+    q_next=None,
+):
     """Update q_pose using estimated marker parameters.
 
     :param physics: Physics of current environment.
@@ -120,11 +142,9 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
     :param root_only: If True, only optimize the root.
     :param temporal_regularization: If True, regularize arm joints over time.
     """
-    lb = np.concatenate(
-        [-np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 0]])
+    lb = np.concatenate([-np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 0]])
     lb = np.minimum(lb, 0.0)
-    ub = np.concatenate(
-        [np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 1]])
+    ub = np.concatenate([np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 1]])
 
     # Define initial position of the optimization
     q0 = np.copy(physics.named.data.qpos[:])
@@ -147,24 +167,34 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
 
     # Use different tolerances for root vs normal optimization
     if root_only:
-        ftol = params['_ROOT_FTOL']
+        ftol = params["_ROOT_FTOL"]
     elif qs_to_opt is not None:
-        ftol = params['_LIMB_FTOL']
+        ftol = params["_LIMB_FTOL"]
     else:
-        ftol = params['_FTOL']
+        ftol = params["_FTOL"]
     try:
         q_opt_param = scipy.optimize.least_squares(
-            lambda q: q_loss(q, physics, marker_ref_arr, sites, params,
-                             qs_to_opt=qs_to_opt,
-                             q_copy=q_copy,
-                             reg_coef=reg_coef,
-                             root_only=root_only,
-                             temporal_regularization=temporal_regularization,
-                             q_prev=q_prev,
-                             q_next=q_next,
-                             kps_to_opt=kps_to_opt),
-            q0, bounds=(lb, ub), ftol=ftol, diff_step=params['_DIFF_STEP'],
-            verbose=0)
+            lambda q: q_loss(
+                q,
+                physics,
+                marker_ref_arr,
+                sites,
+                params,
+                qs_to_opt=qs_to_opt,
+                q_copy=q_copy,
+                reg_coef=reg_coef,
+                root_only=root_only,
+                temporal_regularization=temporal_regularization,
+                q_prev=q_prev,
+                q_next=q_next,
+                kps_to_opt=kps_to_opt,
+            ),
+            q0,
+            bounds=(lb, ub),
+            ftol=ftol,
+            diff_step=params["_DIFF_STEP"],
+            verbose=0,
+        )
 
         # Set pose to the optimized q and step forward.
         if qs_to_opt is None:
@@ -176,14 +206,23 @@ def q_phase(physics, marker_ref_arr, sites, params, reg_coef=0.,
         mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
 
     except ValueError:
-        print('Warning: optimization failed.', flush=True)
-        q_copy[np.isnan(q_copy)] = 0.
+        print("Warning: optimization failed.", flush=True)
+        q_copy[np.isnan(q_copy)] = 0.0
         physics.named.data.qpos[:] = q_copy.copy()
         mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
 
 
-def m_loss(offset, physics, kp_data, time_indices, sites, q, initial_offsets,
-           is_regularized=None, reg_coef=0.):
+def m_loss(
+    offset,
+    physics,
+    kp_data,
+    time_indices,
+    sites,
+    q,
+    initial_offsets,
+    is_regularized=None,
+    reg_coef=0.0,
+):
     """Compute the marker loss for optimization.
 
     :param offset: vector of offsets from rat bodies to inferred
@@ -219,10 +258,10 @@ def m_loss(offset, physics, kp_data, time_indices, sites, q, initial_offsets,
 
         # Get the offset relative to the initial position, only for
         # markers you wish to regularize
-        reg_term += ((offset - initial_offsets.flatten())**2) * is_regularized
-        residual += \
-            (kp_data[i, :].T - m_joints_to_markers(offset, physics, sites))**2
+        reg_term += ((offset - initial_offsets.flatten()) ** 2) * is_regularized
+        residual += (kp_data[i, :].T - m_joints_to_markers(offset, physics, sites)) ** 2
     return np.sum(residual) + reg_coef * np.sum(reg_term)
+
 
 def m_joints_to_markers(offset, physics, sites):
     """Convert site information to marker information.
@@ -243,8 +282,17 @@ def m_joints_to_markers(offset, physics, sites):
     return return_value.flatten()
 
 
-def m_phase(physics, kp_data, sites, time_indices, q, initial_offsets, params,
-            reg_coef=0., maxiter=5):
+def m_phase(
+    physics,
+    kp_data,
+    sites,
+    time_indices,
+    q,
+    initial_offsets,
+    params,
+    reg_coef=0.0,
+    maxiter=5,
+):
     """Estimate marker offset, keeping qpose fixed.
 
     :param physics: Physics of current environment.
@@ -264,19 +312,27 @@ def m_phase(physics, kp_data, sites, time_indices, q, initial_offsets, params,
     # offsets will be regularized or not.
     is_regularized = []
     for site in sites:
-        if any(n in site.name for n in params['_SITES_TO_REGULARIZE']):
-            is_regularized.append(np.array([1., 1., 1.]))
+        if any(n in site.name for n in params["_SITES_TO_REGULARIZE"]):
+            is_regularized.append(np.array([1.0, 1.0, 1.0]))
         else:
-            is_regularized.append(np.array([0., 0., 0.]))
+            is_regularized.append(np.array([0.0, 0.0, 0.0]))
     is_regularized = np.stack(is_regularized).flatten()
 
     # Optimize dm
     offset_opt_param = scipy.optimize.minimize(
-        lambda offset: m_loss(offset, physics, kp_data[time_indices, :],
-                              time_indices, sites, q, initial_offsets,
-                              is_regularized=is_regularized,
-                              reg_coef=reg_coef),
-        offset0, options={'maxiter': maxiter}
+        lambda offset: m_loss(
+            offset,
+            physics,
+            kp_data[time_indices, :],
+            time_indices,
+            sites,
+            q,
+            initial_offsets,
+            is_regularized=is_regularized,
+            reg_coef=reg_coef,
+        ),
+        offset0,
+        options={"maxiter": maxiter},
     )
 
     # Set pose to the optimized m and step forward.
