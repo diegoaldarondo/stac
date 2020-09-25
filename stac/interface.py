@@ -71,7 +71,7 @@ def submit():
     n_jobs = len(start_frames)
     print("Number of jobs: ", n_jobs)
     cmd = (
-        "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_stac_single_batch.sh %s"
+        "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
         % (n_jobs - 1, param_path)
     )
     print(cmd)
@@ -116,7 +116,7 @@ def submit_unfinished():
     n_jobs = len(commands)
     print("Number of jobs: ", n_jobs)
     cmd = (
-        "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_stac_single_batch.sh %s"
+        "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
         % (n_jobs - 1, run_param_path)
     )
     print(cmd)
