@@ -4,6 +4,14 @@ from setuptools import setup
 setup(
     name="stac",
     version="0.0.1",
+    packages=find_packages(),
+    scripts=['cluster/submit_stac_single_batch.sh'],
+    entry_points={
+        "console_scripts": [
+            "stac-submit = stac.interface:submit",
+            "stac-submit-unfinished = stac.interface:submit_unfinished",
+            "stac-compute-single-batch = stac.interface:compute_single_batch",
+        ]
     install_requires=[
         "six >= 1.12.0",
         "clize >= 4.0.3",
