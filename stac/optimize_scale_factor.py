@@ -1,11 +1,11 @@
 """Automatically estimate optimal individual scaling factor."""
 import clize
-import rodent_environments
+import stac.rodent_environments as rodent_environments 
 import numpy as np
 import util
 import yaml
 import scipy.optimize
-import compute_stac
+import stac.compute_stac as compute_stac
 
 _MM_TO_METERS = 1000
 

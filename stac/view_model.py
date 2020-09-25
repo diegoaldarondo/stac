@@ -1,9 +1,9 @@
 """View the base model."""
 from dm_control import viewer
 import clize
-import rodent_environments
+import stac.rodent_environments as rodent_environments
 import numpy as np
-import util
+import stac.util as util
 
 
 def view_model(*, param_path="./params/july15/JDM25.yaml"):

@@ -4,9 +4,9 @@ from __future__ import division
 from __future__ import print_function
 from dm_control import composer
 from dm_control.locomotion.arenas import floors
-import walkers
-import tasks
-import arenas
+import stac.walkers as walkers
+import stac.tasks as tasks
+import stac.arenas as arenas
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)

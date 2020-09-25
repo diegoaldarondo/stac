@@ -9,4 +9,4 @@
 #SBATCH -e logs/Job.compute_stac.%N.%j.err    # STDERR
 setup_mujoco200_3.7
 stac_path="/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac"
-python $stac_path/batch_compute_stac_clip_singularity.py $1
+stac-compute-single-batch $1

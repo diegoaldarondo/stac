@@ -4,13 +4,13 @@ from scipy.io import savemat
 from dm_control.locomotion.walkers import rescale
 import scipy.ndimage
 import clize
-import stac
-import rodent_environments
+import stac.stac as stac
+import stac.rodent_environments as rodent_environments 
 import numpy as np
-import util
+import stac.util as util
 import pickle
 import os
-import tasks
+import stac.tasks as tasks
 
 _MM_TO_METERS = 1000
 

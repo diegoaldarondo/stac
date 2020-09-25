@@ -1,12 +1,11 @@
 """View stac results."""
 from dm_control import viewer
-from dm_control import viewer
 from dm_control.locomotion.walkers import rescale
 import clize
 import rodent_environments
 import numpy as np
 import pickle
-import util
+import stac.util as util
 
 
 def load_data(data_path, start_frame=0, end_frame=-1):
