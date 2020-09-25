@@ -8,15 +8,15 @@ from scipy.io import loadmat
 
 
 def load_params(param_path):
-    with open(param_path, "rb") as f:
-        params = yaml.safe_load(f)
+    with open(param_path, "rb") as file:
+        params = yaml.safe_load(file)
     return params
 
 
 def get_unfinished(base_folder, start_frames):
     is_unfinished = []
-    for i, sf in enumerate(start_frames):
-        if not os.path.exists(os.path.join(base_folder, "%d.p" % (sf))):
+    for start_frame in start_frames:
+        if not os.path.exists(os.path.join(base_folder, "%d.p" % (start_frame))):
             is_unfinished.append(True)
         else:
             is_unfinished.append(False)
@@ -45,102 +45,105 @@ def get_clip_duration(data_path):
     #     clip_duration = f["predictions"]["ArmL"].shape[1]
     return clip_duration
 
-
-# Print to std out if just asking for the number of commands
-# (for sbatch --array=0-$print_num_commands ...)
-if __name__ == "__main__":
-    valid_options = any(
-        [option in sys.argv[1] for option in ["--submit", "--submit-unfinished"]]
+def submit():
+    param_path = sys.argv[1]
+    params = load_params(param_path)
+    if params["clip_duration"] is None:
+        params["clip_duration"] = get_clip_duration(params["data_path"])
+    start_frames = np.arange(
+        0, params["clip_duration"], params["snippet_duration"]
     )
-    if len(sys.argv) >= 2 and valid_options:
-        if sys.argv[1] == "--submit":
-            param_path = sys.argv[2]
-            params = load_params(param_path)
-            if params["clip_duration"] is None:
-                params["clip_duration"] = get_clip_duration(params["data_path"])
-            start_frames = np.arange(
-                0, params["clip_duration"], params["snippet_duration"]
-            )
-            end_frames = start_frames + params["snippet_duration"]
-            save_variables(params["temp_file_name"], start_frames, end_frames)
-            n_jobs = len(start_frames)
-            print("Number of jobs: ", n_jobs)
-            cmd = (
-                "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_compute_stac_clip.sh %s"
-                % (n_jobs - 1, param_path)
-            )
-            print(cmd)
-            # os.system(cmd)
+    end_frames = start_frames + params["snippet_duration"]
+    commands = []
+    for i in range(len(start_frames)):
+        commands.append(
+                        {
+                            "start_frame": start_frames[i],
+                            "end_frame": end_frames[i],
+                            "clip_duration": params["clip_duration"],
+                            "base_folder": params["base_folder"],
+                            "data_path": params["data_path"],
+                            "param_path": param_path,
+                            "offset_path": params["offset_path"],
+                        }
+                    )
+    save_variables(params["temp_file_name"], commands)
+    n_jobs = len(start_frames)
+    print("Number of jobs: ", n_jobs)
+    cmd = (
+        "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_stac_single_batch.sh %s"
+        % (n_jobs - 1, param_path)
+    )
+    print(cmd)
+    # os.system(cmd)
 
-        if sys.argv[1] == "--submit-unfinished":
-            run_param_path = sys.argv[2]
-            params = load_params(run_param_path)
+def submit_unfinished():
+    run_param_path = sys.argv[1]
+    params = load_params(run_param_path)
 
-            # For every file in base_folder and data_path, break it up into chunks
-            commands = []
-            for base_folder, data_path, param_path in zip(
-                params["base_folder"], params["data_path"], params["param_path"]
-            ):
-                params["clip_duration"] = get_clip_duration(data_path)
+    # For every file in base_folder and data_path, break it up into chunks
+    commands = []
+    for base_folder, data_path, param_path in zip(
+        params["base_folder"], params["data_path"], params["param_path"]
+    ):
+        params["clip_duration"] = get_clip_duration(data_path)
 
-                start_frames = np.arange(
-                    0, params["clip_duration"], params["snippet_duration"]
+        start_frames = np.arange(
+            0, params["clip_duration"], params["snippet_duration"]
+        )
+        # start_frames = start_frames[0:2]
+        end_frames = start_frames + params["snippet_duration"]
+        is_unfinished = get_unfinished(base_folder, start_frames)
+
+        for i, v in enumerate(is_unfinished):
+            if v:
+                commands.append(
+                    {
+                        "start_frame": start_frames[i],
+                        "end_frame": end_frames[i],
+                        "clip_duration": params["clip_duration"],
+                        "base_folder": base_folder,
+                        "data_path": data_path,
+                        "param_path": param_path,
+                        "offset_path": params["offset_path"],
+                    }
                 )
-                # start_frames = start_frames[0:2]
-                end_frames = start_frames + params["snippet_duration"]
-                is_unfinished = get_unfinished(base_folder, start_frames)
 
-                for i, v in enumerate(is_unfinished):
-                    if v:
-                        commands.append(
-                            {
-                                "start_frame": start_frames[i],
-                                "end_frame": end_frames[i],
-                                "clip_duration": params["clip_duration"],
-                                "base_folder": base_folder,
-                                "data_path": data_path,
-                                "param_path": param_path,
-                                "offset_path": params["offset_path"],
-                            }
-                        )
+    # start_frames = start_frames[:2]
+    # end_frames = end_frames[:2]
+    # commands = commands[0:2]
+    save_variables(params["temp_file_name"], commands)
+    n_jobs = len(commands)
+    print("Number of jobs: ", n_jobs)
+    cmd = (
+        "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_stac_single_batch.sh %s"
+        % (n_jobs - 1, run_param_path)
+    )
+    print(cmd)
+    os.system(cmd)
 
-            # start_frames = start_frames[:2]
-            # end_frames = end_frames[:2]
-            # commands = commands[0:2]
-            save_variables(params["temp_file_name"], commands)
-            n_jobs = len(commands)
-            print("Number of jobs: ", n_jobs)
-            cmd = (
-                "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 cluster/submit_compute_stac_clip.sh %s"
-                % (n_jobs - 1, run_param_path)
-            )
-            print(cmd)
-            os.system(cmd)
+def compute_single_batch():
+    import compute_stac
+    run_param_path = sys.argv[1]
+    params = load_params(run_param_path)
+    task_id = int(os.getenv("SLURM_ARRAY_TASK_ID"))
+    # task_id = 0
 
-    # Otherwise, run the command for the appropriate job id
-    elif len(sys.argv) == 2 and os.path.splitext(sys.argv[1])[-1] == ".yaml":
-        import compute_stac
-
-        run_param_path = sys.argv[1]
-        params = load_params(run_param_path)
-        task_id = int(os.getenv("SLURM_ARRAY_TASK_ID"))
-        # task_id = 0
-
-        commands = load_variables(params["temp_file_name"])
-        command = commands[task_id]
-        save_path = os.path.join(
-            command["base_folder"], "%d.p" % (command["start_frame"])
-        )
-        print(command)
-        print(save_path)
-        compute_stac.handle_args(
-            command["data_path"],
-            command["param_path"],
-            save_path=save_path,
-            offset_path=command["offset_path"],
-            verbose=True,
-            process_snippet=False,
-            start_frame=command["start_frame"],
-            end_frame=command["end_frame"],
-            skip=1,
-        )
+    commands = load_variables(params["temp_file_name"])
+    command = commands[task_id]
+    save_path = os.path.join(
+        command["base_folder"], "%d.p" % (command["start_frame"])
+    )
+    print(command)
+    print(save_path)
+    compute_stac.handle_args(
+        command["data_path"],
+        command["param_path"],
+        save_path=save_path,
+        offset_path=command["offset_path"],
+        verbose=True,
+        process_snippet=False,
+        start_frame=command["start_frame"],
+        end_frame=command["end_frame"],
+        skip=1,
+    )
