@@ -34,8 +34,8 @@ def _smooth(kp_data, kp_names, sigma=1):
     ids = np.argwhere(
         [any(part in name for name in kp_names) for part in parts_to_smooth]
     )
-    for id in ids:
-        kp_data[:, id] = scipy.ndimage.gaussian_filter1d(kp_data[:, id], sigma, axis=0)
+    for n_marker in ids:
+        kp_data[:, n_marker] = scipy.ndimage.gaussian_filter1d(kp_data[:, n_marker], sigma, axis=0)
     return kp_data
 
 
