@@ -51,15 +51,15 @@ def q_loss(
         #     raise _TestNoneArgs('q_next' + error_msg)
 
     # Optional regularization.
-    reg_term = reg_coef * np.sum(q[7:])
+    # reg_term = reg_coef * np.sum(q[7:])
 
-    # If only optimizing the root, set everything else to 0.
-    if root_only:
-        q[7:] = 0.0
+    # # If only optimizing the root, set everything else to 0.
+    # if root_only:
+    #     q[7:] = 0.0
 
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     if qs_to_opt is not None:
-        q_copy[qs_to_opt] = q
+        q_copy[qs_to_opt] = q.copy()
         q = np.copy(q_copy)
 
     # Add temporal regularization for arms.
@@ -72,9 +72,15 @@ def q_loss(
     residual = kp_data.T - q_joints_to_markers(q, physics, sites)
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
-    return np.sqrt(np.sum(residual ** 2)) + params["temporal_reg_coef"] * np.sqrt(
-        temp_reg_term
-    )
+
+    # loss = np.sqrt(np.sum(residual ** 2)) + params["temporal_reg_coef"] * np.sqrt(
+    #     temp_reg_term
+    # )
+    # loss = np.sqrt(np.sum(residual ** 2)) + params["temporal_reg_coef"] * np.sqrt(
+    #     temp_reg_term
+    # )
+    loss = residual
+    return loss
 
 
 def q_joints_to_markers(q, physics, sites):
@@ -105,9 +111,11 @@ def q_phase(
     qs_to_opt=None,
     kps_to_opt=None,
     root_only=False,
+    trunk_only=False,
     temporal_regularization=False,
     q_prev=None,
     q_next=None,
+    ftol=None,
 ):
     """Update q_pose using estimated marker parameters.
 
@@ -124,7 +132,6 @@ def q_phase(
     lb = np.concatenate([-np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 0]])
     lb = np.minimum(lb, 0.0)
     ub = np.concatenate([np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 1]])
-
     # Define initial position of the optimization
     q0 = np.copy(physics.named.data.qpos[:])
     q_copy = np.copy(q0)
@@ -134,8 +141,14 @@ def q_phase(
     # The center is not necessarily from 12:15 depending on struct ordering.
     # This probably won't be a problem, as it is just an ititialization for the
     # optimizer, but keep it in mind.
+    if root_only or trunk_only:
+        q0[:3] = marker_ref_arr[57:]
+        diff_step = params['_ROOT_DIFF_STEP']
+    else:
+        diff_step = params['_DIFF_STEP']
     if root_only:
-        q0[:3] = marker_ref_arr[12:15]
+        qs_to_opt = np.zeros_like(q0, dtype=np.bool)
+        qs_to_opt[:7] = True
 
     # If you only want to optimize a subset of qposes,
     # limit the optimizer to that
@@ -145,12 +158,13 @@ def q_phase(
         ub = ub[qs_to_opt]
 
     # Use different tolerances for root vs normal optimization
-    if root_only:
-        ftol = params["_ROOT_FTOL"]
-    elif qs_to_opt is not None:
-        ftol = params["_LIMB_FTOL"]
-    else:
-        ftol = params["_FTOL"]
+    if ftol is None:
+        if root_only:
+            ftol = params["_ROOT_FTOL"]
+        elif qs_to_opt is not None:
+            ftol = params["_LIMB_FTOL"]
+        else:
+            ftol = params["_FTOL"]
     try:
         q_opt_param = scipy.optimize.least_squares(
             lambda q: q_loss(
@@ -171,7 +185,8 @@ def q_phase(
             q0,
             bounds=(lb, ub),
             ftol=ftol,
-            diff_step=params["_DIFF_STEP"],
+            diff_step=diff_step,
+            # loss='soft_l1',
             verbose=0,
         )
 
@@ -255,7 +270,7 @@ def m_phase(
     initial_offsets,
     params,
     reg_coef=0.0,
-    maxiter=5,
+    maxiter=50,
 ):
     """Estimate marker offset, keeping qpose fixed.
 
@@ -296,6 +311,7 @@ def m_phase(
             reg_coef=reg_coef,
         ),
         offset0,
+        # tol=params['_ROOT_FTOL'],
         options={"maxiter": maxiter},
     )
 
@@ -304,5 +320,5 @@ def m_phase(
 
     # Forward kinematics, and save the results to the walker sites as well
     mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
-    for id, p in enumerate(physics.bind(sites).pos):
-        sites[id].pos = p
+    for n_site, p in enumerate(physics.bind(sites).pos):
+        sites[n_site].pos = p

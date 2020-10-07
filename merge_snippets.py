@@ -22,7 +22,11 @@ def get_chunk_data(chunk_path):
 
 def merge(folder, *, save_path=None):
     """Merge snippets into a contiguous file."""
-    files = [f for f in os.listdir(folder) if (".p" in f) and ("total" not in f)]
+    files = [
+        f
+        for f in os.listdir(folder)
+        if (".p" in f) and ("total" not in f and "offset" not in f)
+    ]
     files = sorted(files, key=_sort_fn)
 
     q, x, kp_data = [], [], []
@@ -53,7 +57,7 @@ def merge(folder, *, save_path=None):
     if save_path is None:
         save_path = os.path.join(folder, "total.p")
     with open(save_path, "wb") as f:
-        pickle.dump(out_dict, f, protocol=2)
+        pickle.dump(out_dict, f, protocol=4)
 
 
 if __name__ == "__main__":

@@ -142,6 +142,7 @@
   </default>
   <visual>
     <quality shadowsize="2048"/>
+    <global offwidth="736"/>
   </visual>
   <statistic meansize="0.003"/>
   <asset>

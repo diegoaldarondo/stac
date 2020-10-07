@@ -31,17 +31,18 @@ def load_kp_data_from_file(
         with h5py.File(filename, "r") as f:
             data = f["mocapstruct_here"][struct_name]
             kp_names = [k for k in data.keys()]
-
-        # Concatenate the data for each keypoint, and format to (t x n_dims)
-        if start_frame is None:
-            kp_data = np.concatenate([data[name][:] for name in kp_names]).T
-        else:
-            markers = []
-            for name in kp_names:
-                print(name, flush=True)
-                m = data[name][:]
-                markers.append(m[:, start_frame:end_frame])
-            kp_data = np.concatenate(markers).T
+            print(kp_names, flush=True)
+            
+            # Concatenate the data for each keypoint, and format to (t x n_dims)
+            if start_frame is None:
+                kp_data = np.concatenate([data[name][:] for name in kp_names]).T
+            else:
+                markers = []
+                for name in kp_names:
+                    print(name, flush=True)
+                    m = data[name][:]
+                    markers.append(m[:, start_frame:end_frame])
+                kp_data = np.concatenate(markers).T
     except OSError:
         data = loadmat(filename)
         data = data["predictions"]
@@ -63,7 +64,10 @@ def load_snippets_from_file(filename):
         try:
             data = f["data"]
         except KeyError:
-            data = f["preproc_mocap"]
+            try:
+                data = f["preproc_mocap"]
+            except KeyError:
+                data = f["markers_preproc"]
         kp_names = [k for k in data.keys()]
         # Concatenate the data for each keypoint,
         # and format to (t x n_dims)

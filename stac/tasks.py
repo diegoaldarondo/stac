@@ -194,14 +194,14 @@ class ViewMocap(composer.Task):
         physics.named.data.qpos[name] = q
         mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
         if "_L" in name:
-            dir = "_L"
+            direction = "_L"
         else:
-            dir = "_R"
+            direction = "_R"
 
         if "ankle" in name:
-            R = physics.named.data.xmat["walker/foot" + dir]
+            R = physics.named.data.xmat["walker/foot" + direction]
         elif "wrist" in name:
-            R = physics.named.data.xmat["walker/hand" + dir]
+            R = physics.named.data.xmat["walker/hand" + direction]
         else:
             R = physics.named.data.xmat[name]
 
@@ -224,7 +224,7 @@ class ViewMocap(composer.Task):
             physics.named.data.qpos["walker/mandible"] = self.params["_MANDIBLE_POS"]
 
             # Make certain parts parallel to the floor for cosmetics
-            for id, name in enumerate(physics.named.data.qpos.axes.row.names):
+            for i, name in enumerate(physics.named.data.qpos.axes.row.names):
                 if any(part in name for part in self.params["_PARTS_TO_ZERO"]):
                     # Doing it through optimization is pretty easy, but a hack
                     q0 = physics.named.data.qpos[name].copy()
@@ -240,15 +240,15 @@ class ViewMocap(composer.Task):
             # Forward kinematics for rendering
             mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
 
-        if self.render_video:
-            if self.V is None:
-                self.V = cv2.VideoWriter(
-                    self.video_name,
-                    cv2.VideoWriter_fourcc(*"mp4v"),
-                    self.fps,
-                    (self.width, self.height),
-                )
-            self.V.write(self.grab_frame(physics))
+        # if self.render_video:
+        #     if self.V is None:
+        #         self.V = cv2.VideoWriter(
+        #             self.video_name,
+        #             cv2.VideoWriter_fourcc(*"mp4v"),
+        #             self.fps,
+        #             (self.width, self.height),
+        #         )
+        #     self.V.write(self.grab_frame(physics))
 
 
 class ViewMocap_Hfield(ViewMocap):

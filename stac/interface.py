@@ -36,13 +36,13 @@ def load_variables(save_path):
 
 
 def get_clip_duration(data_path):
-    M = loadmat(data_path)
-    clip_duration = M["predictions"]["ArmL"][0, 0].shape[0]
-    # import pdb
-    # pdb.set_trace()
-    # with h5py.File(data_path, "r") as f:
-    #     # clip_duration = f['mocapstruct_here']['markers_preproc']['ArmL'].shape[1]
-    #     clip_duration = f["predictions"]["ArmL"].shape[1]
+    try:
+        M = loadmat(data_path)
+        clip_duration = M["predictions"]["ArmL"][0, 0].shape[0]
+    except (NotImplementedError, FileNotFoundError):
+        with h5py.File(data_path, "r") as f:
+            clip_duration = f['mocapstruct_here']['markers_preproc']['ArmL'].shape[1]
+            # clip_duration = f["predictions"]["ArmL"].shape[1]
     return clip_duration
 
 def submit():
@@ -53,6 +53,7 @@ def submit():
     start_frames = np.arange(
         0, params["clip_duration"], params["snippet_duration"]
     )
+    # start_frames = start_frames[:5]
     end_frames = start_frames + params["snippet_duration"]
     commands = []
     for i in range(len(start_frames)):
@@ -63,28 +64,28 @@ def submit():
                             "clip_duration": params["clip_duration"],
                             "base_folder": params["base_folder"],
                             "data_path": params["data_path"],
-                            "param_path": param_path,
+                            "param_path": params["param_path"],
                             "offset_path": params["offset_path"],
                         }
                     )
+
     save_variables(params["temp_file_name"], commands)
     n_jobs = len(start_frames)
     print("Number of jobs: ", n_jobs)
     cmd = (
-        "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
+        "sbatch --array=0-%d --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
         % (n_jobs - 1, param_path)
     )
     print(cmd)
-    # os.system(cmd)
+    os.system(cmd)
 
 def submit_unfinished():
     run_param_path = sys.argv[1]
     params = load_params(run_param_path)
-
     # For every file in base_folder and data_path, break it up into chunks
     commands = []
     for base_folder, data_path, param_path in zip(
-        params["base_folder"], params["data_path"], params["param_path"]
+        [params["base_folder"]], [params["data_path"]], [params["param_path"]]
     ):
         params["clip_duration"] = get_clip_duration(data_path)
 
@@ -116,14 +117,14 @@ def submit_unfinished():
     n_jobs = len(commands)
     print("Number of jobs: ", n_jobs)
     cmd = (
-        "sbatch --array=0-%d --partition=shared,olveczky,serial_requeue --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
+        "sbatch --array=0-%d --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
         % (n_jobs - 1, run_param_path)
     )
     print(cmd)
     os.system(cmd)
 
 def compute_single_batch():
-    import compute_stac
+    import stac.compute_stac as compute_stac
     run_param_path = sys.argv[1]
     params = load_params(run_param_path)
     task_id = int(os.getenv("SLURM_ARRAY_TASK_ID"))

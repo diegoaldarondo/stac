@@ -48,7 +48,7 @@ class Rat(legacy_base.Walker):
             parent = self._mjcf_root.find("body", v)
             pos = self.params["_KEYPOINT_INITIAL_OFFSETS"][key]
             site = parent.add(
-                "site", name=key, type="sphere", size=[0.005], rgba="0 0 0 1", pos=pos
+                "site", name=key, type="sphere", size=[0.005], rgba="0 0 0 1", pos=pos, group=3,
             )
             self.body_sites.append(site)
         super(Rat, self)._build(initializer=initializer)

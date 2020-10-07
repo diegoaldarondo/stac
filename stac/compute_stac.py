@@ -2,6 +2,7 @@
 from dm_control import viewer
 from scipy.io import savemat
 from dm_control.locomotion.walkers import rescale
+from dm_control.mujoco.wrapper.mjbindings import mjlib
 import scipy.ndimage
 import clize
 import stac.stac as stac
@@ -36,6 +37,7 @@ def _smooth(kp_data, kp_names, sigma=1):
     )
     for n_marker in ids:
         kp_data[:, n_marker] = scipy.ndimage.gaussian_filter1d(kp_data[:, n_marker], sigma, axis=0)
+        kp_data[:, n_marker] = scipy.signal.medfilt(kp_data[:, n_marker], [5, 1], axis=0)
     return kp_data
 
 
@@ -44,7 +46,7 @@ def preprocess_snippet(kp_data, kp_names, params):
     kp_data = kp_data / _MM_TO_METERS
 
     # Downsample
-    kp_data = _downsample(kp_data, params, orig_freq=30.0)
+    kp_data = _downsample(kp_data, params, orig_freq=300.0)
 
     # Smooth
     # kp_data = _smooth(kp_data, kp_names, sigma=.1)
@@ -87,6 +89,10 @@ def initial_optimization(env, initial_offsets, params, maxiter=100):
     :params params: parameter dictionary
     :params maxiter: Maximum number of iterations for m-phase optimization
     """
+    if params["verbose"]:
+        print("Root Optimization", flush=True)
+    root_optimization(env, params)
+
     # Initial q-phase optimization to get joints into approximate position.
     q, _, _ = q_clip_iso(env, params)
 
@@ -104,16 +110,48 @@ def initial_optimization(env, initial_offsets, params, maxiter=100):
     )
 
 
-def root_optimization(env, params):
+def root_optimization(env, params, frame=0):
     """Optimize only the root."""
     stac.q_phase(
         env.physics,
-        env.task.kp_data[0, :],
+        env.task.kp_data[frame, :],
         env.task._walker.body_sites,
         params,
         root_only=True,
     )
-
+    # First optimize over the trunk
+    trunk_kps = [
+        any([n in kp_name for n in ["Spine", "Hip", "Shoulder", "Offset"]])
+        for kp_name in params["kp_names"]
+    ]
+    trunk_kps = np.repeat(np.array(trunk_kps), 3)
+    stac.q_phase(
+        env.physics,
+        env.task.kp_data[frame, :],
+        env.task._walker.body_sites,
+        params,
+        root_only=True,
+        kps_to_opt=trunk_kps,
+    )
+    # # position_only = _get_part_ids(env, ['dummy'])
+    # # position_only[0:7] = True
+    # # stac.q_phase(
+    # #     env.physics,
+    # #     env.task.kp_data[frame, :],
+    # #     env.task._walker.body_sites,
+    # #     params,
+    # #     trunk_only=True,
+    # #     kps_to_opt=trunk_kps,
+    # #     qs_to_opt=position_only,
+    # # )
+    # stac.q_phase(
+    #     env.physics,
+    #     env.task.kp_data[frame, :],
+    #     env.task._walker.body_sites,
+    #     params,
+    #     trunk_only=True,
+    #     kps_to_opt=trunk_kps,
+    # )
 
 def q_clip(env, qs_to_opt, params):
     """Q-phase across the clip: optimize joint angles."""
@@ -165,11 +203,7 @@ def q_clip_iso(env, params):
     q = []
     x = []
     walker_body_sites = []
-    trunk_kps = [
-        any([n in kp_name for n in ["Spine", "Hip", "Shoulder", "Offset"]])
-        for kp_name in params["kp_names"]
-    ]
-    trunk_kps = np.repeat(np.array(trunk_kps), 3)
+
     r_leg = _get_part_ids(
         env,
         [
@@ -216,9 +250,11 @@ def q_clip_iso(env, params):
 
     # Iterate through all of the frames in the clip
     for i in range(params["n_frames"]):
+
+        # root_optimization(env, params)
         print(i, flush=True)
 
-        # First optimize over all points to get gross estimate and trunk
+        # # Optimize over all points
         stac.q_phase(
             env.physics,
             env.task.kp_data[i, :],
@@ -226,15 +262,8 @@ def q_clip_iso(env, params):
             params,
             reg_coef=params["q_reg_coef"],
         )
+        # root_optimization(env, params, frame=i)
 
-        stac.q_phase(
-            env.physics,
-            env.task.kp_data[i, :],
-            env.task._walker.body_sites,
-            params,
-            reg_coef=params["q_reg_coef"],
-            kps_to_opt=trunk_kps,
-        )
 
         # Make sure to only use forward temporal regularization on frames 1...n
         if i == 0:
@@ -345,6 +374,10 @@ def compute_stac(kp_data, save_path, params):
     rescale.rescale_subtree(
         env.task._walker._mjcf_root, params["scale_factor"], params["scale_factor"]
     )
+    mjlib.mj_kinematics(env.physics.model.ptr, env.physics.data.ptr)
+    # Center of mass position
+    mjlib.mj_comPos(env.physics.model.ptr, env.physics.data.ptr)
+    env.reset()
 
     # Get the ids of the limbs
     # TODO(partnames): This currently changes the list everywhere.
@@ -361,8 +394,8 @@ def compute_stac(kp_data, save_path, params):
         sites = env.task._walker.body_sites
         env.physics.bind(sites).pos[:] = in_dict["offsets"]
 
-        for id, p in enumerate(env.physics.bind(sites).pos):
-            sites[id].pos = p
+        for n_site, p in enumerate(env.physics.bind(sites).pos):
+            sites[n_site].pos = p
 
         if params["verbose"]:
             print("Root Optimization", flush=True)
@@ -370,6 +403,15 @@ def compute_stac(kp_data, save_path, params):
     else:
         # Get the initial offsets of the markers
         initial_offsets = np.copy(env.physics.bind(env.task._walker.body_sites).pos[:])
+        initial_offsets *= params['scale_factor']
+        # Set pose to the optimized m and step forward.
+        env.physics.bind(env.task._walker.body_sites).pos[:] = initial_offsets
+        # Forward kinematics, and save the results to the walker sites as well
+        mjlib.mj_kinematics(env.physics.model.ptr, env.physics.data.ptr)
+        # Center of mass position
+        mjlib.mj_comPos(env.physics.model.ptr, env.physics.data.ptr)
+        for n_site, p in enumerate(env.physics.bind(env.task._walker.body_sites).pos):
+            env.task._walker.body_sites[n_site].pos = p
 
         # First optimize the first frame to get an approximation
         # of the m and q phases
@@ -422,8 +464,8 @@ def compute_stac(kp_data, save_path, params):
 
     # Save the pose, offsets, data, and all parameters
     filename, file_extension = os.path.splitext(save_path)
-    # if not os.path.exists(os.path.dirname(save_path)):
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    if not os.path.exists(os.path.dirname(save_path)):
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
     offsets = env.physics.bind(env.task._walker.body_sites).pos[:].copy()
     names_xpos = env.physics.named.data.xpos.axes.row.names
     out_dict = {
@@ -525,6 +567,9 @@ def handle_args(
     else:
         if end_frame == 0:
             end_frame = start_frame + 3600
+        # M = scipy.io.loadmat('test.mat')
+        # kp_data = M['kp_data'][:]
+        # kp_names = M['kp_names'][:]
         kp_data, kp_names = preprocess_data(
             data_path, start_frame, end_frame, skip, params
         )
@@ -533,6 +578,7 @@ def handle_args(
                 os.getcwd(), "results", "snippet" + data_path[:-4] + ".p"
             )
         params["kp_names"] = kp_names
+        # savemat('test.mat', {'kp_data': kp_data, 'kp_names':kp_names})
         compute_stac(kp_data, save_path, params)
 
 

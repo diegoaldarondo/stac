@@ -2,11 +2,17 @@
 from dm_control import viewer
 from dm_control.locomotion.walkers import rescale
 import clize
-import rodent_environments
+import stac.rodent_environments as rodent_environments
 import numpy as np
 import pickle
 import stac.util as util
+import os
+import imageio
+from dm_control.mujoco import wrapper
+from dm_control.mujoco.wrapper.mjbindings import enums
 
+
+FPS = 50
 
 def load_data(data_path, start_frame=0, end_frame=-1):
     with open(data_path, "rb") as f:
@@ -111,19 +117,20 @@ def setup_visualization(
     env.reset()
     sites = env.task._walker.body_sites
     env.physics.bind(sites).pos[:] = offsets
-    for id, site in enumerate(sites):
-        site.pos = offsets[id, :]
+    for n_offset, site in enumerate(sites):
+        site.pos = offsets[n_offset, :]
     env.task.precomp_qpos = q
     env.task.render_video = render_video
-    if save_path is not None:
-        env.task.video_name = save_path
-        print("Rendering: ", env.task.video_name)
 
     # Render a video in headless mode
     env.task.initialize_episode(env.physics, 0)
     prev_time = env.physics.time()
+    scene_option = wrapper.MjvOption()
+    scene_option.geomgroup[2] = 0
+    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
+    scene_option.geomgroup[3] = 1
     n_frame = 0
-
+    frames = []
     if headless & render_video:
         while prev_time < env._time_limit:
             while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
@@ -131,6 +138,13 @@ def setup_visualization(
             ]:
                 env.physics.step()
             env.task.after_step(env.physics, None)
+            rgbArr = env.physics.render(
+                368,
+                368,
+                camera_id="walker/close_profile",
+                scene_option=scene_option,
+            )
+            frames.append(rgbArr)
             n_frame += 1
             prev_time = np.round(env.physics.time(), decimals=2)
     # Otherwise, use the viewer
@@ -139,7 +153,19 @@ def setup_visualization(
     if env.task.V is not None:
         env.task.V.release()
     print(n_frame, flush=True)
+    if save_path is not None and render_video:
+        env.task.video_name = save_path
+        print("Rendering: ", env.task.video_name)
+        write_video(save_path, frames)
 
+def write_video(filename, frames, fps=5):
+        """Write a video to disk"""
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+        print("Writing to %s" % (filename))
+        with imageio.get_writer(filename, fps=fps) as video:
+            for frame in frames:
+                video.append_data(frame)
 
 if __name__ == "__main__":
     clize.run(view_stac)
