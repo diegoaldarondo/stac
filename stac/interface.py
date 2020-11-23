@@ -55,6 +55,8 @@ def submit():
     )
     # start_frames = start_frames[:5]
     end_frames = start_frames + params["snippet_duration"]
+    end_frames[-1] = params["clip_duration"]
+
     commands = []
     for i in range(len(start_frames)):
         commands.append(
@@ -79,6 +81,7 @@ def submit():
     print(cmd)
     os.system(cmd)
 
+
 def submit_unfinished():
     run_param_path = sys.argv[1]
     params = load_params(run_param_path)
@@ -87,13 +90,14 @@ def submit_unfinished():
     for base_folder, data_path, param_path in zip(
         [params["base_folder"]], [params["data_path"]], [params["param_path"]]
     ):
-        params["clip_duration"] = get_clip_duration(data_path)
-
+        params["clip_duration"] = get_clip_duration(data_path)        
         start_frames = np.arange(
             0, params["clip_duration"], params["snippet_duration"]
         )
         # start_frames = start_frames[0:2]
         end_frames = start_frames + params["snippet_duration"]
+        end_frames[-1] = params["clip_duration"]
+
         is_unfinished = get_unfinished(base_folder, start_frames)
 
         for i, v in enumerate(is_unfinished):

@@ -126,7 +126,7 @@ def setup_visualization(
     env.task.initialize_episode(env.physics, 0)
     prev_time = env.physics.time()
     scene_option = wrapper.MjvOption()
-    scene_option.geomgroup[2] = 0
+    scene_option.geomgroup[2] = 1
     scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
     scene_option.geomgroup[3] = 1
     n_frame = 0

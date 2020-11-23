@@ -19,6 +19,15 @@ def load_params(param_path):
     return params
 
 
+def load_dannce_data(filename, skeleton_file=None, start_frame=None, end_frame=None):
+    data = loadmat(filename)
+    kp_data = data["pred"][:]
+    kp_data = kp_data[start_frame:end_frame]
+    skeleton = loadmat(skeleton_file)
+    kp_names = skeleton["joint_names"]
+    return kp_data, kp_names
+
+
 def load_kp_data_from_file(
     filename, struct_name="markers_preproc", start_frame=None, end_frame=None
 ):

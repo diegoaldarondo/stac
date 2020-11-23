@@ -46,7 +46,7 @@ def preprocess_snippet(kp_data, kp_names, params):
     kp_data = kp_data / _MM_TO_METERS
 
     # Downsample
-    kp_data = _downsample(kp_data, params, orig_freq=300.0)
+    kp_data = _downsample(kp_data, params, orig_freq=50.0)
 
     # Smooth
     # kp_data = _smooth(kp_data, kp_names, sigma=.1)
@@ -73,11 +73,14 @@ def preprocess_data(
     :param scale_factor: Multiplier for mocap data
     :param struct_name: Field name of .mat file to load
     """
-    kp_data, kp_names = util.load_kp_data_from_file(
-        data_path, struct_name=struct_name, start_frame=start_frame, end_frame=end_frame
+    # kp_data, kp_names = util.load_kp_data_from_file(
+    #     data_path, struct_name=struct_name, start_frame=start_frame, end_frame=end_frame
+    # )
+    kp_data, kp_names = util.load_dannce_data(
+        data_path, skeleton_path, start_frame=start_frame, end_frame=end_frame
     )
+    kp_data = np.reshape(kp_data, (kp_data.shape[0], -1))
     kp_data = kp_data[::skip, :]
-    # kp_data = kp_data[start_frame:end_frame, :]
     kp_data = preprocess_snippet(kp_data, kp_names, params)
     return kp_data, kp_names
 
