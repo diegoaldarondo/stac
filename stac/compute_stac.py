@@ -6,7 +6,7 @@ from dm_control.mujoco.wrapper.mjbindings import mjlib
 import scipy.ndimage
 import clize
 import stac.stac as stac
-import stac.rodent_environments as rodent_environments 
+import stac.rodent_environments as rodent_environments
 import numpy as np
 import stac.util as util
 import pickle
@@ -18,7 +18,9 @@ _MM_TO_METERS = 1000
 
 def _downsample(kp_data, params, orig_freq=300.0):
     n_samples = kp_data.shape[0]
-    n_upsamples = int(np.round(n_samples / orig_freq * (1 / params["_TIME_BINS"])))
+    n_upsamples = int(
+        np.round(n_samples / orig_freq * (1 / params["_TIME_BINS"]))
+    )
     interp_x_vals = np.linspace(0, n_samples, n_upsamples)
     kp_data_downsampled = np.zeros((interp_x_vals.size, kp_data.shape[1]))
 
@@ -36,8 +38,12 @@ def _smooth(kp_data, kp_names, sigma=1):
         [any(part in name for name in kp_names) for part in parts_to_smooth]
     )
     for n_marker in ids:
-        kp_data[:, n_marker] = scipy.ndimage.gaussian_filter1d(kp_data[:, n_marker], sigma, axis=0)
-        kp_data[:, n_marker] = scipy.signal.medfilt(kp_data[:, n_marker], [5, 1], axis=0)
+        kp_data[:, n_marker] = scipy.ndimage.gaussian_filter1d(
+            kp_data[:, n_marker], sigma, axis=0
+        )
+        kp_data[:, n_marker] = scipy.signal.medfilt(
+            kp_data[:, n_marker], [5, 1], axis=0
+        )
     return kp_data
 
 
@@ -63,7 +69,12 @@ def preprocess_snippet(kp_data, kp_names, params):
 
 
 def preprocess_data(
-    data_path, start_frame, end_frame, skip, params, struct_name="markers_preproc",
+    data_path,
+    start_frame,
+    end_frame,
+    skip,
+    params,
+    struct_name="markers_preproc",
 ):
     """Preprocess mocap data for stac fitting.
 
@@ -77,7 +88,10 @@ def preprocess_data(
     #     data_path, struct_name=struct_name, start_frame=start_frame, end_frame=end_frame
     # )
     kp_data, kp_names = util.load_dannce_data(
-        data_path, skeleton_path, start_frame=start_frame, end_frame=end_frame
+        data_path,
+        params["skeleton_path"],
+        start_frame=start_frame,
+        end_frame=end_frame,
     )
     kp_data = np.reshape(kp_data, (kp_data.shape[0], -1))
     kp_data = kp_data[::skip, :]
@@ -156,6 +170,7 @@ def root_optimization(env, params, frame=0):
     #     kps_to_opt=trunk_kps,
     # )
 
+
 def q_clip(env, qs_to_opt, params):
     """Q-phase across the clip: optimize joint angles."""
     q = []
@@ -192,7 +207,9 @@ def q_clip(env, qs_to_opt, params):
 
 def _get_part_ids(env, parts):
     part_names = env.physics.named.data.qpos.axes.row.names
-    return np.array([any(part in name for part in parts) for name in part_names])
+    return np.array(
+        [any(part in name for part in parts) for name in part_names]
+    )
 
 
 def q_clip_iso(env, params):
@@ -238,10 +255,26 @@ def q_clip_iso(env, params):
         ],
     )
     r_arm = _get_part_ids(
-        env, ["scapula_R", "shoulder_R", "shoulder_s", "elbow_R", "hand_R", "finger_R"]
+        env,
+        [
+            "scapula_R",
+            "shoulder_R",
+            "shoulder_s",
+            "elbow_R",
+            "hand_R",
+            "finger_R",
+        ],
     )
     l_arm = _get_part_ids(
-        env, ["scapula_L", "shoulder_L", "shoulder_s", "elbow_L", "hand_L", "finger_L"]
+        env,
+        [
+            "scapula_L",
+            "shoulder_L",
+            "shoulder_s",
+            "elbow_L",
+            "hand_L",
+            "finger_L",
+        ],
     )
     head = _get_part_ids(env, ["atlas", "cervical", "atlant_extend"])
     if params["LIMBS_TO_TEMPORALLY_REGULARIZE"] == "arms":
@@ -266,7 +299,6 @@ def q_clip_iso(env, params):
             reg_coef=params["q_reg_coef"],
         )
         # root_optimization(env, params, frame=i)
-
 
         # Make sure to only use forward temporal regularization on frames 1...n
         if i == 0:
@@ -343,7 +375,9 @@ def qpos_z_offset(env, q, x):
     # Find the indices of hands and feet xpositions
     ground_parts = ["foot", "hand"]
     part_names = env.physics.named.data.xpos.axes.row.names
-    ground_ids = [any(part in name for part in ground_parts) for name in part_names]
+    ground_ids = [
+        any(part in name for part in ground_parts) for name in part_names
+    ]
 
     # Estimate the ground position by the 2nd percentile of the hands/feet
     ground_part_pos = np.zeros((len(x), np.sum(ground_ids)))
@@ -375,7 +409,9 @@ def compute_stac(kp_data, save_path, params):
         kp_data, params, use_hfield=params["_USE_HFIELD"]
     )
     rescale.rescale_subtree(
-        env.task._walker._mjcf_root, params["scale_factor"], params["scale_factor"]
+        env.task._walker._mjcf_root,
+        params["scale_factor"],
+        params["scale_factor"],
     )
     mjlib.mj_kinematics(env.physics.model.ptr, env.physics.data.ptr)
     # Center of mass position
@@ -405,15 +441,19 @@ def compute_stac(kp_data, save_path, params):
         root_optimization(env, params)
     else:
         # Get the initial offsets of the markers
-        initial_offsets = np.copy(env.physics.bind(env.task._walker.body_sites).pos[:])
-        initial_offsets *= params['scale_factor']
+        initial_offsets = np.copy(
+            env.physics.bind(env.task._walker.body_sites).pos[:]
+        )
+        initial_offsets *= params["scale_factor"]
         # Set pose to the optimized m and step forward.
         env.physics.bind(env.task._walker.body_sites).pos[:] = initial_offsets
         # Forward kinematics, and save the results to the walker sites as well
         mjlib.mj_kinematics(env.physics.model.ptr, env.physics.data.ptr)
         # Center of mass position
         mjlib.mj_comPos(env.physics.model.ptr, env.physics.data.ptr)
-        for n_site, p in enumerate(env.physics.bind(env.task._walker.body_sites).pos):
+        for n_site, p in enumerate(
+            env.physics.bind(env.task._walker.body_sites).pos
+        ):
             env.task._walker.body_sites[n_site].pos = p
 
         # First optimize the first frame to get an approximation
@@ -515,7 +555,8 @@ def handle_args(
     verbose=False,
     visualize=False,
     render_video=False,
-    process_snippet=True
+    process_snippet=True,
+    skeleton_path="/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat",
 ):
     """Wrap compute_stac to perform appropriate processing.
 
@@ -544,13 +585,16 @@ def handle_args(
         "adaptive_z_offset": adaptive_z_offset,
         "visualize": visualize,
         "render_video": render_video,
+        "skeleton_path": skeleton_path,
     }
     params = util.load_params(param_path)
     for key, v in kw.items():
         params[key] = v
 
     if process_snippet:
-        data, kp_names, behavior, com_vel = util.load_snippets_from_file(data_path)
+        data, kp_names, behavior, com_vel = util.load_snippets_from_file(
+            data_path
+        )
 
         # Put useful statistics into params dict for now. Consider stats dict
         params["behavior"] = behavior
