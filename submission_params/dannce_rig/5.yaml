@@ -1,0 +1,7 @@
+base_folder: /n/home02/daldarondo/LabDir/Everyone/dannce_rig/test/5/stac/
+data_path: /n/home02/daldarondo/LabDir/Everyone/dannce_rig/test/5/DANNCE/predict03/save_data_AVG.mat
+offset_path: /n/home02/daldarondo/LabDir/Everyone/dannce_rig/test/5/stac/offset.p
+param_path: /n/home02/daldarondo/LabDir/Diego/code/dm/stac/params/dannce_rig/5.yaml
+temp_file_name: run_variables.p
+snippet_duration: 1000
+clip_duration: null

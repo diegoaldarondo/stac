@@ -1,0 +1,125 @@
+_ARENA_DIAMETER: 0.5842
+_ARM_JOINTS:
+- shoulder
+- scapula
+- elbow
+- wrist
+- finger
+_ROOT_DIFF_STEP: 1.0e-08
+_DIFF_STEP: 1.0e-3
+# _FTOL: 0.001
+_FTOL: 1.0e-04
+_IS_LIMB:
+- scapula
+- hip
+- knee
+- shoulder
+- elbow
+_KEYPOINT_COLOR_PAIRS:
+  ArmL: 0 0 .8 1
+  ArmR: .8 0 0 1
+  ElbowL: 0 0 .8 1
+  ElbowR: .8 0 0 1
+  HeadB: .8 .8 0 1
+  HeadF: .8 .8 0 1
+  HeadL: .8 .8 0 1
+  HipL: 0 0 .3 1
+  HipR: .3 0 0 1
+  KneeL: 0 0 .3 1
+  KneeR: .3 0 0 1
+  Offset1: .8 .8 .8 1
+  Offset2: .8 .8 .8 1
+  ShinL: 0 0 .3 1
+  ShinR: .3 0 0 1
+  ShoulderL: 0 0 .8 1
+  ShoulderR: .8 0 0 1
+  SpineF: .8 .8 .8 1
+  SpineL: .8 .8 .8 1
+  SpineM: .8 .8 .8 1
+_KEYPOINT_INITIAL_OFFSETS:
+  ArmL: 0.01 0.0125 -0.01
+  ArmR: 0.01 -0.0125 -0.01
+  ElbowL: -0.01593120836133218 0.01035528543486592 -0.02230369170586505
+  ElbowR: -0.01593120836133218 -0.01035528543486592 -0.02230369170586505
+  HeadB: 0. -.025 .04
+  HeadF: .025 -.025 .04
+  HeadL: 0. .025 .04
+  HipL: -0.015 0.015 0.
+  HipR: -0.015 -0.015 0.
+  KneeL: 0.01542264534586861 0.01747899805865108 -0.02570440890978101
+  KneeR: 0.01542264534586861 -0.01747899805865108 -0.02570440890978101
+  Offset1: 0.015 .025 -0.005
+  Offset2: -0.015 .025 -0.005
+  ShinL: -0.01 0.01 -0.01
+  ShinR: -0.01 -0.01 -0.01
+  # ShoulderL: 0.0287 0.00984 -0.02542
+  # ShoulderR: 0.0287 -0.00984 -0.02542
+  ShoulderL: 0. 0.015 0.005
+  ShoulderR: 0. -0.015 0.005
+  SpineF: -0.015 0. 0.01
+  SpineL: 0. 0. 0.0025
+  SpineM: 0. 0. 0.01
+_KEYPOINT_MODEL_PAIRS:
+  ArmL: lower_arm_L
+  ArmR: lower_arm_R
+  ElbowL: upper_arm_L
+  ElbowR: upper_arm_R
+  HeadB: skull
+  HeadF: skull
+  HeadL: skull
+  HipL: pelvis
+  HipR: pelvis
+  KneeL: upper_leg_L
+  KneeR: upper_leg_R
+  Offset1: vertebra_1
+  Offset2: vertebra_1
+  ShinL: lower_leg_L
+  ShinR: lower_leg_R
+  # ShoulderL: scapula_L
+  # ShoulderR: scapula_R
+  ShoulderL: vertebra_cervical_5
+  ShoulderR: vertebra_cervical_5
+  SpineF: vertebra_cervical_5
+  SpineL: pelvis
+  SpineM: vertebra_1
+_LIMB_FTOL: 1.0e-04
+_MANDIBLE_POS: -0.297
+_PARTS_TO_ZERO:
+- toe
+- ankle
+_ROOT_FTOL: 1.0e-8
+_M_FTOL: 1.0e-06
+_SITES_TO_REGULARIZE:
+  # - temp
+- ArmL
+- ArmR
+# - ElbowL
+# - ElbowR
+- KneeL
+- KneeR
+- ShinL
+- ShinR
+- HeadB
+- HeadF
+- HeadL
+# - ShoulderR
+# - ShoulderL
+# - HipL
+# - HipR
+- SpineF
+- SpineL
+- SpineM
+LIMBS_TO_TEMPORALLY_REGULARIZE: arms
+_STAND_HEIGHT: 1.5
+_TIME_BINS: 0.02
+_USE_HFIELD: 0
+_XML_PATH: ./models/rodent.xml
+adaptive_z_offset_value: 0.0
+hfield_image_path: ./params/floor_models/test_floormap.p
+m_reg_coef: 1
+# offset_path: ./offsets/JDM33_june14.p
+q_reg_coef: 0.0
+scale_factor: .9
+temporal_reg_coef: 0.0
+z_offset: 0.00
+z_perc: 0

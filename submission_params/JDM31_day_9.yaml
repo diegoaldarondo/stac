@@ -1,0 +1,7 @@
+base_folder: /n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/results/long_clips/JDM31_day_9/
+data_path: /n/home02/daldarondo/LabDir/Jesse/Data/Dropbox_curated_sharefolders/mocap_data_diego/diego_mocap_files_rat_JDM31_day_9.mat
+offset_path: /n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/results/long_clips/JDM31_day_9/offset.p
+param_path: /n/home02/daldarondo/LabDir/Diego/code/dm/stac/params/09_25_2020/JDM31_mocap.yaml
+temp_file_name: run_variables.p
+snippet_duration: 7200
+clip_duration: null
