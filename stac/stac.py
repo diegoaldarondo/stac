@@ -142,7 +142,7 @@ def q_phase(
     # This probably won't be a problem, as it is just an ititialization for the
     # optimizer, but keep it in mind.
     if root_only or trunk_only:
-        q0[:3] = marker_ref_arr[57:]
+        q0[:3] = marker_ref_arr[12:15]
         diff_step = params['_ROOT_DIFF_STEP']
     else:
         diff_step = params['_DIFF_STEP']
