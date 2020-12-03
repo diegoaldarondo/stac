@@ -93,7 +93,6 @@ def preprocess_data(
         start_frame=start_frame,
         end_frame=end_frame,
     )
-    kp_data = np.reshape(kp_data, (kp_data.shape[0], -1))
     kp_data = kp_data[::skip, :]
     kp_data = preprocess_snippet(kp_data, kp_names, params)
     return kp_data, kp_names
@@ -535,6 +534,11 @@ def compute_stac(kp_data, save_path, params):
     if file_extension == ".p":
         with open(save_path, "wb") as output_file:
             pickle.dump(out_dict, output_file, protocol=2)
+        # mat_path = save_path.split('.p')[0] + '.mat'
+        # for k, v in out_dict.items():
+        #     if v is None:
+        #         out_dict[k] = 'None'
+        # savemat(mat_path, out_dict)
     elif file_extension == ".mat":
         savemat(save_path, out_dict)
 
@@ -595,7 +599,6 @@ def handle_args(
         data, kp_names, behavior, com_vel = util.load_snippets_from_file(
             data_path
         )
-
         # Put useful statistics into params dict for now. Consider stats dict
         params["behavior"] = behavior
         params["com_vel"] = com_vel
@@ -620,6 +623,7 @@ def handle_args(
         kp_data, kp_names = preprocess_data(
             data_path, start_frame, end_frame, skip, params
         )
+
         if save_path is None:
             save_path = os.path.join(
                 os.getcwd(), "results", "snippet" + data_path[:-4] + ".p"

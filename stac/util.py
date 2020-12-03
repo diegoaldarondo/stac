@@ -22,7 +22,7 @@ def load_params(param_path):
 def load_dannce_data(filename, skeleton_file=None, start_frame=None, end_frame=None):
     data = loadmat(filename)
     kp_data = data["pred"][:]
-    kp_data = kp_data[start_frame:end_frame]
+    kp_data = kp_data[start_frame:end_frame, ...]
     skeleton = loadmat(skeleton_file)
     kp_names = skeleton["joint_names"]
     return kp_data, kp_names
