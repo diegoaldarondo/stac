@@ -21,10 +21,17 @@ def load_params(param_path):
 
 def load_dannce_data(filename, skeleton_file=None, start_frame=None, end_frame=None):
     data = loadmat(filename)
-    kp_data = data["pred"][:]
-    kp_data = kp_data[start_frame:end_frame, ...]
     skeleton = loadmat(skeleton_file)
     kp_names = skeleton["joint_names"]
+    kp_names = [name[0] for name in kp_names[0]]
+    order = np.argsort(kp_names)
+
+    kp_data = data["pred"][:]
+    kp_data = kp_data[start_frame:end_frame, ...]
+    kp_data = kp_data[..., order]
+
+    kp_data = np.transpose(kp_data, (0, 2, 1))
+    kp_data = np.reshape(kp_data, (kp_data.shape[0], -1))
     return kp_data, kp_names
 
 
