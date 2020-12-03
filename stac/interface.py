@@ -38,7 +38,10 @@ def load_variables(save_path):
 def get_clip_duration(data_path):
     try:
         M = loadmat(data_path)
-        clip_duration = M["predictions"]["ArmL"][0, 0].shape[0]
+        try:
+            clip_duration = M["predictions"]["ArmL"][0, 0].shape[0]
+        except KeyError:
+            clip_duration = M["pred"].shape[0]
     except (NotImplementedError, FileNotFoundError):
         with h5py.File(data_path, "r") as f:
             clip_duration = f['mocapstruct_here']['markers_preproc']['ArmL'].shape[1]
@@ -75,11 +78,16 @@ def submit():
     n_jobs = len(start_frames)
     print("Number of jobs: ", n_jobs)
     cmd = (
-        "sbatch --array=0-%d --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
+        "sbatch --wait --array=0-%d --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
         % (n_jobs - 1, param_path)
     )
+    # cmd = (
+    #     "sbatch --wait --array=0-0 --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
+    #     % (param_path)
+    # )
     print(cmd)
-    os.system(cmd)
+    # os.system(cmd)
+    sys.exit(os.WEXITSTATUS(os.system(cmd)))
 
 
 def submit_unfinished():
@@ -121,11 +129,16 @@ def submit_unfinished():
     n_jobs = len(commands)
     print("Number of jobs: ", n_jobs)
     cmd = (
-        "sbatch --array=0-%d --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
+        "sbatch --wait --array=0-%d --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
         % (n_jobs - 1, run_param_path)
     )
+    # cmd = (
+    #     "sbatch --array=0-0 --exclude=seasmicro25,holy2c18111 submit_stac_single_batch.sh %s"
+    #     % (run_param_path)
+    # )
     print(cmd)
-    os.system(cmd)
+    sys.exit(os.WEXITSTATUS(os.system(cmd)))
+
 
 def compute_single_batch():
     import stac.compute_stac as compute_stac
