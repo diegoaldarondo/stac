@@ -24,10 +24,12 @@ def get_chunk_data(chunk_path):
 
 def merge(folder, *, save_path=None):
     """Merge snippets into a contiguous file."""
+    def hasNumbers(inputString):
+        return any(char.isdigit() for char in inputString)
     files = [
         f
         for f in os.listdir(folder)
-        if (".p" in f) and ("total" not in f and "offset" not in f)
+        if (".p" in f) and hasNumbers(f)
     ]
     files = sorted(files, key=_sort_fn)
 
@@ -67,7 +69,7 @@ def merge(folder, *, save_path=None):
     for k, v in out_dict.items():
         if v is None:
             out_dict[k] = "None"
-    savemat(mat_path, out_dict)
+#    savemat(mat_path, out_dict)
 
 
 def stac_merge():
