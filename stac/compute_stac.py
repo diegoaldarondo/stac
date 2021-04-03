@@ -395,18 +395,22 @@ def qpos_z_offset(env, q, x):
 
 def compute_stac(kp_data, save_path, params):
     """Perform stac on rat mocap data.
-
+    
     :param kp_data: mocap_data
     :param save_path: File to save optimized qposes
     :param params: Dictionary of rat parameters
+    
+    Args:
+        kp_data (TYPE): Description
+        save_path (TYPE): Description
+        params (TYPE): Description
     """
     if params["n_frames"] is None:
         params["n_frames"] = kp_data.shape[0]
     params["n_frames"] = int(params["n_frames"])
+
     # Build the environment
-    env = rodent_environments.rodent_mocap(
-        kp_data, params, use_hfield=params["_USE_HFIELD"]
-    )
+    env = rodent_environments.rodent_mocap(kp_data, params)
     rescale.rescale_subtree(
         env.task._walker._mjcf_root,
         params["scale_factor"],

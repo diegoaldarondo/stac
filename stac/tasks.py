@@ -41,7 +41,7 @@ class ViewMocap(composer.Task):
         height=480,
         video_name=None,
         params=None,
-        fps=30.0,
+        fps=50.0,
     ):
         """Initialize ViewMocap environment.
 

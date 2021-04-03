@@ -27,6 +27,82 @@ def _load_hfield(data_path, scale):
     return floormap
 
 
+class DannceArena(composer.Arena):
+    def _build(
+        self,
+        params,
+        arena_diameter=None,
+        arena_center=None,
+        size=(1, 1),
+        name='DannceArena',
+    ):
+        super(DannceArena, self)._build(name=name)
+
+        self._size = size
+        self._mjcf_root.visual.headlight.set_attributes(
+            ambient=[0.4, 0.4, 0.4], diffuse=[0.8, 0.8, 0.8], specular=[0.1, 0.1, 0.1]
+        )
+
+        self._ground_geom = self._mjcf_root.worldbody.add(
+            "geom",
+            type="plane",
+            name='groundplane',
+            rgba="0.2 0.3 0.4 1",
+            pos=GROUND_GEOM_POS,
+            size=list(size) + [.025]
+        )
+
+        # Get the dimensions of arena objects and floormap
+        self.params = params
+        self.arena_diameter = arena_diameter
+        self.arena_center = arena_center
+        
+        # Make the cylinder
+        cylinder_segments = []
+        radius = self.arena_diameter / 2
+        height = 0.5
+        chord = 2 * radius * np.tan(np.pi / _NUM_CYLINDER_SEGMENTS)
+        for ii in range(_NUM_CYLINDER_SEGMENTS):
+            ang = ii * 2 * np.pi / _NUM_CYLINDER_SEGMENTS
+            cylinder_segments.append(
+                self._mjcf_root.worldbody.add(
+                    "geom",
+                    name="plane_{}".format(ii),
+                    type="plane",
+                    pos=[
+                        radius * np.cos(ang) + arena_center[0],
+                        radius * np.sin(ang) + arena_center[1],
+                        height,
+                    ],
+                    size=[chord / 2, height, .1],
+                    euler=[np.pi / 2, -np.pi / 2 + ang, 0],
+                    rgba=[0.5, 0.5, 0.5, 0.2],
+                )
+            )
+
+        # Choose the FOV so that the floor always fits nicely within the frame
+        # irrespective of actual floor size.
+        fovy_radians = 2 * np.arctan2(
+            _TOP_CAMERA_Y_PADDING_FACTOR * size[1], _TOP_CAMERA_DISTANCE
+        )
+        self._top_camera = self._mjcf_root.worldbody.add(
+            "camera",
+            name="top_camera",
+            pos=[0, 0, _TOP_CAMERA_DISTANCE],
+            zaxis=[0, 0, 1],
+            fovy=np.rad2deg(fovy_radians),
+        )
+
+    @property
+    def ground_geoms(self):
+        """Return the ground geoms."""
+        return (self._ground_geom,)
+
+    def regenerate(self, random_state):
+        """."""
+        pass
+
+
 class RatArena(composer.Arena):
     """A floor arena supporting heightfields."""
 
@@ -39,6 +115,7 @@ class RatArena(composer.Arena):
         pedestal_radius=None,
         pedestal_height=None,
         arena_diameter=None,
+        arena_center=None,
         size=(8, 8),
         name="terrain",
     ):
@@ -73,35 +150,36 @@ class RatArena(composer.Arena):
             self.pedestal_height = pedestal_height
             self.arena_diameter = arena_diameter
 
-        self._pedestal = self._mjcf_root.worldbody.add(
-            "geom",
-            name="pedestal",
-            type="cylinder",
-            pos=self.pedestal_center,
-            size=[self.pedestal_radius, self.pedestal_height / 2],
-        )
-
-        cylinder_segments = []
-        radius = self.arena_diameter / 2
-        height = 0.5
-        chord = 2 * radius * np.tan(np.pi / _NUM_CYLINDER_SEGMENTS)
-        for ii in range(_NUM_CYLINDER_SEGMENTS):
-            ang = ii * 2 * np.pi / _NUM_CYLINDER_SEGMENTS
-            cylinder_segments.append(
-                self._mjcf_root.worldbody.add(
-                    "geom",
-                    name="plane_{}".format(ii),
-                    type="plane",
-                    pos=[
-                        radius * np.cos(ang),
-                        radius * np.sin(ang),
-                        height + self._ground_geom.pos[2],
-                    ],
-                    size=[chord / 2, height, 1],
-                    euler=[np.pi / 2, -np.pi / 2 + ang, 0],
-                    rgba=[0.5, 0.5, 0.5, 0.2],
-                )
+        if self.pedestal_center is not None:
+            self._pedestal = self._mjcf_root.worldbody.add(
+                "geom",
+                name="pedestal",
+                type="cylinder",
+                pos=self.pedestal_center,
+                size=[self.pedestal_radius, self.pedestal_height / 2],
             )
+        if arena_diameter is not None:
+            cylinder_segments = []
+            radius = self.arena_diameter / 2
+            height = 0.5
+            chord = 2 * radius * np.tan(np.pi / _NUM_CYLINDER_SEGMENTS)
+            for ii in range(_NUM_CYLINDER_SEGMENTS):
+                ang = ii * 2 * np.pi / _NUM_CYLINDER_SEGMENTS
+                cylinder_segments.append(
+                    self._mjcf_root.worldbody.add(
+                        "geom",
+                        name="plane_{}".format(ii),
+                        type="plane",
+                        pos=[
+                            radius * np.cos(ang) + arena_center[0],
+                            radius * np.sin(ang) + arena_center[1],
+                            height + self._ground_geom.pos[2],
+                        ],
+                        size=[chord / 2, height, 1],
+                        euler=[np.pi / 2, -np.pi / 2 + ang, 0],
+                        rgba=[0.5, 0.5, 0.5, 0.2],
+                    )
+                )
 
         # Choose the FOV so that the floor always fits nicely within the frame
         # irrespective of actual floor size.

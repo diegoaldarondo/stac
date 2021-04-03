@@ -25,23 +25,36 @@ PEDESTAL_HEIGHT = 0.054
 
 def rodent_mocap(
     kp_data,
-    params,
-    random_state=None,
-    use_hfield=False,
+    params: Dict,
+    random_state: int = None,
     hfield_image=None,
     pedestal_center=None,
     pedestal_height=None,
     pedestal_radius=None,
     arena_diameter=None,
+    arena_center=None,
 ):
-    """View a rat with mocap sites."""
+    """View a rat with mocap sites.
+
+    Args:
+        kp_data (TYPE): Reference keypoint data
+        params (Dict): Stac parameters dict
+        random_state (int, optional): Random seed for arena initialization.
+        arena_type (Text, optional): Description
+        hfield_image (None, optional): Heightfield array for non-flat surfaces.
+        pedestal_center (None, optional): Center of pedestal
+        pedestal_height (None, optional): Height of pedestal
+        pedestal_radius (None, optional): Radius of pedestal
+        arena_diameter (None, optional): Diameter of circular arena
+        arena_center (None, optional): Center of circular arena
+    """
     # Build a position-controlled Rat
     walker = walkers.Rat(
         initializer=None,
         params=params,
         observable_options={"egocentric_camera": dict(enabled=True)},
     )
-    if use_hfield:
+    if params["ARENA_TYPE"] == "HField":
         process_objects = False
         if hfield_image is None:
             hfield_image = arenas._load_hfield(
@@ -56,9 +69,17 @@ def rodent_mocap(
             pedestal_height=pedestal_height,
             pedestal_radius=pedestal_radius,
             arena_diameter=arena_diameter,
+            arena_center=arena_center,
         )
         task = tasks.ViewMocap_Hfield(walker, arena, kp_data, params=params)
-    else:
+    elif params["ARENA_TYPE"] == "DannceArena":
+        arena = arenas.DannceArena(
+            params,
+            arena_diameter=arena_diameter,
+            arena_center=arena_center,
+        )
+        task = tasks.ViewMocap(walker, arena, kp_data, params=params)
+    elif params["ARENA_TYPE"] == "Standard":
         # Build a Floor arena
         arena = floors.Floor(size=(1, 1))
         arena._ground_geom.pos = [0.0, 0.0, -0.1]
