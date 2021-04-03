@@ -1,4 +1,5 @@
-"""Compute stac optimization on data."""
+"""Compute stac optimization on data.
+"""
 from dm_control import viewer
 from scipy.io import savemat
 from dm_control.locomotion.walkers import rescale
@@ -17,10 +18,18 @@ _MM_TO_METERS = 1000
 
 
 def _downsample(kp_data, params, orig_freq=300.0):
+    """Summary
+    
+    Args:
+        kp_data (TYPE): Description
+        params (TYPE): Description
+        orig_freq (float, optional): Description
+    
+    Returns:
+        TYPE: Description
+    """
     n_samples = kp_data.shape[0]
-    n_upsamples = int(
-        np.round(n_samples / orig_freq * (1 / params["_TIME_BINS"]))
-    )
+    n_upsamples = int(np.round(n_samples / orig_freq * (1 / params["_TIME_BINS"])))
     interp_x_vals = np.linspace(0, n_samples, n_upsamples)
     kp_data_downsampled = np.zeros((interp_x_vals.size, kp_data.shape[1]))
 
@@ -33,6 +42,16 @@ def _downsample(kp_data, params, orig_freq=300.0):
 
 
 def _smooth(kp_data, kp_names, sigma=1):
+    """Summary
+    
+    Args:
+        kp_data (TYPE): Description
+        kp_names (TYPE): Description
+        sigma (int, optional): Description
+    
+    Returns:
+        TYPE: Description
+    """
     parts_to_smooth = ["Arm", "Elbow"]
     ids = np.argwhere(
         [any(part in name for name in kp_names) for part in parts_to_smooth]
@@ -48,7 +67,16 @@ def _smooth(kp_data, kp_names, sigma=1):
 
 
 def preprocess_snippet(kp_data, kp_names, params):
-    """Preprocess snippet data."""
+    """Preprocess snippet data.
+    
+    Args:
+        kp_data (TYPE): Description
+        kp_names (TYPE): Description
+        params (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     kp_data = kp_data / _MM_TO_METERS
 
     # Downsample
@@ -77,12 +105,19 @@ def preprocess_data(
     struct_name="markers_preproc",
 ):
     """Preprocess mocap data for stac fitting.
-
+    
     :param data_path: Path to .mat mocap file
     :param start_frame: Frame to start stac tracing
     :param skip: Subsampling rate for the frames
-    :param scale_factor: Multiplier for mocap data
     :param struct_name: Field name of .mat file to load
+    
+    Args:
+        data_path (TYPE): Description
+        start_frame (TYPE): Description
+        end_frame (TYPE): Description
+        skip (TYPE): Description
+        params (TYPE): Description
+        struct_name (str, optional): Description
     """
     # kp_data, kp_names = util.load_kp_data_from_file(
     #     data_path, struct_name=struct_name, start_frame=start_frame, end_frame=end_frame
@@ -104,6 +139,12 @@ def initial_optimization(env, initial_offsets, params, maxiter=100):
     :params initial_offsets: Vector of starting offsets for initial q_phase
     :params params: parameter dictionary
     :params maxiter: Maximum number of iterations for m-phase optimization
+    
+    Args:
+        env (TYPE): Description
+        initial_offsets (TYPE): Description
+        params (TYPE): Description
+        maxiter (int, optional): Description
     """
     if params["verbose"]:
         print("Root Optimization", flush=True)
@@ -127,7 +168,13 @@ def initial_optimization(env, initial_offsets, params, maxiter=100):
 
 
 def root_optimization(env, params, frame=0):
-    """Optimize only the root."""
+    """Optimize only the root.
+    
+    Args:
+        env (TYPE): Description
+        params (TYPE): Description
+        frame (int, optional): Description
+    """
     stac.q_phase(
         env.physics,
         env.task.kp_data[frame, :],
@@ -171,7 +218,16 @@ def root_optimization(env, params, frame=0):
 
 
 def q_clip(env, qs_to_opt, params):
-    """Q-phase across the clip: optimize joint angles."""
+    """Q-phase across the clip: optimize joint angles.
+    
+    Args:
+        env (TYPE): Description
+        qs_to_opt (TYPE): Description
+        params (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     q = []
     walker_body_sites = []
     for i in range(params["n_frames"]):
@@ -205,19 +261,33 @@ def q_clip(env, qs_to_opt, params):
 
 
 def _get_part_ids(env, parts):
+    """Summary
+    
+    Args:
+        env (TYPE): Description
+        parts (TYPE): Description
+    
+    Returns:
+        TYPE: Description
+    """
     part_names = env.physics.named.data.qpos.axes.row.names
-    return np.array(
-        [any(part in name for part in parts) for name in part_names]
-    )
+    return np.array([any(part in name for part in parts) for name in part_names])
 
 
 def q_clip_iso(env, params):
     """Perform q_phase over the entire clip.
-
+    
     Optimizes limbs and head independently.
     Perform bidirectional temporal regularization.
     :param env: Rodent environment.
     :param params: Rodent parameters.
+    
+    Args:
+        env (TYPE): Description
+        params (TYPE): Description
+    
+    Returns:
+        TYPE: Description
     """
     q = []
     x = []
@@ -366,17 +436,23 @@ def q_clip_iso(env, params):
 
 def qpos_z_offset(env, q, x):
     """Add a z offset to the qpos root equal to the minimum of the hands/ankles.
-
+    
     :param env: Rat mocap environment.
     :param q: List of qposes over a clip.
     :param x: List of xposes over a clip.
+    
+    Args:
+        env (TYPE): Description
+        q (TYPE): Description
+        x (TYPE): Description
+    
+    Returns:
+        TYPE: Description
     """
     # Find the indices of hands and feet xpositions
     ground_parts = ["foot", "hand"]
     part_names = env.physics.named.data.xpos.axes.row.names
-    ground_ids = [
-        any(part in name for part in ground_parts) for name in part_names
-    ]
+    ground_ids = [any(part in name for part in ground_parts) for name in part_names]
 
     # Estimate the ground position by the 2nd percentile of the hands/feet
     ground_part_pos = np.zeros((len(x), np.sum(ground_ids)))
@@ -444,9 +520,7 @@ def compute_stac(kp_data, save_path, params):
         root_optimization(env, params)
     else:
         # Get the initial offsets of the markers
-        initial_offsets = np.copy(
-            env.physics.bind(env.task._walker.body_sites).pos[:]
-        )
+        initial_offsets = np.copy(env.physics.bind(env.task._walker.body_sites).pos[:])
         initial_offsets *= params["scale_factor"]
         # Set pose to the optimized m and step forward.
         env.physics.bind(env.task._walker.body_sites).pos[:] = initial_offsets
@@ -454,9 +528,7 @@ def compute_stac(kp_data, save_path, params):
         mjlib.mj_kinematics(env.physics.model.ptr, env.physics.data.ptr)
         # Center of mass position
         mjlib.mj_comPos(env.physics.model.ptr, env.physics.data.ptr)
-        for n_site, p in enumerate(
-            env.physics.bind(env.task._walker.body_sites).pos
-        ):
+        for n_site, p in enumerate(env.physics.bind(env.task._walker.body_sites).pos):
             env.task._walker.body_sites[n_site].pos = p
 
         # First optimize the first frame to get an approximation
@@ -533,6 +605,18 @@ def compute_stac(kp_data, save_path, params):
         out_dict["hfield_image"] = env.task._arena.hfield
         out_dict["scaled_arena_diameter"] = env.task._arena.arena_diameter
 
+    # # Render a video
+    # view_stac.setup_visualization(
+    #     param_path,
+    #     q,
+    #     offsets,
+    #     kp_data,
+    #     n_frames,
+    #     render_video=render_video,
+    #     save_path=save_path,
+    #     headless=headless,
+    # )
+
     for k, v in params.items():
         out_dict[k] = v
     if file_extension == ".p":
@@ -600,9 +684,7 @@ def handle_args(
         params[key] = v
 
     if process_snippet:
-        data, kp_names, behavior, com_vel = util.load_snippets_from_file(
-            data_path
-        )
+        data, kp_names, behavior, com_vel = util.load_snippets_from_file(data_path)
         # Put useful statistics into params dict for now. Consider stats dict
         params["behavior"] = behavior
         params["com_vel"] = com_vel
