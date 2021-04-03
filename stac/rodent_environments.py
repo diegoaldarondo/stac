@@ -1,4 +1,10 @@
-"""Environment for rodent modeling with dm_control and motion capture."""
+"""Environment for rodent modeling with dm_control and motion capture.
+
+Attributes:
+    MM_TO_METER (int): Description
+    PEDESTAL_HEIGHT (float): Description
+    PEDESTAL_WIDTH (float): Description
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -7,6 +13,7 @@ from dm_control.locomotion.arenas import floors
 import stac.walkers as walkers
 import stac.tasks as tasks
 import stac.arenas as arenas
+from typing import List, Dict, Text, Union, Tuple
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
@@ -27,12 +34,12 @@ def rodent_mocap(
     kp_data,
     params: Dict,
     random_state: int = None,
-    hfield_image=None,
-    pedestal_center=None,
-    pedestal_height=None,
-    pedestal_radius=None,
-    arena_diameter=None,
-    arena_center=None,
+    hfield_image: np.ndarray = None,
+    pedestal_center: List = None,
+    pedestal_height: float = None,
+    pedestal_radius: float = None,
+    arena_diameter: float = None,
+    arena_center: List = None,
 ):
     """View a rat with mocap sites.
 
@@ -40,13 +47,15 @@ def rodent_mocap(
         kp_data (TYPE): Reference keypoint data
         params (Dict): Stac parameters dict
         random_state (int, optional): Random seed for arena initialization.
+        hfield_image (np.ndarray, optional): Heightfield array for non-flat surfaces.
+        pedestal_center (List, optional): Center of pedestal
+        pedestal_height (float, optional): Height of pedestal
+        pedestal_radius (float, optional): Radius of pedestal
+        arena_diameter (float, optional): Diameter of circular arena
+        arena_center (List, optional): Center of circular arena
+
+    Deleted Parameters:
         arena_type (Text, optional): Description
-        hfield_image (None, optional): Heightfield array for non-flat surfaces.
-        pedestal_center (None, optional): Center of pedestal
-        pedestal_height (None, optional): Height of pedestal
-        pedestal_radius (None, optional): Radius of pedestal
-        arena_diameter (None, optional): Diameter of circular arena
-        arena_center (None, optional): Center of circular arena
     """
     # Build a position-controlled Rat
     walker = walkers.Rat(
