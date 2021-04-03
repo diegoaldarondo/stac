@@ -5,6 +5,8 @@ import scipy.optimize
 
 
 class _TestNoneArgs(BaseException):
+    """Simple base exception"""
+
     pass
 
 
@@ -22,24 +24,26 @@ def q_loss(
     q_prev=None,
     q_next=None,
     kps_to_opt=None,
-):
+) -> float:
     """Compute the marker loss for q_phase optimization.
 
-    :param physics: Physics of current environment.
-    :param kp_data: Reference
-    :param sites: sites of keypoints at frame_index
-    :param params: Animal parameters dictionary
-    :param qs_to_opt: Binary vector of qposes to optimize.
-    :param q_copy: Copy of current qpos, for use in optimization of subsets
-                   of qpos.
-    :param reg_coef: L1 regularization coefficient during marker loss.
-    :param root_only: If True, only regularize the root.
-    :param temporal_regularization: If True, regularize arm joints over time.
-    :param q_prev: Copy of previous qpos frame for use in
-                   bidirectional temporal regularization.
-    :param q_next: Copy of next qpos frame for use in bidirectional temporal
-                   regularization.
-    :param kps_to_opt: Vector denoting which keypoints to use in the q loss function.
+    Args:
+        q (TYPE): Qpos for current frame.
+        physics (TYPE): Physics of current environment.
+        kp_data (TYPE): Reference keypoint data.
+        sites (TYPE): sites of keypoints at frame_index
+        params (TYPE): Animal parameters dictionary
+        qs_to_opt (None, optional): Binary vector of qposes to optimize.
+        q_copy (None, optional): Copy of current qpos, for use in optimization of subsets
+        reg_coef (float, optional): L1 regularization coefficient during marker loss.
+        root_only (bool, optional): If True, only regularize the root.
+        temporal_regularization (bool, optional): If True, regularize joints over time.
+        q_prev (None, optional): Copy of previous qpos frame
+        q_next (None, optional): Copy of next qpos frame
+        kps_to_opt (None, optional): Vector denoting which keypoints to use in loss.
+
+    Returns:
+        float: loss value
     """
     if temporal_regularization:
         error_msg = " cannot be None if using temporal regularization"
@@ -49,13 +53,6 @@ def q_loss(
             raise _TestNoneArgs("q_prev" + error_msg)
         # if q_next is None:
         #     raise _TestNoneArgs('q_next' + error_msg)
-
-    # Optional regularization.
-    # reg_term = reg_coef * np.sum(q[7:])
-
-    # # If only optimizing the root, set everything else to 0.
-    # if root_only:
-    #     q[7:] = 0.0
 
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     if qs_to_opt is not None:
@@ -73,12 +70,6 @@ def q_loss(
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
 
-    # loss = np.sqrt(np.sum(residual ** 2)) + params["temporal_reg_coef"] * np.sqrt(
-    #     temp_reg_term
-    # )
-    # loss = np.sqrt(np.sum(residual ** 2)) + params["temporal_reg_coef"] * np.sqrt(
-    #     temp_reg_term
-    # )
     loss = residual
     return loss
 
@@ -89,6 +80,14 @@ def q_joints_to_markers(q, physics, sites):
     :param q: Postural state
     :param physics: Physics of current environment
     :param sites: Sites of keypoint data.
+
+    Args:
+        q (TYPE): Description
+        physics (TYPE): Description
+        sites (TYPE): Description
+
+    Returns:
+        TYPE: Description
     """
     physics.named.data.qpos[:] = q.copy()
 
@@ -128,6 +127,21 @@ def q_phase(
     :param kps_to_opt: Logical vector of keypoints to use in q loss function.
     :param root_only: If True, only optimize the root.
     :param temporal_regularization: If True, regularize arm joints over time.
+
+    Args:
+        physics (TYPE): Description
+        marker_ref_arr (TYPE): Description
+        sites (TYPE): Description
+        params (TYPE): Description
+        reg_coef (float, optional): Description
+        qs_to_opt (None, optional): Description
+        kps_to_opt (None, optional): Description
+        root_only (bool, optional): Description
+        trunk_only (bool, optional): Description
+        temporal_regularization (bool, optional): Description
+        q_prev (None, optional): Description
+        q_next (None, optional): Description
+        ftol (None, optional): Description
     """
     lb = np.concatenate([-np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 0]])
     lb = np.minimum(lb, 0.0)
@@ -143,9 +157,9 @@ def q_phase(
     # optimizer, but keep it in mind.
     if root_only or trunk_only:
         q0[:3] = marker_ref_arr[12:15]
-        diff_step = params['_ROOT_DIFF_STEP']
+        diff_step = params["_ROOT_DIFF_STEP"]
     else:
-        diff_step = params['_DIFF_STEP']
+        diff_step = params["_DIFF_STEP"]
     if root_only:
         qs_to_opt = np.zeros_like(q0, dtype=np.bool)
         qs_to_opt[:7] = True
@@ -229,6 +243,17 @@ def m_loss(
     :param initial_offsets: Initial offset values for offset regularization
     :param is_regularized: binary vector of offsets to regularize.
     :param reg_coef: L1 regularization coefficient during marker loss.
+
+    Args:
+        offset (TYPE): Description
+        physics (TYPE): Description
+        kp_data (TYPE): Description
+        time_indices (TYPE): Description
+        sites (TYPE): Description
+        q (TYPE): Description
+        initial_offsets (TYPE): Description
+        is_regularized (None, optional): Description
+        reg_coef (float, optional): Description
     """
     residual = 0
     reg_term = 0
@@ -248,6 +273,14 @@ def m_joints_to_markers(offset, physics, sites):
     :param offset: Postural state
     :param physics: Physics of current environment
     :param sites: Sites of keypoint data.
+
+    Args:
+        offset (TYPE): Description
+        physics (TYPE): Description
+        sites (TYPE): Description
+
+    Returns:
+        TYPE: Description
     """
     physics.bind(sites).pos[:] = np.reshape(offset.copy(), (-1, 3))
 
@@ -272,17 +305,18 @@ def m_phase(
     reg_coef=0.0,
     maxiter=50,
 ):
-    """Estimate marker offset, keeping qpose fixed.
+    """Estimate marker offset, keeping qpos fixed.
 
-    :param physics: Physics of current environment.
-    :param kp_data: Keypoint data.
-    :param sites: sites of keypoints at frame_index.
-    :param q: qpos values for the frames in time_indices.
-    :param time_indices: time_indices used for offset estimation.
-    :param initial_offsets: Initial offset values for offset regularization.
-    :param params: Animal parameters dictionary
-    :param reg_coef: L1 regularization coefficient during marker loss.
-    :param maxiter: Maximum number of iterations to use in the minimization.
+    Args:
+        physics (TYPE): Physics of current environment
+        kp_data (TYPE): Keypoint data.
+        sites (TYPE): sites of keypoints at frame_index.
+        time_indices (TYPE): time_indices used for offset estimation.
+        q (TYPE): qpos values for the frames in time_indices.
+        initial_offsets (TYPE): Initial offset values for offset regularization.
+        params (TYPE): Animal parameters dictionary
+        reg_coef (float, optional): L1 regularization coefficient during marker loss.
+        maxiter (int, optional): Maximum number of iterations to use in the minimization.
     """
     # Define initial position of the optimization
     offset0 = np.copy(physics.bind(sites).pos[:]).flatten()
