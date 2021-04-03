@@ -40,15 +40,21 @@ class Rat(legacy_base.Walker):
         if marker_rgba is not None:
             for geom in self.marker_geoms:
                 geom.set_attributes(rgba=marker_rgba)
-        self.body_sites = []
 
         # Add keypoint sites to the mjcf model, and a reference to the sites as
         # an attribute for easier access
+        self.body_sites = []
         for key, v in self.params["_KEYPOINT_MODEL_PAIRS"].items():
             parent = self._mjcf_root.find("body", v)
             pos = self.params["_KEYPOINT_INITIAL_OFFSETS"][key]
             site = parent.add(
-                "site", name=key, type="sphere", size=[0.005], rgba="0 0 0 1", pos=pos, group=3,
+                "site",
+                name=key,
+                type="sphere",
+                size=[0.005],
+                rgba="0 0 0 1",
+                pos=pos,
+                group=3,
             )
             self.body_sites.append(site)
         super(Rat, self)._build(initializer=initializer)
