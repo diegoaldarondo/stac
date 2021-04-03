@@ -7,7 +7,7 @@ import argparse
 from scipy.io import savemat
 
 
-def _sort_fn(file: Text):
+def _sort_fn(file: Text) -> int:
     """Helper to sort files by their name.
 
     Args:
