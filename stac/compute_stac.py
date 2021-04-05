@@ -17,16 +17,18 @@ import stac.tasks as tasks
 _MM_TO_METERS = 1000
 
 
-def _downsample(kp_data, params, orig_freq=300.0):
-    """Summary
-    
+def _downsample(
+    kp_data: np.ndarray, params: Dict, orig_freq: float = 300.0
+) -> np.ndarray:
+    """Helpfer function to downsample data.
+
     Args:
-        kp_data (TYPE): Description
-        params (TYPE): Description
-        orig_freq (float, optional): Description
-    
-    Returns:
-        TYPE: Description
+        kp_data (np.ndarray): n_frames x n_markers x ndimensions keypoint data
+        params (Dict): Parameters dictionary.
+        orig_freq (float, optional): Original frequency of data.
+
+    No Longer Returned:
+        np.ndarray: Resampled keypoint data
     """
     n_samples = kp_data.shape[0]
     n_upsamples = int(np.round(n_samples / orig_freq * (1 / params["_TIME_BINS"])))
@@ -41,16 +43,18 @@ def _downsample(kp_data, params, orig_freq=300.0):
     return kp_data_downsampled
 
 
-def _smooth(kp_data, kp_names, sigma=1):
-    """Summary
-    
+def _smooth(kp_data: np.ndarray, kp_names: List, sigma: float = 1.0):
+    """Helper function to smooth data.
+
+    Applies a Gaussian and median filter.
+
     Args:
-        kp_data (TYPE): Description
-        kp_names (TYPE): Description
-        sigma (int, optional): Description
-    
+        kp_data (np.ndarray): n_frames x n_markers x ndimensions keypoint data
+        kp_names (List): Keypoint names
+        sigma (float, optional): Sigma of Gaussian smoothing.
+
     Returns:
-        TYPE: Description
+        TYPE: Smoothed keypoint data
     """
     parts_to_smooth = ["Arm", "Elbow"]
     ids = np.argwhere(
@@ -66,16 +70,16 @@ def _smooth(kp_data, kp_names, sigma=1):
     return kp_data
 
 
-def preprocess_snippet(kp_data, kp_names, params):
+def preprocess_snippet(kp_data: np.ndarray, kp_names: List, params: Dict):
     """Preprocess snippet data.
-    
+
     Args:
-        kp_data (TYPE): Description
-        kp_names (TYPE): Description
-        params (TYPE): Description
-    
+        kp_data (np.ndarray): n_frames x n_markers x ndimensions keypoint data
+        kp_names (List): Keypoint names
+        params (Dict): Patameters dictionary
+
     Returns:
-        TYPE: Description
+        TYPE: Preprocessed keypoint data
     """
     kp_data = kp_data / _MM_TO_METERS
 
@@ -97,31 +101,27 @@ def preprocess_snippet(kp_data, kp_names, params):
 
 
 def preprocess_data(
-    data_path,
-    start_frame,
-    end_frame,
-    skip,
-    params,
-    struct_name="markers_preproc",
-):
+    data_path: Text,
+    start_frame: int,
+    end_frame: int,
+    skip: int,
+    params: Dict,
+    struct_name: Text = "markers_preproc",
+) -> Tuple[np.ndarray, List]:
     """Preprocess mocap data for stac fitting.
-    
-    :param data_path: Path to .mat mocap file
-    :param start_frame: Frame to start stac tracing
-    :param skip: Subsampling rate for the frames
-    :param struct_name: Field name of .mat file to load
-    
+
     Args:
-        data_path (TYPE): Description
-        start_frame (TYPE): Description
-        end_frame (TYPE): Description
-        skip (TYPE): Description
-        params (TYPE): Description
-        struct_name (str, optional): Description
+        data_path (Text): Path to .mat mocap file
+        start_frame (int): Frame to start stac tracking
+        end_frame (int): Frame to end stac tracking
+        skip (int): Subsampling rate for the frames
+        params (Dict): Parameters dictionary
+        struct_name (Text, optional): Field name of .mat file to load
+
+    No Longer Returned:
+        Tuple: kp_data (np.ndarray): Keypoint data
+            kp_names (List): List of keypoint names
     """
-    # kp_data, kp_names = util.load_kp_data_from_file(
-    #     data_path, struct_name=struct_name, start_frame=start_frame, end_frame=end_frame
-    # )
     kp_data, kp_names = util.load_dannce_data(
         data_path,
         params["skeleton_path"],
@@ -133,18 +133,16 @@ def preprocess_data(
     return kp_data, kp_names
 
 
-def initial_optimization(env, initial_offsets, params, maxiter=100):
+def initial_optimization(
+    env, initial_offsets: np.ndarray, params: Dict, maxiter: int = 100
+):
     """Optimize the first frame with alternating q and m phase.
-    :params env: Environment
-    :params initial_offsets: Vector of starting offsets for initial q_phase
-    :params params: parameter dictionary
-    :params maxiter: Maximum number of iterations for m-phase optimization
-    
+
     Args:
-        env (TYPE): Description
-        initial_offsets (TYPE): Description
-        params (TYPE): Description
-        maxiter (int, optional): Description
+        env (TYPE): Environment
+        initial_offsets (np.ndarray): Vector of starting offsets for initial q_phase
+        params (Dict): parameter dictionary
+        maxiter (int, optional): Maximum number of iterations for m-phase optimization
     """
     if params["verbose"]:
         print("Root Optimization", flush=True)
@@ -167,13 +165,13 @@ def initial_optimization(env, initial_offsets, params, maxiter=100):
     )
 
 
-def root_optimization(env, params, frame=0):
+def root_optimization(env, params: Dict, frame: int = 0):
     """Optimize only the root.
-    
+
     Args:
-        env (TYPE): Description
-        params (TYPE): Description
-        frame (int, optional): Description
+        env (TYPE): Environment
+        params (Dict): Parameters dictionary
+        frame (int, optional): Frame to optimize
     """
     stac.q_phase(
         env.physics,
@@ -196,37 +194,18 @@ def root_optimization(env, params, frame=0):
         root_only=True,
         kps_to_opt=trunk_kps,
     )
-    # # position_only = _get_part_ids(env, ['dummy'])
-    # # position_only[0:7] = True
-    # # stac.q_phase(
-    # #     env.physics,
-    # #     env.task.kp_data[frame, :],
-    # #     env.task._walker.body_sites,
-    # #     params,
-    # #     trunk_only=True,
-    # #     kps_to_opt=trunk_kps,
-    # #     qs_to_opt=position_only,
-    # # )
-    # stac.q_phase(
-    #     env.physics,
-    #     env.task.kp_data[frame, :],
-    #     env.task._walker.body_sites,
-    #     params,
-    #     trunk_only=True,
-    #     kps_to_opt=trunk_kps,
-    # )
 
 
-def q_clip(env, qs_to_opt, params):
+def q_clip(env, qs_to_opt: np.ndarray, params: Dict) -> Tuple:
     """Q-phase across the clip: optimize joint angles.
-    
+
     Args:
-        env (TYPE): Description
-        qs_to_opt (TYPE): Description
-        params (TYPE): Description
-    
+        env (TYPE): Environment
+        qs_to_opt (np.ndarray): boolean array denoting joints to optimize.
+        params (Dict): Parameters dictionary
+
     Returns:
-        TYPE: Description
+        Tuple: Lists for qpos and walker body sites
     """
     q = []
     walker_body_sites = []
@@ -260,34 +239,32 @@ def q_clip(env, qs_to_opt, params):
     return q, walker_body_sites
 
 
-def _get_part_ids(env, parts):
-    """Summary
-    
+def _get_part_ids(env, parts: List) -> np.ndarray:
+    """Get the part ids given a list of parts.
+
     Args:
-        env (TYPE): Description
-        parts (TYPE): Description
-    
+        env (TYPE): Environment
+        parts (List): List of part names
+
     Returns:
-        TYPE: Description
+        np.ndarray: Array of part identifiers
     """
     part_names = env.physics.named.data.qpos.axes.row.names
     return np.array([any(part in name for part in parts) for name in part_names])
 
 
-def q_clip_iso(env, params):
+def q_clip_iso(env, params) -> Tuple:
     """Perform q_phase over the entire clip.
-    
+
     Optimizes limbs and head independently.
     Perform bidirectional temporal regularization.
-    :param env: Rodent environment.
-    :param params: Rodent parameters.
-    
+
     Args:
-        env (TYPE): Description
-        params (TYPE): Description
-    
+        env (TYPE): Environment
+        params (TYPE): Parameters dictionary.
+
     Returns:
-        TYPE: Description
+        Tuple: Description
     """
     q = []
     x = []
@@ -436,16 +413,16 @@ def q_clip_iso(env, params):
 
 def qpos_z_offset(env, q, x):
     """Add a z offset to the qpos root equal to the minimum of the hands/ankles.
-    
+
     :param env: Rat mocap environment.
     :param q: List of qposes over a clip.
     :param x: List of xposes over a clip.
-    
+
     Args:
         env (TYPE): Description
         q (TYPE): Description
         x (TYPE): Description
-    
+
     Returns:
         TYPE: Description
     """
@@ -471,11 +448,11 @@ def qpos_z_offset(env, q, x):
 
 def compute_stac(kp_data, save_path, params):
     """Perform stac on rat mocap data.
-    
+
     :param kp_data: mocap_data
     :param save_path: File to save optimized qposes
     :param params: Dictionary of rat parameters
-    
+
     Args:
         kp_data (TYPE): Description
         save_path (TYPE): Description
