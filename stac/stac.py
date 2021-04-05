@@ -2,6 +2,7 @@
 from dm_control.mujoco.wrapper.mjbindings import mjlib
 import numpy as np
 import scipy.optimize
+from typing import List, Dict, Text, Union, Tuple
 
 
 class _TestNoneArgs(BaseException):
@@ -11,36 +12,36 @@ class _TestNoneArgs(BaseException):
 
 
 def q_loss(
-    q,
+    q: np.ndarray,
     physics,
-    kp_data,
-    sites,
-    params,
-    qs_to_opt=None,
-    q_copy=None,
-    reg_coef=0.0,
-    root_only=False,
-    temporal_regularization=False,
-    q_prev=None,
-    q_next=None,
-    kps_to_opt=None,
+    kp_data: np.ndarray,
+    sites: np.ndarray,
+    params: Dict,
+    qs_to_opt: np.ndarray = None,
+    q_copy: np.ndarray = None,
+    reg_coef: float = 0.0,
+    root_only: bool = False,
+    temporal_regularization: bool = False,
+    q_prev: np.ndarray = None,
+    q_next: np.ndarray = None,
+    kps_to_opt: np.ndarray = None,
 ) -> float:
     """Compute the marker loss for q_phase optimization.
 
     Args:
-        q (TYPE): Qpos for current frame.
+        q (np.ndarray): Qpos for current frame.
         physics (TYPE): Physics of current environment.
-        kp_data (TYPE): Reference keypoint data.
-        sites (TYPE): sites of keypoints at frame_index
-        params (TYPE): Animal parameters dictionary
-        qs_to_opt (None, optional): Binary vector of qposes to optimize.
-        q_copy (None, optional): Copy of current qpos, for use in optimization of subsets
+        kp_data (np.ndarray): Reference keypoint data.
+        sites (np.ndarray): sites of keypoints at frame_index
+        params (Dict): Animal parameters dictionary
+        qs_to_opt (List, optional): Binary vector of qposes to optimize.
+        q_copy (np.ndarray, optional): Copy of current qpos, for use in optimization of subsets
         reg_coef (float, optional): L1 regularization coefficient during marker loss.
         root_only (bool, optional): If True, only regularize the root.
         temporal_regularization (bool, optional): If True, regularize joints over time.
-        q_prev (None, optional): Copy of previous qpos frame
-        q_next (None, optional): Copy of next qpos frame
-        kps_to_opt (None, optional): Vector denoting which keypoints to use in loss.
+        q_prev (np.ndarray, optional): Copy of previous qpos frame
+        q_next (np.ndarray, optional): Copy of next qpos frame
+        kps_to_opt (List, optional): Vector denoting which keypoints to use in loss.
 
     Returns:
         float: loss value
@@ -74,20 +75,16 @@ def q_loss(
     return loss
 
 
-def q_joints_to_markers(q, physics, sites):
+def q_joints_to_markers(q: np.ndarray, physics, sites: np.ndarray) -> np.ndarray:
     """Convert site information to marker information.
 
-    :param q: Postural state
-    :param physics: Physics of current environment
-    :param sites: Sites of keypoint data.
-
     Args:
-        q (TYPE): Description
-        physics (TYPE): Description
-        sites (TYPE): Description
+        q (np.ndarray): Postural state
+        physics (TYPE): Physics of current environment
+        sites (np.ndarray): Sites of keypoint data.
 
     Returns:
-        TYPE: Description
+        np.ndarray: Array of marker positions.
     """
     physics.named.data.qpos[:] = q.copy()
 
@@ -103,45 +100,40 @@ def q_joints_to_markers(q, physics, sites):
 
 def q_phase(
     physics,
-    marker_ref_arr,
-    sites,
-    params,
-    reg_coef=0.0,
-    qs_to_opt=None,
-    kps_to_opt=None,
-    root_only=False,
-    trunk_only=False,
+    marker_ref_arr: np.ndarray,
+    sites: np.ndarray,
+    params: Dict,
+    reg_coef: float = 0.0,
+    qs_to_opt: np.ndarray = None,
+    kps_to_opt: np.ndarray = None,
+    root_only: bool = False,
+    trunk_only: bool = False,
     temporal_regularization=False,
-    q_prev=None,
-    q_next=None,
-    ftol=None,
+    q_prev: np.ndarray = None,
+    q_next: np.ndarray = None,
+    ftol: float = None,
 ):
     """Update q_pose using estimated marker parameters.
 
-    :param physics: Physics of current environment.
-    :param marker_ref_arr: Keypoint data reference
-    :param sites: sites of keypoints at frame_index
-    :param params: Animal parameters dictionary
-    :param reg_coef: L1 regularization coefficient during marker loss.
-    :param qs_to_opt: Binary vector of qs to optimize.
-    :param kps_to_opt: Logical vector of keypoints to use in q loss function.
-    :param root_only: If True, only optimize the root.
-    :param temporal_regularization: If True, regularize arm joints over time.
-
     Args:
-        physics (TYPE): Description
-        marker_ref_arr (TYPE): Description
-        sites (TYPE): Description
-        params (TYPE): Description
+        physics (TYPE): Physics of current environment.
+        marker_ref_arr (np.ndarray): Keypoint data reference
+        sites (np.ndarray): sites of keypoints at frame_index
+        params (Dict): Animal parameters dictionary
         reg_coef (float, optional): Description
-        qs_to_opt (None, optional): Description
-        kps_to_opt (None, optional): Description
+        qs_to_opt (np.ndarray, optional): Description
+        kps_to_opt (np.ndarray, optional): Description
         root_only (bool, optional): Description
         trunk_only (bool, optional): Description
-        temporal_regularization (bool, optional): Description
-        q_prev (None, optional): Description
-        q_next (None, optional): Description
-        ftol (None, optional): Description
+        temporal_regularization (bool, optional): If True, regularize arm joints over time.
+        q_prev (np.ndarray, optional): Description
+        q_next (np.ndarray, optional): Description
+        ftol (float, optional): Description
+        reg_coef (float, optional L1 regularization coefficient during marker loss.
+        qs_to_opt (None, optional Binary vector of qs to optimize.
+        kps_to_opt (None, optional Logical vector of keypoints to use in q loss function.
+        root_only (bool, optional If True, only optimize the root.
+        trunk_only (bool, optional If True, only optimize the trunk.
     """
     lb = np.concatenate([-np.inf * np.ones(7), physics.named.model.jnt_range[1:][:, 0]])
     lb = np.minimum(lb, 0.0)
@@ -221,39 +213,28 @@ def q_phase(
 
 
 def m_loss(
-    offset,
+    offset: np.ndarray,
     physics,
-    kp_data,
-    time_indices,
-    sites,
-    q,
-    initial_offsets,
-    is_regularized=None,
-    reg_coef=0.0,
+    kp_data: np.ndarray,
+    time_indices: List,
+    sites: np.ndarray,
+    q: np.ndarray,
+    initial_offsets: np.ndarray,
+    is_regularized: bool = None,
+    reg_coef: float = 0.0,
 ):
     """Compute the marker loss for optimization.
 
-    :param offset: vector of offsets from rat bodies to inferred
-                   mocap sites
-    :param physics: Physics of current environment.
-    :param kp_data: Mocap data in global coordinates
-    :param time_indices: time_indices used for offset estimation
-    :param sites: sites of keypoints at frame_index
-    :param q: qpos values for the frames in time_indices
-    :param initial_offsets: Initial offset values for offset regularization
-    :param is_regularized: binary vector of offsets to regularize.
-    :param reg_coef: L1 regularization coefficient during marker loss.
-
     Args:
-        offset (TYPE): Description
-        physics (TYPE): Description
-        kp_data (TYPE): Description
-        time_indices (TYPE): Description
-        sites (TYPE): Description
-        q (TYPE): Description
-        initial_offsets (TYPE): Description
-        is_regularized (None, optional): Description
-        reg_coef (float, optional): Description
+        offset (np.ndarray): vector of offsets to inferred mocap sites
+        physics (TYPE): Physics of current environment.
+        kp_data (np.ndarray): Mocap data in global coordinates
+        time_indices (List): time_indices used for offset estimation
+        sites (np.ndarray): sites of keypoints at frame_index
+        q (np.ndarray): qpos values for the frames in time_indices
+        initial_offsets (np.ndarray): Initial offset values for offset regularization
+        is_regularized (bool, optional): binary vector of offsets to regularize.
+        reg_coef (float, optional): L1 regularization coefficient during marker loss.
     """
     residual = 0
     reg_term = 0
@@ -267,20 +248,16 @@ def m_loss(
     return np.sum(residual) + reg_coef * np.sum(reg_term)
 
 
-def m_joints_to_markers(offset, physics, sites):
+def m_joints_to_markers(offset, physics, sites) -> np.ndarray:
     """Convert site information to marker information.
 
-    :param offset: Postural state
-    :param physics: Physics of current environment
-    :param sites: Sites of keypoint data.
-
     Args:
-        offset (TYPE): Description
-        physics (TYPE): Description
-        sites (TYPE): Description
+        offset (TYPE):  Current offset.
+        physics (TYPE):  Physics of current environment
+        sites (TYPE):  Sites of keypoint data.
 
     Returns:
-        TYPE: Description
+        TYPE: Array of marker positions
     """
     physics.bind(sites).pos[:] = np.reshape(offset.copy(), (-1, 3))
 
@@ -296,25 +273,25 @@ def m_joints_to_markers(offset, physics, sites):
 
 def m_phase(
     physics,
-    kp_data,
-    sites,
-    time_indices,
-    q,
-    initial_offsets,
-    params,
-    reg_coef=0.0,
-    maxiter=50,
+    kp_data: np.ndarray,
+    sites: np.ndarray,
+    time_indices: List,
+    q: np.ndarray,
+    initial_offsets: np.ndarray,
+    params: Dict,
+    reg_coef: float = 0.0,
+    maxiter: int = 50,
 ):
     """Estimate marker offset, keeping qpos fixed.
 
     Args:
         physics (TYPE): Physics of current environment
-        kp_data (TYPE): Keypoint data.
-        sites (TYPE): sites of keypoints at frame_index.
-        time_indices (TYPE): time_indices used for offset estimation.
-        q (TYPE): qpos values for the frames in time_indices.
-        initial_offsets (TYPE): Initial offset values for offset regularization.
-        params (TYPE): Animal parameters dictionary
+        kp_data (np.ndarray): Keypoint data.
+        sites (np.ndarray): sites of keypoints at frame_index.
+        time_indices (List): time_indices used for offset estimation.
+        q (np.ndarray): qpos values for the frames in time_indices.
+        initial_offsets (np.ndarray): Initial offset values for offset regularization.
+        params (Dict): Animal parameters dictionary
         reg_coef (float, optional): L1 regularization coefficient during marker loss.
         maxiter (int, optional): Maximum number of iterations to use in the minimization.
     """
