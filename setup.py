@@ -5,8 +5,7 @@ setup(
     name="stac",
     version="0.0.1",
     packages=find_packages(),
-    scripts=["cluster/submit_stac_single_batch.sh",
-             "cluster/dannce2npmp.sh"],
+    scripts=["cluster/submit_stac_single_batch.sh", "cluster/dannce2npmp.sh"],
     entry_points={
         "console_scripts": [
             "stac-submit = stac.interface:submit",
