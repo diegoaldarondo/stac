@@ -30,13 +30,15 @@ source ~/.bashrc
 setup_mujoco200_3.7
 
 # Make the log directory if it doesn't exist
-mkdir -p logs
+# mkdir -p logs
 
 # Stac data and merge if successful
-stac-submit ./stac_params/submission_params.yaml && stac-merge ./stac
+# stac-submit ./stac_params/submission_params.yaml && stac-merge ./stac
 
-# Preprocess npmp and merge if successgul
-parallel-npmp-preprocessing ./stac/total.p ./npmp_preprocessing && merge-npmp-preprocessing ./npmp_preprocessing
+# Preprocess npmp and merge if successful
+# parallel-npmp-preprocessing ./stac/total.p ./npmp_preprocessing && merge-npmp-preprocessing ./npmp_preprocessing
 
 # Embed npmp
-dispatch-npmp-embed ./npmp_preprocessing/total.hdf5 ./npmp $1
+mkdir -p npmp
+mkdir -p npmp/model_3_no_noise
+dispatch-npmp-embed ./npmp_preprocessing/total.hdf5 ./npmp/model_3_no_noise_segmented $1 --stac-params=./stac_params/params.yaml --offset-path=./stac/offset.p
