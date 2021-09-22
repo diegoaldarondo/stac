@@ -14,6 +14,7 @@ import stac.walkers as walkers
 import stac.tasks as tasks
 import stac.arenas as arenas
 from typing import List, Dict, Text, Union, Tuple
+import numpy as np
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
