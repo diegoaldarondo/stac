@@ -5,6 +5,7 @@ import clize
 import os
 import argparse
 from scipy.io import savemat
+from typing import Text, Tuple
 
 
 def _sort_fn(file: Text) -> int:
