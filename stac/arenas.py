@@ -31,8 +31,8 @@ class DannceArena(composer.Arena):
     def _build(
         self,
         params,
-        arena_diameter=None,
-        arena_center=None,
+        arena_diameter=.6985,
+        arena_center=[.1123, .1750],
         size=(1, 1),
         name='DannceArena',
     ):
@@ -58,27 +58,28 @@ class DannceArena(composer.Arena):
         self.arena_center = arena_center
         
         # Make the cylinder
-        cylinder_segments = []
-        radius = self.arena_diameter / 2
-        height = 0.5
-        chord = 2 * radius * np.tan(np.pi / _NUM_CYLINDER_SEGMENTS)
-        for ii in range(_NUM_CYLINDER_SEGMENTS):
-            ang = ii * 2 * np.pi / _NUM_CYLINDER_SEGMENTS
-            cylinder_segments.append(
-                self._mjcf_root.worldbody.add(
-                    "geom",
-                    name="plane_{}".format(ii),
-                    type="plane",
-                    pos=[
-                        radius * np.cos(ang) + arena_center[0],
-                        radius * np.sin(ang) + arena_center[1],
-                        height,
-                    ],
-                    size=[chord / 2, height, .1],
-                    euler=[np.pi / 2, -np.pi / 2 + ang, 0],
-                    rgba=[0.5, 0.5, 0.5, 0.2],
+        if arena_diameter is not None:
+            cylinder_segments = []
+            radius = self.arena_diameter / 2
+            height = 0.5
+            chord = 2 * radius * np.tan(np.pi / _NUM_CYLINDER_SEGMENTS)
+            for ii in range(_NUM_CYLINDER_SEGMENTS):
+                ang = ii * 2 * np.pi / _NUM_CYLINDER_SEGMENTS
+                cylinder_segments.append(
+                    self._mjcf_root.worldbody.add(
+                        "geom",
+                        name="plane_{}".format(ii),
+                        type="plane",
+                        pos=[
+                            radius * np.cos(ang) + arena_center[0],
+                            radius * np.sin(ang) + arena_center[1],
+                            height,
+                        ],
+                        size=[chord / 2, height, .1],
+                        euler=[np.pi / 2, -np.pi / 2 + ang, 0],
+                        rgba=[0.5, 0.5, 0.5, 0.2],
+                    )
                 )
-            )
 
         # Choose the FOV so that the floor always fits nicely within the frame
         # irrespective of actual floor size.
