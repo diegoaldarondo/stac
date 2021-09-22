@@ -13,6 +13,7 @@ import stac.util as util
 import pickle
 import os
 import stac.tasks as tasks
+from typing import List, Dict, Tuple, Text, Union
 
 _MM_TO_METERS = 1000
 
@@ -411,20 +412,17 @@ def q_clip_iso(env, params) -> Tuple:
     return q, walker_body_sites, x
 
 
-def qpos_z_offset(env, q, x):
+def qpos_z_offset(env, q: List, x: List) -> Tuple[List, np.ndarray]:
     """Add a z offset to the qpos root equal to the minimum of the hands/ankles.
 
-    :param env: Rat mocap environment.
-    :param q: List of qposes over a clip.
-    :param x: List of xposes over a clip.
-
     Args:
-        env (TYPE): Description
-        q (TYPE): Description
-        x (TYPE): Description
+        env (TYPE): Environment
+        q (List): List of qposes over a clip.
+        x (List): List of xposes over a clip.
 
     Returns:
-        TYPE: Description
+        Tuple[List, np.ndarray]: qpos (List): List of altered qposes
+            ground_pos (np.ndarray): ground position.
     """
     # Find the indices of hands and feet xpositions
     ground_parts = ["foot", "hand"]
@@ -446,17 +444,13 @@ def qpos_z_offset(env, q, x):
     return q, ground_pos
 
 
-def compute_stac(kp_data, save_path, params):
+def compute_stac(kp_data: np.ndarray, save_path: Text, params: Dict):
     """Perform stac on rat mocap data.
 
-    :param kp_data: mocap_data
-    :param save_path: File to save optimized qposes
-    :param params: Dictionary of rat parameters
-
     Args:
-        kp_data (TYPE): Description
-        save_path (TYPE): Description
-        params (TYPE): Description
+        kp_data (np.ndarray): n_frames x n_markers x ndimensions keypoint data
+        save_path (Text): File to save optimized qposes
+        params (Dict): Parameters dictionary
     """
     if params["n_frames"] is None:
         params["n_frames"] = kp_data.shape[0]
@@ -573,14 +567,14 @@ def compute_stac(kp_data, save_path, params):
         # 'ground_pos': ground_pos,
         "kp_data": np.copy(kp_data[: params["n_frames"], :]),
     }
-
-    if params["_USE_HFIELD"] and isinstance(env.task, tasks.ViewMocap_Hfield):
-        # env.task.get_heightfield(env.physics)
-        out_dict["pedestal_radius"] = env.task._arena.pedestal_radius
-        out_dict["pedestal_center"] = env.task._arena.pedestal_center
-        out_dict["pedestal_height"] = env.task._arena.pedestal_height
-        out_dict["hfield_image"] = env.task._arena.hfield
-        out_dict["scaled_arena_diameter"] = env.task._arena.arena_diameter
+    if "_USE_HFIELD" in params:
+        if params["_USE_HFIELD"] and isinstance(env.task, tasks.ViewMocap_Hfield):
+            # env.task.get_heightfield(env.physics)
+            out_dict["pedestal_radius"] = env.task._arena.pedestal_radius
+            out_dict["pedestal_center"] = env.task._arena.pedestal_center
+            out_dict["pedestal_height"] = env.task._arena.pedestal_height
+            out_dict["hfield_image"] = env.task._arena.hfield
+            out_dict["scaled_arena_diameter"] = env.task._arena.arena_diameter
 
     # # Render a video
     # view_stac.setup_visualization(
@@ -609,23 +603,22 @@ def compute_stac(kp_data, save_path, params):
 
 
 def handle_args(
-    data_path,
-    param_path,
+    data_path: Text,
+    param_path: Text,
     *,
-    save_path=None,
-    offset_path=None,
-    start_frame=0,
-    end_frame=0,
-    n_snip=None,
-    n_frames=None,
-    n_sample_frames=50,
-    skip=1,
-    adaptive_z_offset=False,
-    verbose=False,
-    visualize=False,
-    render_video=False,
-    process_snippet=True,
-    skeleton_path="/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat",
+    save_path: Text = None,
+    offset_path: Text = None,
+    start_frame: int = 0,
+    end_frame: int = 0,
+    n_frames: int = None,
+    n_sample_frames: int = 50,
+    skip: int = 1,
+    adaptive_z_offset: bool = False,
+    verbose: bool = False,
+    visualize: bool = False,
+    render_video: bool = False,
+    process_snippet: bool = True,
+    skeleton_path: Text = "/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat",
 ):
     """Wrap compute_stac to perform appropriate processing.
 
