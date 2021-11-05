@@ -16,7 +16,8 @@ MM_TO_METER = 1000
 
 FLOOR_PCTILE_CLAMP = 95
 FLOOR_CLAMP_VALUE = 0.01
-GROUND_GEOM_POS = "0 0 -0.025"
+GROUND_GEOM_POS = "0 0 -0.005"
+_GROUNDPLANE_QUAD_SIZE = 0.025
 
 
 def _load_hfield(data_path, scale):
@@ -31,10 +32,11 @@ class DannceArena(composer.Arena):
     def _build(
         self,
         params,
-        arena_diameter=.6985,
-        arena_center=[.1123, .1750],
-        size=(1, 1),
-        name='DannceArena',
+        arena_diameter=0.6985,
+        arena_center=[0.1123, 0.1750],
+        size=(2, 2),
+        name="DannceArena",
+        alpha=1.0,
     ):
         super(DannceArena, self)._build(name=name)
 
@@ -43,20 +45,51 @@ class DannceArena(composer.Arena):
             ambient=[0.4, 0.4, 0.4], diffuse=[0.8, 0.8, 0.8], specular=[0.1, 0.1, 0.1]
         )
 
+        self._ground_texture = self._mjcf_root.asset.add(
+            "texture",
+            rgb1=[0.2, 0.3, 0.4],
+            rgb2=[0.1, 0.2, 0.3],
+            type="2d",
+            builtin="checker",
+            name="groundplane",
+            width=100,
+            height=100,
+            mark="edge",
+            markrgb=[0.8, 0.8, 0.8],
+        )
+        if alpha == 0.0:
+            self._ground_material = self._mjcf_root.asset.add(
+                "material",
+                name="groundplane",
+                texrepeat=[2, 2],  # Makes white squares exactly 1x1 length units.
+                texuniform=True,
+                reflectance=0.2,
+                rgba=[0.0, 0.0, 0.0, alpha],
+            )
+        else:
+            self._ground_material = self._mjcf_root.asset.add(
+                "material",
+                name="groundplane",
+                texrepeat=[2, 2],  # Makes white squares exactly 1x1 length units.
+                texuniform=True,
+                reflectance=0.2,
+                texture=self._ground_texture,
+            )
+
         self._ground_geom = self._mjcf_root.worldbody.add(
             "geom",
             type="plane",
-            name='groundplane',
-            rgba="0.2 0.3 0.4 1",
+            name="groundplane",
+            material=self._ground_material,
             pos=GROUND_GEOM_POS,
-            size=list(size) + [.025]
+            size=list(size) + [_GROUNDPLANE_QUAD_SIZE],
         )
 
         # Get the dimensions of arena objects and floormap
         self.params = params
         self.arena_diameter = arena_diameter
         self.arena_center = arena_center
-        
+
         # Make the cylinder
         if arena_diameter is not None:
             cylinder_segments = []
@@ -75,7 +108,7 @@ class DannceArena(composer.Arena):
                             radius * np.sin(ang) + arena_center[1],
                             height,
                         ],
-                        size=[chord / 2, height, .1],
+                        size=[chord / 2, height, 0.1],
                         euler=[np.pi / 2, -np.pi / 2 + ang, 0],
                         rgba=[0.5, 0.5, 0.5, 0.2],
                     )
@@ -135,7 +168,7 @@ class RatArena(composer.Arena):
             "geom",
             name=name,
             type="hfield",
-            rgba="0.2 0.3 0.4 1",
+            rgba="0.2 0.3 0.4 0",
             pos=GROUND_GEOM_POS,
             hfield=name,
         )

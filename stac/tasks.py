@@ -224,16 +224,16 @@ class ViewMocap(composer.Task):
             physics.named.data.qpos["walker/mandible"] = self.params["_MANDIBLE_POS"]
 
             # Make certain parts parallel to the floor for cosmetics
-            for i, name in enumerate(physics.named.data.qpos.axes.row.names):
-                if any(part in name for part in self.params["_PARTS_TO_ZERO"]):
-                    # Doing it through optimization is pretty easy, but a hack
-                    q0 = physics.named.data.qpos[name].copy()
-                    q_opt = scipy.optimize.minimize(
-                        lambda q: self._loss(q, physics, name),
-                        q0,
-                        options={"maxiter": 5},
-                    )
-                    physics.named.data.qpos[name] = q_opt.x
+            # for i, name in enumerate(physics.named.data.qpos.axes.row.names):
+            #     if any(part in name for part in self.params["_PARTS_TO_ZERO"]):
+            #         # Doing it through optimization is pretty easy, but a hack
+            #         q0 = physics.named.data.qpos[name].copy()
+            #         q_opt = scipy.optimize.minimize(
+            #             lambda q: self._loss(q, physics, name),
+            #             q0,
+            #             options={"maxiter": 5},
+            #         )
+            #         physics.named.data.qpos[name] = q_opt.x
 
             physics.named.data.qvel[:] = 0.0
             physics.named.data.qacc[:] = 0.0

@@ -41,6 +41,7 @@ def rodent_mocap(
     pedestal_radius: float = None,
     arena_diameter: float = None,
     arena_center: List = None,
+    alpha=1.0,
 ):
     """View a rat with mocap sites.
 
@@ -87,12 +88,13 @@ def rodent_mocap(
             params,
             arena_diameter=arena_diameter,
             arena_center=arena_center,
+            alpha=alpha,
         )
         task = tasks.ViewMocap(walker, arena, kp_data, params=params)
     elif params["ARENA_TYPE"] == "Standard":
         # Build a Floor arena
         arena = floors.Floor(size=(1, 1))
-        arena._ground_geom.pos = [0.0, 0.0, -0.1]
+        arena._ground_geom.pos = [0.0, 0.0, -0.01]
         # Build a mocap viewing task
         task = tasks.ViewMocap(walker, arena, kp_data, params=params)
 
