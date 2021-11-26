@@ -13,8 +13,10 @@
       <geom contype="1" conaffinity="1" condim="1" group="2"/>
       <default class="collision_primitive">
         <geom type="capsule" group="2" rgba="0 0.5 0.5 1" density="500.0"/>
+        <!-- <geom type="capsule" group="2" rgba="0.5 0.5 0.5 1" density="500.0"/> -->
         <default class="collision_primitive_paw">
           <geom condim="3" priority="1" rgba="0 0.6 0.7 1" friction="1.5 0.005 0.0001"/>
+          <!-- <geom condim="3" priority="1" rgba="0.5 0.5 0.5 1" friction="1.5 0.005 0.0001"/> -->
         </default>
         <default class="nonself_collision_primitive">
           <geom conaffinity="0"/>
@@ -144,18 +146,23 @@
     <quality shadowsize="2048"/>
     <global offwidth="1920"/>
     <global offheight="1200"/>
+    <!-- <rgba fog="1 1 1 1"/> -->
   </visual>
   <statistic meansize="0.003"/>
   <asset>
     <!-- <skin name="skin" file="rodent_walker_skin.skn"/> -->
   </asset>
   <worldbody>
+    <camera name="close_fixed" mode="fixed" pos=".3 -.3 0.32" xyaxes="1 1 0 -1 1 2"/>
+    <camera name="close_profile_aligned" mode="targetbody" pos=".3 -.3 0.25" target="torso"/>
     <body name="torso" pos="0.03099526054578288 2.058524937651458e-07 0.06508957263119967">
       <light name="tracking_light" mode="trackcom" pos="0 0 3"/>
       <camera name="back" mode="trackcom" pos="-1 0 0.5" xyaxes="0 -1 0 1 0 2"/>
-      <camera name="side" mode="trackcom" pos="0 -1 0.5" xyaxes="1 0 0 0 1 2"/>
+      <camera name="side" mode="fixed" pos="0 -1 0.5" xyaxes="1 0 0 0 1 2"/>
       <camera name="top" mode="trackcom" fovy="100.0" pos="0 0 1" zaxis="0 -0.2 1"/>
       <camera name="close_profile" mode="trackcom" pos=".3 -.3 0.25" xyaxes="1 1 0 -1 1 2"/>
+      <camera name="close_side" mode="fixed" pos="0 -.5 0.25" xyaxes="1 0 0 0 1 2"/>
+      <!-- <camera name="close_profile_fixed" mode="track" pos=".3 -.3 0.25" xyaxes="1 1 0 -1 1 2"/> -->
       <camera name="examples" mode="trackcom" pos="-.5 0 0.15" xyaxes="0 -1 0 1 0 2"/>
       <camera name="stretch_examples" mode="trackcom" pos=".5 0 0.05" xyaxes="0 1 0 -1 0 4"/>
       <geom name="collision_torso" class="nonself_collision_primitive" type="ellipsoid" size="0.05 0.024 0.026" density="468.251260009" pos="-0.008200000000000001 0 0" euler="0 0.1745329251994329 0"/>
@@ -283,7 +290,7 @@
                                                             </body>
                                                             <geom name="vertebra_C20_collision" class="collision_primitive" size="0.001498286379501224 0.005176536360522732 0.003596158232539892" density="507.157357703" pos="0 2.844946500601963e-18 0" quat="0 0.7071067811865475 0 0.7071067811865476"/>
                                                           </body>
-                                                          <joint name="vertebra_C19_extend" class="caudal_extend" pos="0.00427856529131528 0 5.656174381406233e-10" axis="-0 1 0" range="-0.2617993877991494 0.2617993877991494"/>
+                                                          <joint name="vertebra_C19_extend" class="caudal_extend"  pos="0.00427856529131528 0 5.656174381406233e-10" axis="-0 1 0" range="-0.2617993877991494 0.2617993877991494"/>
                                                           <geom name="vertebra_C19_collision" class="collision_primitive" size="0.00163395400159061 0.005171378143131733 0.003596235066652298" density="507.157357703" pos="0 0 0" quat="0 0.7071067811865475 0 0.7071067811865476"/>
                                                         </body>
                                                         <geom name="vertebra_C18_collision" class="collision_primitive" size="0.001633956097066402 0.004912774951662868 0.003596230177208781" density="507.157357703" pos="-4.551914400963142e-17 3.556183125752454e-19 0" quat="0 0.7071067811865475 0 0.7071067811865476"/>
