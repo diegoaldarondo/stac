@@ -3,7 +3,7 @@
 Attributes:
     FPS (int): Default frames per second of the video. 
 """
-from dm_control import viewer
+# from dm_control import viewer
 from dm_control.locomotion.walkers import rescale
 import clize
 import stac.rodent_environments as rodent_environments
@@ -17,7 +17,7 @@ from dm_control.mujoco.wrapper.mjbindings import enums
 from typing import Text, List, Dict, Union, Tuple
 from scipy.ndimage import median_filter, uniform_filter1d
 import re
-from scipy.io import loadmat
+import scipy.io as spio
 from scipy.ndimage import gaussian_filter
 import cv2
 
@@ -25,7 +25,45 @@ ALPHA_BASE_VALUE = 0.5
 FPS = 50
 
 
-def load_data(data_path: Text, start_frame: int = 0, end_frame: int = -1):
+def loadmat(filename):
+    """
+    this function should be called instead of direct spio.loadmat
+    as it cures the problem of not properly recovering python dictionaries
+    from mat files. It calls the function check keys to cure all entries
+    which are still mat-objects
+    """
+    data = spio.loadmat(filename, struct_as_record=False, squeeze_me=True)
+    return _check_keys(data)
+
+
+def _check_keys(dict):
+    """
+    checks if entries in dictionary are mat-objects. If yes
+    todict is called to change them to nested dictionaries
+    """
+    for key in dict:
+        if isinstance(dict[key], spio.matlab.mio5_params.mat_struct):
+            dict[key] = _todict(dict[key])
+    return dict
+
+
+def _todict(matobj):
+    """
+    A recursive function which constructs from matobjects nested dictionaries
+    """
+    dict = {}
+    for strg in matobj._fieldnames:
+        elem = matobj.__dict__[strg]
+        if isinstance(elem, spio.matlab.mio5_params.mat_struct):
+            dict[strg] = _todict(elem)
+        else:
+            dict[strg] = elem
+    return dict
+
+
+def load_data(
+    data_path: Text, start_frame: int = 0, end_frame: int = -1, return_q_names=False
+):
     """Load data from .pickle file
 
     Args:
@@ -57,10 +95,13 @@ def load_data(data_path: Text, start_frame: int = 0, end_frame: int = -1):
             kp_data = np.zeros((n_frames, offsets.size))
 
         q_names = in_dict["names_qpos"]
-        print(q_names)
+        # print(q_names)
         q = fix_tail(q, q_names)
 
-    return q, offsets, kp_data, n_frames
+    if return_q_names:
+        return q, offsets, kp_data, n_frames, q_names
+    else:
+        return q, offsets, kp_data, n_frames
 
 
 def fix_tail(q: np.ndarray, q_names: List):
@@ -75,7 +116,7 @@ def fix_tail(q: np.ndarray, q_names: List):
     """
     for i, name in enumerate(q_names):
         if re.match("walker/vertebra_C.*bend", name):
-            print(name, i, flush=True)
+            # print(name, i, flush=True)
             q[:, i] = 0.0
         if re.match("walker/vertebra_C.*extend", name):
             q[:, i] = 0.0
@@ -128,6 +169,8 @@ def setup_visualization(
     n_frames: int,
     render_video: bool = False,
     segmented=False,
+    camera_kwargs: List = None,
+    registration_xml: bool = False,
 ):
     """Sets up stac visualization.
 
@@ -144,8 +187,19 @@ def setup_visualization(
 
     if segmented:
         alpha = 0.0
+        params["_ARENA_DIAMETER"] = None
     else:
         alpha = 1.0
+        params["_ARENA_DIAMETER"] = None
+    if registration_xml:
+        params[
+            "_XML_PATH"
+        ] = "/n/home02/daldarondo/LabDir/Diego/code/dm/stac/models/rodent_stac.xml"
+    # else:
+    #     params[
+    #         "_XML_PATH"
+    #     ] = "/n/home02/daldarondo/LabDir/Diego/code/dm/stac/models/rodent_mujoco_overlay.xml"
+
     env = setup_arena(kp_data, params, alpha=alpha)
 
     rescale.rescale_subtree(
@@ -156,13 +210,17 @@ def setup_visualization(
 
     # Setup cameras
     # fovy = 2*atan(height/(2*params{1}.K(2,2)))/2*pi*360
-    env.task._arena._mjcf_root.worldbody.add(
-        "camera",
-        name="Camera1",
-        pos=[-0.8781364, 0.3775911, 0.4291190],
-        fovy=28.8255,
-        quat="0.5353    0.3435   -0.4623   -0.6178",
-    )
+    if camera_kwargs is not None:
+        for kwargs in camera_kwargs:
+            env.task._arena._mjcf_root.worldbody.add("camera", **kwargs)
+    else:
+        env.task._arena._mjcf_root.worldbody.add(
+            "camera",
+            name="Camera1",
+            pos=[-0.8781364, 0.3775911, 0.4291190],
+            fovy=28.8255,
+            quat="0.5353    0.3435   -0.4623   -0.6178",
+        )
 
     env.task._arena._mjcf_root.worldbody.add(
         "camera",
@@ -171,6 +229,10 @@ def setup_visualization(
         fovy=50,
         quat="0.5353    0.3435   -0.4623   -0.6178",
     )
+
+    # env.physics.contexts.mujoco._ptr.contents.fogRGBA[0] = 1.0
+    # env.physics.contexts.mujoco._ptr.contents.fogRGBA[1] = 1.0
+    # env.physics.contexts.mujoco._ptr.contents.fogRGBA[2] = 1.0
     env.reset()
     setup_sites(q, offsets, env)
     env.task.render_video = render_video
@@ -212,6 +274,31 @@ def setup_hires_scene():
     scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
     scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
     scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
+    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_FOG] = False
+    return scene_option
+
+
+def setup_variability_scene():
+    """Return scene_option for hires scene.
+
+    Returns:
+        [type]: MjvOption
+    """
+    scene_option = wrapper.MjvOption()
+    # scene_option.geomgroup[1] = 0
+    scene_option.geomgroup[2] = 1
+    # scene_option.geomgroup[3] = 0
+    # scene_option.sitegroup[0] = 0
+    # scene_option.sitegroup[1] = 0
+    scene_option.sitegroup[2] = 0
+    scene_option.sitegroup[5] = 1
+    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
+    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
+    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
+    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
+    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
+    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
+    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_FOG] = False
     return scene_option
 
 
@@ -242,22 +329,15 @@ def load_calibration(dannce_file: Text) -> Tuple:
         Tuple: Intrinsic matrix, radial distortion, tangential distortion, R, t
     """
     M = loadmat(dannce_file)
-    params = M["params"][0][0][0][0]
-    K = params[0]
-    rdistort = params[1]
-    tdistort = params[2]
-    r = params[3]
-    t = params[4]
-    return K, rdistort, tdistort, r, t
+    return M["params"]
 
 
 def overlay_frame(
     rgb_frame: np.ndarray,
-    K: np.ndarray,
-    rdistort: np.ndarray,
-    tdistort: np.ndarray,
+    params: List,
     recon_frame: np.ndarray,
     seg_frame: np.ndarray,
+    cam_id: int = 0,
 ) -> np.ndarray:
     """Make a single overlain frame of reconstruction + rgb.
 
@@ -275,13 +355,15 @@ def overlay_frame(
     # Load and undistort the rgb frame
     rgb_frame = cv2.undistort(
         rgb_frame,
-        K.T,
-        np.concatenate([rdistort, tdistort], axis=1).T.squeeze(),
-        K.T,
+        params[cam_id].K.T,
+        np.concatenate(
+            [params[cam_id].RDistort, params[cam_id].TDistort], axis=0
+        ).T.squeeze(),
+        params[cam_id].K.T,
     )
 
     # Calculate the alpha mask using the segmented video
-    alpha = (seg_frame[:, :, 0] != 0.0) * ALPHA_BASE_VALUE
+    alpha = (seg_frame[:, :, 0] >= 0.0) * ALPHA_BASE_VALUE
     alpha = gaussian_filter(alpha, 2)
     alpha = gaussian_filter(alpha, 2)
     alpha = gaussian_filter(alpha, 2)
@@ -293,6 +375,121 @@ def overlay_frame(
             alpha * recon_frame[:, :, n_chan] + (1 - alpha) * rgb_frame[:, :, n_chan]
         )
     return frame
+
+
+def mujoco_loop(
+    save_path: Text,
+    params: Dict,
+    env,
+    scene_option,
+    camera: Text = "walker/close_profile",
+    height: int = 1200,
+    width: int = 1920,
+):
+    """Rendering loop for generating mujoco videos.
+
+    Args:
+        save_path (Text): Path to save overlay video
+        params (Dict): stac parameters dictionary
+        env ([type]): rodent environment
+        scene_option ([type]): MjvOption rendering options
+        camera (Text, optional): Name of the camera to use for rendering. Defaults to "walker/close_profile".
+        height (int, optional): Camera height in pixels. Defaults to 1200.
+        width (int, optional): Camera width in pixels. Defaults to 1920.
+    """
+    prev_time = env.physics.time()
+    n_frame = 0
+    with imageio.get_writer(save_path, fps=FPS) as video:
+        env.task.after_step(env.physics, None)
+        reconArr = env.physics.render(
+            height,
+            width,
+            camera_id=camera,
+            scene_option=scene_option,
+        )
+        video.append_data(reconArr)
+        n_frame += 1
+        while prev_time < env._time_limit:
+            while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
+                "_TIME_BINS"
+            ]:
+                env.physics.step()
+            env.task.after_step(env.physics, None)
+
+            # env.physics.contexts.mujoco._ptr.contents.fogRGBA[2] = 1.0
+            reconArr = env.physics.render(
+                height,
+                width,
+                camera_id=camera,
+                scene_option=scene_option,
+            )
+            # segArr = env.physics.render(
+            #     height,
+            #     width,
+            #     camera_id=camera,
+            #     scene_option=scene_option,
+            #     segmentation=True,
+            # )
+            # background = segArr[:, :, 0] < 0.0
+            # for i in range(reconArr.shape[2]):
+            #     fr = reconArr[:, :, i]
+            #     fr[background] = 255
+            #     reconArr[:, :, i] = fr
+
+            # import pdb
+
+            # pdb.set_trace()
+            video.append_data(reconArr)
+
+            n_frame += 1
+            # print(n_frame)
+            prev_time = np.round(env.physics.time(), decimals=2)
+
+
+# def variability_loop(
+#     save_path: Text,
+#     frames: np.ndarray,
+#     params: Dict,
+#     variability: np.ndarray,
+#     env,
+#     scene_option,
+#     camera: Text = "walker/close_profile",
+#     height: int = 1200,
+#     width: int = 1920,
+# ):
+#     """Rendering loop for generating variability videos.
+
+#     Args:
+#         save_path (Text): Path to save overlay video
+#         video_path (Text): Path to undistorted rgb video
+#         calibration_path (Text): Path to calibration dannce.mat file.
+#         frames (np.ndarray): Frames to render
+#         params (Dict): stac parameters dictionary
+#         env ([type]): rodent environment
+#         scene_option ([type]): MjvOption rendering options
+#         camera (Text, optional): Name of the camera to use for rendering. Defaults to "walker/close_profile".
+#         height (int, optional): Camera height in pixels. Defaults to 1200.
+#         width (int, optional): Camera width in pixels. Defaults to 1920.
+#     """
+#     prev_time = env.physics.time()
+#     n_frame = 0
+#     env.task.after_step(env.physics, None)
+#     with imageio.get_writer(save_path, fps=FPS) as video:
+#         for n_frame in range(len(frames)):
+#             if n_frame > 0:
+#                 while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
+#                     "_TIME_BINS"
+#                 ]:
+#                     env.physics.step()
+#             reconArr = env.physics.render(
+#                 height,
+#                 width,
+#                 camera_id=camera,
+#                 scene_option=scene_option,
+#             )
+#             video.append_data(reconArr)
+#             print(n_frame)
+#             prev_time = np.round(env.physics.time(), decimals=2)
 
 
 def overlay_loop(
@@ -324,36 +521,51 @@ def overlay_loop(
     prev_time = env.physics.time()
     reader = imageio.get_reader(video_path)
     n_frame = 0
-    K, rdistort, tdistort, r, t = load_calibration(calibration_path)
+    cam_params = load_calibration(calibration_path)
+    env.task.after_step(env.physics, None)
     with imageio.get_writer(save_path, fps=FPS) as video:
-        while prev_time < env._time_limit:
-            while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
-                "_TIME_BINS"
-            ]:
-                env.physics.step()
-            env.task.after_step(env.physics, None)
-            reconArr = env.physics.render(
+        for n_frame in range(len(frames)):
+            if n_frame > 0:
+                while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
+                    "_TIME_BINS"
+                ]:
+                    env.physics.step()
+            frame = render_overlay(
+                frames,
+                env,
+                scene_option,
+                camera,
                 height,
                 width,
-                camera_id=camera,
-                scene_option=scene_option,
-            )
-            segArr = env.physics.render(
-                height,
-                width,
-                camera_id=camera,
-                scene_option=scene_option,
-                segmentation=True,
-            )
-            rgbArr = reader.get_data(frames[n_frame])
-            frame = overlay_frame(
-                rgbArr, K, rdistort, tdistort, n_frame, reconArr, segArr
+                reader,
+                n_frame,
+                cam_params,
             )
             video.append_data(frame)
-
-            n_frame += 1
             print(n_frame)
             prev_time = np.round(env.physics.time(), decimals=2)
+
+
+def render_overlay(
+    frames, env, scene_option, camera, height, width, reader, n_frame, cam_params
+):
+    env.task.after_step(env.physics, None)
+    reconArr = env.physics.render(
+        height,
+        width,
+        camera_id=camera,
+        scene_option=scene_option,
+    )
+    segArr = env.physics.render(
+        height,
+        width,
+        camera_id=camera,
+        scene_option=scene_option,
+        segmentation=True,
+    )
+    rgbArr = reader.get_data(frames[n_frame])
+    frame = overlay_frame(rgbArr, cam_params, reconArr, segArr)
+    return frame
 
 
 def setup_arena(kp_data, params, alpha=1.0):
@@ -437,6 +649,8 @@ def render_loop(
             prev_time = np.round(env.physics.time(), decimals=2)
     # Otherwise, use the viewer
     else:
+        from dm_control import viewer
+
         viewer.launch(env)
     if env.task.V is not None:
         env.task.V.release()
