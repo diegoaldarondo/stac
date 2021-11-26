@@ -1,20 +1,116 @@
 """Module to convert qpos files to sites for arbitrary marker sets."""
 import os
 import pickle
-from typing import Text, Dict
+from typing import Text, Dict, List, Tuple
 import numpy as np
 from scipy.io import savemat, loadmat
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import mjlib
 from stac import util
 from stac import rodent_environments
+import h5py
 import time
 
 _M_TO_MM = 1000
 N_MOCAP_DIMS = 60
+N_DANNCE_DIMS = 69
 MOCAP_OFFSET_PATH = (
     "/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/offsets/july22/JDM25.p"
 )
+PROJECT_FOLDERS = [
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_3",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_23_2",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_23_3",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_1",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_2",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_3",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_25_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_25_3",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_3",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_2",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_3",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_3",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_29_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_29_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_30_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_30_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_31_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_31_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_01_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_01_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_02_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_02_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_04_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_04_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_05_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_05_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_06_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_06_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_07_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_07_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_08_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_09_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_21_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_21_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_22_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_22_2",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_23_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_24_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_25_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_26_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_28_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_29_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_30_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_01_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_02_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_03_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_05_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_06_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_07_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_08_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_10_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_11_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_12_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_13_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_14_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_15_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_16_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_17_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_18_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_19_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_28_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_29_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_30_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_31_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_01_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_02_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_03_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_04_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_05_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_06_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_07_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_08_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_09_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_10_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_11_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_12_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_13_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_14_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_15_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_16_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_17_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_18_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_19_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_20_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_21_1",
+]
 
 
 def load_data(file_path: Text) -> Dict:
@@ -29,6 +125,16 @@ def load_data(file_path: Text) -> Dict:
     with open(file_path, "rb") as file:
         in_dict = pickle.load(file)
     return in_dict
+
+
+def load_comic_data(file_path: Text) -> Dict:
+    with h5py.File(file_path, "r") as file:
+        q = file["qpos"][:].astype("float")
+        data = {
+            "qpos": q,
+            "kp_data": np.zeros((q.shape[0], N_DANNCE_DIMS)),
+        }
+    return data
 
 
 def convert(
@@ -58,11 +164,7 @@ def convert(
     print("params_path_target: ", params_path_target, flush=True)
     print("save_path: ", save_path, flush=True)
 
-    # Load the parameters and data
-    params_source = util.load_params(params_path_source)
-    params = util.load_params(params_path_target)
-    params["scale_factor"] = params_source["scale_factor"]
-    data = load_data(file_path)
+    params, data = load(file_path, params_path_source, params_path_target)
 
     if end_frame == -1:
         params["n_frames"] = data["qpos"].shape[0]
@@ -73,7 +175,10 @@ def convert(
     print(data["kp_data"].shape)
     data["kp_data"] = data["kp_data"][start_frame:end_frame, ...]
 
-    env = setup_environment(params, data)
+    env = setup_environment(
+        params,
+        data,
+    )
 
     # Load the offsets and set the sites to those positions.
     with open(offset_path, "rb") as file:
@@ -106,8 +211,6 @@ def convert(
         walker_body_sites[n_frame, ...] = np.copy(
             env.physics.bind(env.task._walker.body_sites).xpos[:]
         )
-        # print(walker_body_sites[n_frame])
-        # print(n_frame, flush=True)
         if (
             n_frame == params["n_frames"] - 1
             or env.task.frame == params["n_frames"] - 1
@@ -127,6 +230,33 @@ def convert(
     savemat(save_path, {"walker_body_sites": walker_body_sites})
 
 
+def load(
+    file_path: Text, params_path_source: Text, params_path_target: Text
+) -> Tuple[Dict, Dict]:
+    """Load parameters and data
+
+    Args:
+        file_path (Text): Path to the qpos pickle file.
+        params_path_source (Text): Path the the stac params .yaml file.
+        params_path_target (Text): Path the the stac params .yaml file.
+
+    Returns:
+        Tuple[Dict, Dict]: Parameters, data
+    """
+    # Load the parameters and data
+    params_source = util.load_params(params_path_source)
+    params = util.load_params(params_path_target)
+    params["scale_factor"] = params_source["scale_factor"]
+    print(os.path.splitext(file_path)[1])
+    if os.path.splitext(file_path)[1] == ".hdf5":
+        data = load_comic_data(file_path)
+        params["n_kp_dims"] = N_DANNCE_DIMS
+    else:
+        data = load_data(file_path)
+        params["n_kp_dims"] = N_MOCAP_DIMS
+    return params, data
+
+
 def setup_environment(params: Dict, data: Dict):
     """Set up environment to convert keypoint sets.
 
@@ -139,7 +269,7 @@ def setup_environment(params: Dict, data: Dict):
     """
     # Build the environment
     env = rodent_environments.rodent_mocap(
-        data["kp_data"][:, :N_MOCAP_DIMS],
+        data["kp_data"][:, : params["n_kp_dims"]],
         params,
         arena_diameter=params["_ARENA_DIAMETER"],
         arena_center=params["_ARENA_CENTER"],
@@ -175,17 +305,32 @@ def submit():
 
 
 class ParallelConverter:
+    """Convert keypoint sets using parallel chunks."""
+
     def __init__(
         self,
         stac_path: Text,
+        project_folder: Text,
         offset_path: Text = MOCAP_OFFSET_PATH,
         n_samples_per_job: int = 5000,
+        save_folder: Text = "mocap_conversion",
         test: bool = False,
     ):
+        """Initialize ParallelConverter
+
+        Args:
+            stac_path (Text): Path to stac file.
+            offset_path (Text, optional): Path to offset file. Defaults to MOCAP_OFFSET_PATH.
+            n_samples_per_job (int, optional): Number of samples per chunk. Defaults to 5000.
+            test (bool, optional): If True, test the converter. Defaults to False.
+            save_folder (Text, optional): Name of folder (in project folder) in which to save results.
+                                          Defaults to "mocap_conversion"
+        """
         self.stac_path = stac_path
         self.offset_path = offset_path
+        self.save_folder = save_folder
         self.test = test
-        self.project_folder = os.path.dirname(os.path.dirname(self.stac_path))
+        self.project_folder = project_folder
         self.params_path_source = os.path.join(
             self.project_folder, "stac_params", "params.yaml"
         )
@@ -193,11 +338,23 @@ class ParallelConverter:
             self.project_folder, "stac_params", "params_conversion.yaml"
         )
         self.n_samples_per_job = n_samples_per_job
-        data = load_data(self.stac_path)
+        data = self._load()
         self.n_frames = data["qpos"].shape[0]
-        self.batches = self.generate_batches()
 
-    def generate_batches(self):
+    def _load(self) -> Dict:
+        """Helper to load data
+
+        Returns:
+            Dict: Data
+        """
+        return load_data(self.stac_path)
+
+    def generate_batches(self) -> List[Dict]:
+        """Generate batches parameters.
+
+        Returns:
+            List[Dict]: List of dictionaries containing batch submission parameters.
+        """
         start_frames = np.arange(0, self.n_frames, self.n_samples_per_job)
         end_frames = start_frames + self.n_samples_per_job
         end_frames[-1] = np.min([end_frames[-1], self.n_frames])
@@ -211,29 +368,38 @@ class ParallelConverter:
                 "params_path_target": self.params_path_target,
                 "save_path": os.path.join(
                     self.project_folder,
-                    "mocap_conversion",
+                    self.save_folder,
                     str(start_frames[i]) + ".mat",
                 ),
                 "start_frame": start_frames[i],
                 "end_frame": end_frames[i],
             }
             batches.append(batch)
-
-        # with open("_parameters.p", "wb") as file:
-        #     pickle.dump(batches, file)
-
         return batches
 
     def submit(self):
         if self.test:
             cmd = "sbatch --array=0 cluster/convert.sh"
+            print(cmd)
         else:
             cmd = "sbatch --array=0-%d cluster/convert.sh" % (len(self.batches) - 1)
+            os.system(cmd)
 
-        os.system(cmd)
+
+class ComicParallelConverter(ParallelConverter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _load(self):
+        return load_comic_data(self.stac_path)
 
 
-def merge(mocap_conversion_path):
+def merge(mocap_conversion_path: Text):
+    """Merge the mocap_conversion for a single project folder.
+
+    Args:
+        mocap_conversion_path (Text): Path to mocap conversion folder
+    """
     files = [file for file in os.listdir(mocap_conversion_path) if ".mat" in file]
     files = [file for file in files if "data" not in file]
     indices = [int(file.split(".mat")[0]) for file in files]
@@ -252,302 +418,72 @@ def merge(mocap_conversion_path):
     )
 
 
-# if __name__ == "__main__":
-#     stac_paths = [
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_3/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_23_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_23_3/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_3/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_25_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_25_3/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_3/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_3/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_3/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_29_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_29_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_30_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_30_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_31_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_31_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_01_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_01_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_02_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_02_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_04_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_04_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_05_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_05_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_06_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_06_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_07_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_07_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_08_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_09_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_21_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_21_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_22_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_22_2/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_23_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_24_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_25_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_26_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_28_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_29_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_30_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_01_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_02_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_03_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_05_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_06_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_07_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_08_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_10_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_11_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_12_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_13_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_14_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_15_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_16_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_17_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_18_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_19_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_28_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_29_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_30_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_31_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_01_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_02_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_03_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_04_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_05_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_06_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_07_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_08_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_09_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_10_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_11_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_12_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_13_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_14_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_15_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_16_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_17_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_18_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_19_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_20_1/stac/total.p",
-#         "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_21_1/stac/total.p",
-#     ]
-#     all_batches = []
-#     for path in stac_paths:
-#         pc = ParallelConverter(path)
-#         all_batches.append(pc.batches.copy())
-#     jobs = [job for batch in all_batches for job in batch]
-#     with open("_parameters.p", "wb") as file:
-#         pickle.dump(jobs, file)
-#     print(len(jobs))
-#     for job in jobs:
-#         print(job["stac_path"])
-#     cmd = "sbatch --array=0-%d cluster/convert.sh" % (len(jobs) - 1)
-#     os.system(cmd)
+def submit_comic_convert(comic_model: Text):
+    """Submit conversion jobs to the cluster for the sessions in PROJECT_FOLDERS/npmp/comic_model.
 
-# pc.submit()
-# time.sleep(1)
+    Args:
+        comic_model (Text): name of the comic model data to convert.
+    """
 
-if __name__ == "__main__":
+    data_paths = [
+        os.path.join(pf, "npmp", comic_model, "logs", "data.hdf5")
+        for pf in PROJECT_FOLDERS
+    ]
+    all_batches = []
+    for path, pf in zip(data_paths, PROJECT_FOLDERS):
+        pc = ComicParallelConverter(
+            path,
+            pf,
+            offset_path=os.path.join(pf, "stac", "offset.p"),
+            save_folder=os.path.join("npmp", comic_model, "kp_conversion"),
+        )
+        pc.params_path_target = pc.params_path_source
+        pc.batches = pc.generate_batches()
+        all_batches.append(pc.batches.copy())
+    jobs = [job for batch in all_batches for job in batch]
+    with open("_parameters.p", "wb") as file:
+        pickle.dump(jobs, file)
+    print(len(jobs))
+    for job in jobs:
+        print(job["stac_path"])
+    cmd = "sbatch --array=0-%d cluster/convert.sh" % (len(jobs) - 1)
+    print(cmd)
+    os.system(cmd)
+
+
+def submit_convert():
+    """Submit conversion jobs to the cluster for the sessions in PROJECT_FOLDERS."""
+    stac_paths = [os.path.join(pf, "stac", "total.p") for pf in PROJECT_FOLDERS]
+    all_batches = []
+    for path, pf in zip(stac_paths, PROJECT_FOLDERS):
+        pc = ParallelConverter(path, pf)
+        pc.batches = pc.generate_batches()
+        all_batches.append(pc.batches.copy())
+    jobs = [job for batch in all_batches for job in batch]
+    with open("_parameters.p", "wb") as file:
+        pickle.dump(jobs, file)
+    print(len(jobs))
+    for job in jobs:
+        print(job["stac_path"])
+    cmd = "sbatch --array=0-%d cluster/convert.sh" % (len(jobs) - 1)
+    os.system(cmd)
+
+
+def merge_mocap_conversion():
+    """Merge the mocap_conversion sessions in PROJECT_FOLDERS."""
     mocap_conversion_paths = [
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_3/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_23_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_23_3/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_3/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_25_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_25_3/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_3/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_3/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_3/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_29_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_29_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_30_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_30_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_31_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_31_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_01_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_01_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_02_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_02_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_04_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_04_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_05_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_05_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_06_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_06_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_07_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_07_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_08_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_09_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_21_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_21_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_22_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_22_2/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_23_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_24_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_25_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_26_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_28_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_29_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_30_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_01_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_02_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_03_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_05_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_06_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_07_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_08_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_10_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_11_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_12_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_13_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_14_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_15_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_16_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_17_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_18_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_19_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_28_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_29_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_30_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_31_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_01_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_02_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_03_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_04_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_05_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_06_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_07_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_08_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_09_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_10_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_11_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_12_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_13_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_14_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_15_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_16_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_17_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_18_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_19_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_20_1/mocap_conversion",
-        "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_21_1/mocap_conversion",
+        os.path.join(pf, "mocap_conversion") for pf in PROJECT_FOLDERS
     ]
     for path in mocap_conversion_paths:
         print(path, flush=True)
         merge(path)
 
 
-# ANIMAL = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art"
-# SESSIONS = [
-#     "2020_12_21_1",
-#     "2020_12_21_2",
-#     "2020_12_22_1",
-#     "2020_12_22_2",
-#     "2020_12_22_3",
-#     "2020_12_23_1",
-#     "2020_12_23_2",
-#     "2020_12_23_3",
-#     "2020_12_24_1",
-#     "2020_12_24_2",
-#     "2020_12_24_3",
-#     "2020_12_25_1",
-#     "2020_12_25_2",
-#     "2020_12_25_3",
-#     "2020_12_26_1",
-#     "2020_12_26_2",
-#     "2020_12_26_3",
-#     "2020_12_27_1",
-#     "2020_12_27_2",
-#     "2020_12_27_3",
-#     "2020_12_28_1",
-#     "2020_12_28_2",
-#     "2020_12_28_3",
-#     "2020_12_29_1",
-#     "2020_12_29_2",
-#     "2020_12_30_1",
-#     "2020_12_30_2",
-#     "2020_12_31_1",
-#     "2020_12_31_2",
-#     "2021_01_01_1",
-#     "2021_01_01_2",
-#     "2021_01_02_1",
-#     "2021_01_02_2",
-#     "2021_01_04_1",
-#     "2021_01_04_2",
-#     "2021_01_05_1",
-#     "2021_01_05_2",
-#     "2021_01_06_1",
-#     "2021_01_06_2",
-#     "2021_01_07_1",
-#     "2021_01_07_2",
-#     "2021_01_08_1",
-#     "2021_01_09_1",
-#     "2021_01_09_2",
-#     "2021_01_10_0",
-#     "2021_01_10_1",
-#     "2021_01_10_2",
-#     "2021_01_11_1",
-#     "2021_01_11_2",
-#     "2021_01_20_1",
-#     "2021_01_21_1",
-#     "2021_01_22_1",
-#     "2021_01_23_1",
-#     "2021_01_24_1",
-#     "2021_01_25_1",
-#     "2021_01_26_1",
-#     "2021_01_27_1",
-#     "2021_01_28_1",
-#     "2021_01_29_1",
-#     "2021_01_30_1",
-#     "2021_02_07_1",
-#     "2021_02_08_1",
-#     "2021_02_11_1",
-# ]
-# FILE_PATH = [os.path.join(ANIMAL, sess, "stac", "total.p") for sess in SESSIONS]
-# SAVE_PATH = [
-#     os.path.join(ANIMAL, sess, "mocap_conversion", "data.mat") for sess in SESSIONS
-# ]
-# OFFSET_PATH = (
-#     "/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/offsets/july22/JDM25.p"
-# )
-# PARAMS_PATH_TARGET = os.path.join(
-#     ANIMAL, "2020_12_22_1", "stac_params", "params_conversion.yaml"
-# )
-# PARAMS_PATH_SOURCE = os.path.join(
-#     ANIMAL, "2020_12_22_1", "stac_params", "params.yaml"
-# )
-# PARAMETERS = []
-# for fp, sp in zip(FILE_PATH, SAVE_PATH):
-#     args = [fp, OFFSET_PATH, PARAMS_PATH_SOURCE, PARAMS_PATH_TARGET, sp]
-#     PARAMETERS.append(args)
-# with open("_parameters.p", "wb") as FILE:
-#     pickle.dump(PARAMETERS, FILE)
-
-# CMD = "sbatch --array=0-%d cluster/convert.sh" % (len(FILE_PATH) - 1)
-# os.system(CMD)
+def merge_comic_conversion(comic_model: Text):
+    """Merge the mocap_conversion sessions in PROJECT_FOLDERS."""
+    mocap_conversion_paths = [
+        os.path.join(pf, "npmp", comic_model, "kp_conversion") for pf in PROJECT_FOLDERS
+    ]
+    for path in mocap_conversion_paths:
+        print(path, flush=True)
+        merge(path)
