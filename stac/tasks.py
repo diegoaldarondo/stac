@@ -7,6 +7,8 @@ import numpy as np
 import cv2
 from datetime import datetime
 import scipy.optimize
+from matplotlib import cm, colors
+from scipy.interpolate import interp1d
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
@@ -21,6 +23,47 @@ _TOP_CAMERA_DISTANCE = 100
 _TOP_CAMERA_Y_PADDING_FACTOR = 1.1
 PEDESTAL_WIDTH = 0.099
 PEDESTAL_HEIGHT = 0.054
+
+ACTUATOR_BODY_PAIRS = {
+    "lumbar_extend": "vertebra_4",
+    "lumbar_bend": "vertebra_5",
+    "lumbar_twist": "vertebra_3",
+    "cervical_extend": "vertebra_atlant",
+    "cervical_bend": "vertebra_cervical_1",
+    "cervical_twist": "vertebra_cervical_3",
+    "caudal_extend": "vertebra_C1",
+    "caudal_bend": "vertebra_C2",
+    "hip_L_supinate": "upper_leg_L",
+    "hip_L_abduct": "upper_leg_L",
+    "hip_L_extend": "upper_leg_L",
+    "knee_L": "lower_leg_L",
+    "ankle_L": "foot_L",
+    "toe_L": "toe_L",
+    "hip_R_supinate": "upper_leg_R",
+    "hip_R_abduct": "upper_leg_R",
+    "hip_R_extend": "upper_leg_R",
+    "knee_R": "lower_leg_R",
+    "ankle_R": "foot_R",
+    "toe_R": "toe_R",
+    "atlas": "skull",
+    "mandible": "jaw",
+    "scapula_L_supinate": "scapula_L",
+    "scapula_L_abduct": "scapula_L",
+    "scapula_L_extend": "scapula_L",
+    "shoulder_L": "upper_arm_L",
+    "shoulder_sup_L": "upper_arm_L",
+    "elbow_L": "lower_arm_L",
+    "wrist_L": "hand_L",
+    "finger_L": "finger_L",
+    "scapula_R_supinate": "scapula_R",
+    "scapula_R_abduct": "scapula_R",
+    "scapula_R_extend": "scapula_R",
+    "shoulder_R": "upper_arm_R",
+    "shoulder_sup_R": "upper_arm_R",
+    "elbow_R": "lower_arm_R",
+    "wrist_R": "hand_R",
+    "finger_R": "finger_R",
+}
 
 
 class ViewMocap(composer.Task):
@@ -249,6 +292,76 @@ class ViewMocap(composer.Task):
         #             (self.width, self.height),
         #         )
         #     self.V.write(self.grab_frame(physics))
+
+
+class ViewVariability(ViewMocap):
+    def __init__(self, variability, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        rgba = [1, 1, 1, 1]
+
+        self.actuator_names = [actuator.name for actuator in self._walker.actuators]
+        self.actuator_sites = []
+        for name in self.actuator_names:
+            start = (np.random.rand(3) - 0.5) * 0.001
+            site = self._arena.mjcf_model.worldbody.add(
+                "site",
+                name=name,
+                type="sphere",
+                size=[0.01],
+                rgba=rgba,
+                pos=start,
+                group=5,
+            )
+            self.actuator_sites.append(site)
+        self.variability = variability
+
+        # Set up the colors.
+        # min_val = np.min(variability.flatten())
+        # max_val = np.max(variability.flatten())
+        min_val = -1
+        max_val = 1
+        norm = colors.Normalize(vmin=min_val, vmax=max_val, clip=True)
+        self.mapper = cm.ScalarMappable(norm=norm, cmap=cm.RdBu_r)
+        self.size_map = interp1d([-3, 3], [0.0001, 0.01])
+
+    def after_step(self, physics, random_state):
+        """Update the mujoco markers on each step."""
+        # Get the frame
+        self.frame = physics.time()
+        self.frame = np.floor(self.frame / self.params["_TIME_BINS"]).astype("int32")
+        # # Set the variability marker positions
+        # physics.bind(self.sites).pos[:] = np.reshape(
+        #     self.kp_data[self.frame, :].T, (-1, 3)
+        # )
+        # Set qpose if it has been precomputed.
+        if self.precomp_qpos is not None:
+            physics.named.data.qpos[:] = self.precomp_qpos[self.frame]
+            physics.named.data.qpos["walker/mandible"] = self.params["_MANDIBLE_POS"]
+            physics.named.data.qvel[:] = 0.0
+            physics.named.data.qacc[:] = 0.0
+            # Forward kinematics for rendering
+            mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
+
+        # Set the variability marker positions to the tendon positions
+        # physics.named.data.site_xpos.axes.row.names
+        # import pdb
+
+        # pdb.set_trace()
+        site_names = ["walker/" + part for part in list(ACTUATOR_BODY_PAIRS.values())]
+        physics.bind(self.actuator_sites).pos[:] = physics.named.data.xpos[site_names]
+
+        # Set the variability marker colors
+        physics.bind(self.actuator_sites).rgba[:] = self.mapper.to_rgba(
+            self.variability[self.frame, :]
+        )
+        # Set the variability marker colors
+        physics.bind(self.actuator_sites).size[:] = self.size_map(
+            np.repeat(
+                self.variability[self.frame, :].squeeze()[:, np.newaxis], 3, axis=1
+            )
+        )
+        physics.bind(self.actuator_sites).rgba[:, 3] = 0.5
+        mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
 
 
 class ViewMocap_Hfield(ViewMocap):

@@ -98,7 +98,33 @@ def rodent_mocap(
         # Build a mocap viewing task
         task = tasks.ViewMocap(walker, arena, kp_data, params=params)
 
-    time_limit = params["_TIME_BINS"] * (params["n_frames"] - 1)
+    # time_limit = params["_TIME_BINS"] * (params["n_frames"] - 1)
+    time_limit = params["_TIME_BINS"] * (params["n_frames"])
+    return composer.Environment(
+        task,
+        time_limit=time_limit,
+        random_state=random_state,
+        strip_singleton_obs_buffer_dim=True,
+    )
+
+
+def rodent_variability(
+    kp_data,
+    variability,
+    params: Dict,
+    random_state: int = None,
+    alpha=1.0,
+):
+    walker = walkers.Rat(
+        initializer=None,
+        params=params,
+        observable_options={"egocentric_camera": dict(enabled=True)},
+    )
+    arena = arenas.DannceArena(
+        params, alpha=alpha, arena_diameter=None, arena_center=None
+    )
+    task = tasks.ViewVariability(variability, walker, arena, kp_data, params=params)
+    time_limit = params["_TIME_BINS"] * (params["n_frames"])
     return composer.Environment(
         task,
         time_limit=time_limit,
