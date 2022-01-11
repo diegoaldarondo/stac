@@ -319,15 +319,17 @@ def q_clip_iso(env, params) -> Tuple:
     head = _get_part_ids(env, ["atlas", "cervical", "atlant_extend"])
     if params["LIMBS_TO_TEMPORALLY_REGULARIZE"] == "arms":
         temp_reg_indiv_parts = [r_arm, l_arm]
-        non_temp_reg_indiv_parts = [r_leg, l_leg, head]
+        indiv_parts = [r_leg, l_leg, head]
     elif params["LIMBS_TO_TEMPORALLY_REGULARIZE"] == "arms and legs":
         temp_reg_indiv_parts = [r_leg, l_leg, r_arm, l_arm]
-        non_temp_reg_indiv_parts = [head]
+        indiv_parts = [head]
+    else:
+        indiv_parts = [head, r_leg, l_leg, r_arm, l_arm]
+        temp_reg_indiv_parts = []
 
     # Iterate through all of the frames in the clip
     for i in range(params["n_frames"]):
-
-        # # Optimize over all points
+        # Optimize over all points
         stac_base.q_phase(
             env.physics,
             env.task.kp_data[i, :],
@@ -335,7 +337,6 @@ def q_clip_iso(env, params) -> Tuple:
             params,
             reg_coef=params["q_reg_coef"],
         )
-        # root_optimization(env, params, frame=i)
 
         # Make sure to only use forward temporal regularization on frames 1...n
         if i == 0:
@@ -346,7 +347,7 @@ def q_clip_iso(env, params) -> Tuple:
             q_prev = q[i - 1]
 
         # Next optimize over the limbs individually to improve time and accur.
-        for part in non_temp_reg_indiv_parts:
+        for part in indiv_parts:
             stac_base.q_phase(
                 env.physics,
                 env.task.kp_data[i, :],
@@ -434,12 +435,11 @@ def qpos_z_offset(env, q: List, x: List) -> Tuple[List, np.ndarray]:
     return q, ground_pos
 
 
-def compute_stac(kp_data: np.ndarray, save_path: Text, params: Dict):
+def compute_stac(kp_data: np.ndarray, params: Dict):
     """Perform stac on rat mocap data.
 
     Args:
         kp_data (np.ndarray): n_frames x n_markers x ndimensions keypoint data
-        save_path (Text): File to save optimized qposes
         params (Dict): Parameters dictionary
     """
     if params["n_frames"] is None:
@@ -543,15 +543,6 @@ def compute_stac(kp_data: np.ndarray, save_path: Text, params: Dict):
     }
     for k, v in params.items():
         out_dict[k] = v
-
-    _, file_extension = os.path.splitext(save_path)
-    if not os.path.exists(os.path.dirname(save_path)):
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    if file_extension == ".p":
-        with open(save_path, "wb") as output_file:
-            pickle.dump(out_dict, output_file, protocol=2)
-    elif file_extension == ".mat":
-        savemat(save_path, out_dict)
     return out_dict
 
 
@@ -570,6 +561,21 @@ class STAC:
         verbose: bool = False,
         skeleton_path: Text = "/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat",
     ):
+        """Initialize STAC
+
+        Args:
+            data_path (Text): Path to dannce .mat file
+            param_path (Text): Path to parameters .yaml file.
+            save_path (Text, optional): Path to save data. Defaults to None.
+            offset_path (Text, optional): Path to offset .p file. Defaults to None.
+            start_frame (int, optional): Starting frame. Defaults to 0.
+            end_frame (int, optional): Ending frame. Defaults to 0.
+            n_frames (int, optional): Number of frames to evaluate. Defaults to None.
+            n_sample_frames (int, optional): Number of frames to evaluate for m-phase estimation. Defaults to 50.
+            skip (int, optional): Frame skip. Defaults to 1.
+            verbose (bool, optional): If True, print status messages. Defaults to False.
+            skeleton_path (Text, optional): Path to skeleton file. Defaults to "/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat".
+        """
         # Aggregate optional cl arguments into params dict
         kw = {
             "data_path": data_path,
@@ -587,15 +593,30 @@ class STAC:
         for key, v in kw.items():
             self.params[key] = v
 
-    def fit(self):
-        kp_data = self._prepare_data()
-        data = compute_stac(kp_data, self.params["save_path"], self.params)
+    def fit(self) -> Dict:
+        """Calibrate and fit the model to keypoints.
 
-        # Register the file as the offset path for future fitting.
-        self.params["offset_path"] = self.params["save_path"]
+        Performs three rounds of alternating marker and quaternion optimization. Optimal
+        results with greater than 200 frames of data in which the subject is moving.
+
+        Example:
+            stac = STAC(data_path, param_path, **kwargs)
+            offset_data = stac.fit()
+            stac.save(offset_data, offset_save_path)
+
+        Returns:
+            Dict: Data dictionary
+        """
+        kp_data = self._prepare_data()
+        data = compute_stac(kp_data, self.params)
         return data
 
-    def _prepare_data(self):
+    def _prepare_data(self) -> np.ndarray:
+        """Preprocess data and keypoint names.
+
+        Returns:
+            np.ndarray: Keypoint data (nSamples, nKeypoints*3)
+        """
         kp_data, kp_names = preprocess_data(
             self.params["data_path"],
             self.params["start_frame"],
@@ -603,18 +624,49 @@ class STAC:
             self.params["skip"],
             self.params,
         )
-
-        if self.params["save_path"] is None:
-            self.params["save_path"] = os.path.join(
-                os.getcwd(), "results", "snippet" + self.params["data_path"][:-4] + ".p"
-            )
         self.params["kp_names"] = kp_names
         return kp_data
 
-    def transform(self):
+    def transform(self, offset_path: Text) -> Dict:
+        """Register skeleton to keypoint data
+
+        Transform should be used after a skeletal model has been fit to keypoints using the fit() method.
+
+        Example:
+            stac = STAC(data_path, param_path, **kwargs)
+            offset_data = stac.fit()
+            stac.save(offset_data, offset_save_path)
+            data = stac.transform(offset_save_path)
+            stac.save(data, save_path)
+
+        Args:
+            offset_path (Text): Path to offset file saved after .fit()
+
+        Returns:
+            Dict: Registered data dictionary
+        """
         kp_data = self._prepare_data()
-        data = compute_stac(kp_data, self.params["save_path"], self.params)
+        self.params["offset_path"] = offset_path
+        data = compute_stac(kp_data, self.params)
         return data
+
+    def save(self, data: Dict, save_path: Text = None):
+        """Save data.
+
+        Args:
+            data (Dict): Data dictionary (output of fit() or transform())
+            save_path (Text, optional): Path to save data. Defaults to None.
+        """
+        if save_path is None:
+            save_path = self.params["save_path"]
+        _, file_extension = os.path.splitext(self.params["save_path"])
+        if not os.path.exists(os.path.dirname(self.params["save_path"])):
+            os.makedirs(os.path.dirname(self.params["save_path"]), exist_ok=True)
+        if file_extension == ".p":
+            with open(self.params["save_path"], "wb") as output_file:
+                pickle.dump(data, output_file, protocol=2)
+        elif file_extension == ".mat":
+            savemat(self.params["save_path"], data)
 
 
 def handle_args(
@@ -681,7 +733,7 @@ def handle_args(
         file, ext = os.path.splitext(os.path.basename(data_path))
         save_path = os.path.join(save_path, file + ".p")
         print(save_path, flush=True)
-        compute_stac(kp_data, save_path, params)
+        compute_stac(kp_data, params)
         print("Finished %s" % (save_path))
 
     # Support file-based processing
@@ -701,7 +753,7 @@ def handle_args(
             )
         params["kp_names"] = kp_names
         # savemat('test.mat', {'kp_data': kp_data, 'kp_names':kp_names})
-        compute_stac(kp_data, save_path, params)
+        compute_stac(kp_data, params)
 
 
 if __name__ == "__main__":

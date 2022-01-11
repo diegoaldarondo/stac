@@ -1,8 +1,4 @@
 from absl.testing import absltest
-import os
-import time
-import mocap_util
-import h5py
 import stac.compute_stac as cs
 
 DATA_PATH = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/DANNCE/predict02/save_data_AVG.mat"
@@ -10,7 +6,7 @@ PARAM_PATH = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/ar
 OFFSET_PATH = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/stac/offset.p"
 SAVE_PATH = "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/test/test.p"
 START_FRAME = 0
-END_FRAME = 100
+END_FRAME = 50
 N_TEST_KEYPOINTS = 23
 
 
@@ -41,8 +37,11 @@ class StacTest(absltest.TestCase):
         data = self.stac.fit()
 
     def test_stac_transform(self):
-        self.stac.params["offset_path"] = OFFSET_PATH
-        data = self.stac.transform()
+        data = self.stac.transform(OFFSET_PATH)
+
+    def test_stac_save(self):
+        data = self.stac.transform(OFFSET_PATH)
+        self.stac.save(data)
 
 
 if __name__ == "__main__":
