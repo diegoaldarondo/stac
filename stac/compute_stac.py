@@ -6,7 +6,7 @@ from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import mjlib
 import scipy.ndimage
 import clize
-import stac.stac as stac
+import stac.stac_base as stac_base
 import stac.rodent_environments as rodent_environments
 import numpy as np
 import stac.util as util
@@ -84,20 +84,8 @@ def preprocess_snippet(kp_data: np.ndarray, kp_names: List, params: Dict):
     """
     kp_data = kp_data / _MM_TO_METERS
 
-    # Downsample
-    kp_data = _downsample(kp_data, params, orig_freq=50.0)
-
-    # Smooth
-    # kp_data = _smooth(kp_data, kp_names, sigma=.1)
-    print(kp_data.shape)
     # Handle z-offset conditions
-    if params["adaptive_z_offset"]:
-        kp_data[:, 2::3] -= np.nanpercentile(
-            kp_data[:, 2::3].flatten(), params["z_perc"]
-        )
-        kp_data[:, 2::3] += params["adaptive_z_offset_value"]
-    else:
-        kp_data[:, 2::3] -= params["z_offset"]
+    kp_data[:, 2::3] -= params["z_offset"]
     return kp_data
 
 
@@ -153,7 +141,7 @@ def initial_optimization(
     q, _, _ = q_clip_iso(env, params)
 
     # Initial m-phase optimization to calibrate offsets
-    stac.m_phase(
+    stac_base.m_phase(
         env.physics,
         env.task.kp_data,
         env.task._walker.body_sites,
@@ -174,7 +162,7 @@ def root_optimization(env, params: Dict, frame: int = 0):
         params (Dict): Parameters dictionary
         frame (int, optional): Frame to optimize
     """
-    stac.q_phase(
+    stac_base.q_phase(
         env.physics,
         env.task.kp_data[frame, :],
         env.task._walker.body_sites,
@@ -187,7 +175,7 @@ def root_optimization(env, params: Dict, frame: int = 0):
         for kp_name in params["kp_names"]
     ]
     trunk_kps = np.repeat(np.array(trunk_kps), 3)
-    stac.q_phase(
+    stac_base.q_phase(
         env.physics,
         env.task.kp_data[frame, :],
         env.task._walker.body_sites,
@@ -208,36 +196,41 @@ def q_clip(env, qs_to_opt: np.ndarray, params: Dict) -> Tuple:
     Returns:
         Tuple: Lists for qpos and walker body sites
     """
-    q = []
-    walker_body_sites = []
+    q, x, walker_body_sites = [], [], []
     for i in range(params["n_frames"]):
-        print(i)
-        stac.q_phase(
+        stac_base.q_phase(
             env.physics,
             env.task.kp_data[i, :],
             env.task._walker.body_sites,
             params,
             reg_coef=params["q_reg_coef"],
         )
+        # Make sure to only use forward temporal regularization on frames 1...n
         if i == 0:
             temp_reg = False
+            q_prev = 0
         else:
             temp_reg = True
+            q_prev = q[i - 1]
+
         if params["temporal_reg_coef"] > 0.0:
-            stac.q_phase(
+            stac_base.q_phase(
                 env.physics,
                 env.task.kp_data[i, :],
                 env.task._walker.body_sites,
                 params,
                 reg_coef=params["q_reg_coef"],
                 qs_to_opt=qs_to_opt,
+                q_prev=q_prev,
                 temporal_regularization=temp_reg,
             )
         q.append(np.copy(env.physics.named.data.qpos[:]))
+        x.append(np.copy(env.physics.named.data.xpos[:]))
+
         walker_body_sites.append(
             np.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
         )
-    return q, walker_body_sites
+    return q, walker_body_sites, x
 
 
 def _get_part_ids(env, parts: List) -> np.ndarray:
@@ -334,11 +327,8 @@ def q_clip_iso(env, params) -> Tuple:
     # Iterate through all of the frames in the clip
     for i in range(params["n_frames"]):
 
-        # root_optimization(env, params)
-        print(i, flush=True)
-
         # # Optimize over all points
-        stac.q_phase(
+        stac_base.q_phase(
             env.physics,
             env.task.kp_data[i, :],
             env.task._walker.body_sites,
@@ -357,7 +347,7 @@ def q_clip_iso(env, params) -> Tuple:
 
         # Next optimize over the limbs individually to improve time and accur.
         for part in non_temp_reg_indiv_parts:
-            stac.q_phase(
+            stac_base.q_phase(
                 env.physics,
                 env.task.kp_data[i, :],
                 env.task._walker.body_sites,
@@ -366,7 +356,7 @@ def q_clip_iso(env, params) -> Tuple:
                 qs_to_opt=part,
             )
         for part in temp_reg_indiv_parts:
-            stac.q_phase(
+            stac_base.q_phase(
                 env.physics,
                 env.task.kp_data[i, :],
                 env.task._walker.body_sites,
@@ -391,7 +381,7 @@ def q_clip_iso(env, params) -> Tuple:
             # Recompute position of select parts with bidirectional
             # temporal regularizer.
             for part in [r_arm, l_arm, r_leg, l_leg]:
-                stac.q_phase(
+                stac_base.q_phase(
                     env.physics,
                     env.task.kp_data[i, :],
                     env.task._walker.body_sites,
@@ -525,7 +515,7 @@ def compute_stac(kp_data: np.ndarray, save_path: Text, params: Dict):
         # M-phase across the subsampling: optimize offsets
         if params["verbose"]:
             print("m-phase", flush=True)
-        stac.m_phase(
+        stac_base.m_phase(
             env.physics,
             env.task.kp_data,
             env.task._walker.body_sites,
@@ -539,22 +529,7 @@ def compute_stac(kp_data: np.ndarray, save_path: Text, params: Dict):
             print("q-phase", flush=True)
         q, walker_body_sites, x = q_clip_iso(env, params)
 
-    # Fix z offsets using the model positions
-    # q, ground_pos = qpos_z_offset(env, q, x)
-    # kp_data[:, 2::3] -= ground_pos
-
-    # Optional visualization
-    if params["visualize"]:
-        env.task.precomp_qpos = q
-        env.task.render_video = params["render_video"]
-        viewer.launch(env)
-        if env.task.V is not None:
-            env.task.V.release()
-
     # Save the pose, offsets, data, and all parameters
-    filename, file_extension = os.path.splitext(save_path)
-    if not os.path.exists(os.path.dirname(save_path)):
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
     offsets = env.physics.bind(env.task._walker.body_sites).pos[:].copy()
     names_xpos = env.physics.named.data.xpos.axes.row.names
     out_dict = {
@@ -564,42 +539,82 @@ def compute_stac(kp_data: np.ndarray, save_path: Text, params: Dict):
         "offsets": offsets,
         "names_qpos": part_names,
         "names_xpos": names_xpos,
-        # 'ground_pos': ground_pos,
         "kp_data": np.copy(kp_data[: params["n_frames"], :]),
     }
-    if "_USE_HFIELD" in params:
-        if params["_USE_HFIELD"] and isinstance(env.task, tasks.ViewMocap_Hfield):
-            # env.task.get_heightfield(env.physics)
-            out_dict["pedestal_radius"] = env.task._arena.pedestal_radius
-            out_dict["pedestal_center"] = env.task._arena.pedestal_center
-            out_dict["pedestal_height"] = env.task._arena.pedestal_height
-            out_dict["hfield_image"] = env.task._arena.hfield
-            out_dict["scaled_arena_diameter"] = env.task._arena.arena_diameter
-
-    # # Render a video
-    # view_stac.setup_visualization(
-    #     param_path,
-    #     q,
-    #     offsets,
-    #     kp_data,
-    #     n_frames,
-    #     render_video=render_video,
-    #     save_path=save_path,
-    #     headless=headless,
-    # )
-
     for k, v in params.items():
         out_dict[k] = v
+
+    _, file_extension = os.path.splitext(save_path)
+    if not os.path.exists(os.path.dirname(save_path)):
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
     if file_extension == ".p":
         with open(save_path, "wb") as output_file:
             pickle.dump(out_dict, output_file, protocol=2)
-        # mat_path = save_path.split('.p')[0] + '.mat'
-        # for k, v in out_dict.items():
-        #     if v is None:
-        #         out_dict[k] = 'None'
-        # savemat(mat_path, out_dict)
     elif file_extension == ".mat":
         savemat(save_path, out_dict)
+    return out_dict
+
+
+class STAC:
+    def __init__(
+        self,
+        data_path: Text,
+        param_path: Text,
+        save_path: Text = None,
+        offset_path: Text = None,
+        start_frame: int = 0,
+        end_frame: int = 0,
+        n_frames: int = None,
+        n_sample_frames: int = 50,
+        skip: int = 1,
+        verbose: bool = False,
+        skeleton_path: Text = "/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat",
+    ):
+        # Aggregate optional cl arguments into params dict
+        kw = {
+            "data_path": data_path,
+            "save_path": save_path,
+            "offset_path": offset_path,
+            "start_frame": start_frame,
+            "end_frame": end_frame,
+            "n_frames": n_frames,
+            "n_sample_frames": n_sample_frames,
+            "verbose": verbose,
+            "skip": skip,
+            "skeleton_path": skeleton_path,
+        }
+        self.params = util.load_params(param_path)
+        for key, v in kw.items():
+            self.params[key] = v
+
+    def fit(self):
+        kp_data = self._prepare_data()
+        data = compute_stac(kp_data, self.params["save_path"], self.params)
+
+        # Register the file as the offset path for future fitting.
+        self.params["offset_path"] = self.params["save_path"]
+        return data
+
+    def _prepare_data(self):
+        kp_data, kp_names = preprocess_data(
+            self.params["data_path"],
+            self.params["start_frame"],
+            self.params["end_frame"],
+            self.params["skip"],
+            self.params,
+        )
+
+        if self.params["save_path"] is None:
+            self.params["save_path"] = os.path.join(
+                os.getcwd(), "results", "snippet" + self.params["data_path"][:-4] + ".p"
+            )
+        self.params["kp_names"] = kp_names
+        return kp_data
+
+    def transform(self):
+        kp_data = self._prepare_data()
+        data = compute_stac(kp_data, self.params["save_path"], self.params)
+        return data
 
 
 def handle_args(
