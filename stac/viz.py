@@ -75,38 +75,6 @@ def concat_videos(rgb_video_path: Text, recon_video_path: Text, frames: np.ndarr
             video.append_data(frame)
 
 
-# def overlay_videos(
-#     recon_video_path: Text,
-#     frames: np.ndarray,
-#     calibration_path: Text = CALIBRATION_PATH,
-# ):
-#     """Render a video with reconstructed poses overlain ontop of the rgb videos.
-
-#     Args:
-#         recon_video_path (Text): Path to reconstructed video.
-#         frames (np.ndarray): Frames to render.
-#         calibration_path (Text, optional): Path to calibration file. Defaults to CALIBRATION_PATH.
-#     """
-#     rgb_video_path = add_qualifier(recon_video_path, "_rgb")
-#     seg_path = add_qualifier(recon_video_path, "_seg")
-#     overlay_path = add_qualifier(recon_video_path, "_overlay")
-
-#     recon_reader = imageio.get_reader(recon_video_path)
-#     rgb_reader = imageio.get_reader(rgb_video_path)
-#     seg_reader = imageio.get_reader(seg_path)
-
-#     K, rdistort, tdistort, r, t = view_stac.load_calibration(calibration_path)
-#     with imageio.get_writer(overlay_path, fps=FPS) as video:
-#         for n_frame in frames:
-#             recon_frame = recon_reader.get_data(n_frame)
-#             seg_frame = seg_reader.get_data(n_frame)
-#             rgb_frame = rgb_reader.get_data(n_frame)
-#             frame = overlay_frame(
-#                 rgb_frame, K, rdistort, tdistort, n_frame, recon_frame, seg_frame
-#             )
-#             video.append_data(frame)
-
-
 def add_qualifier(video_path: Text, qualifier: Text) -> Text:
     """Utility to add qualifier to paths
 
