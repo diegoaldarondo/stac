@@ -109,12 +109,24 @@ def rodent_mocap(
 
 
 def rodent_variability(
-    kp_data,
-    variability,
+    kp_data: np.ndarray,
+    variability: np.ndarray,
     params: Dict,
     random_state: int = None,
     alpha=1.0,
-):
+) -> composer.Environment:
+    """Environment to view model motor variability
+
+    Args:
+        kp_data (np.ndarray): Keypoint data
+        variability (np.ndarray): Variability data
+        params (Dict): Parameters dictionary
+        random_state (int, optional): Environment random state. Defaults to None.
+        alpha (float, optional): DannceArena alpha value. Defaults to 1.0.
+
+    Returns:
+        composer.Environment: Environment
+    """
     walker = walkers.Rat(
         initializer=None,
         params=params,
