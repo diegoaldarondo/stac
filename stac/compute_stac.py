@@ -44,7 +44,7 @@ def _downsample(
     return kp_data_downsampled
 
 
-def _smooth(kp_data: np.ndarray, kp_names: List, sigma: float = 1.0):
+def _smooth(kp_data: np.ndarray, kp_names: List, sigma: float = 1.0) -> np.ndarray:
     """Helper function to smooth data.
 
     Applies a Gaussian and median filter.
@@ -55,7 +55,7 @@ def _smooth(kp_data: np.ndarray, kp_names: List, sigma: float = 1.0):
         sigma (float, optional): Sigma of Gaussian smoothing.
 
     Returns:
-        TYPE: Smoothed keypoint data
+        np.ndarray: Smoothed keypoint data
     """
     parts_to_smooth = ["Arm", "Elbow"]
     ids = np.argwhere(
@@ -71,7 +71,7 @@ def _smooth(kp_data: np.ndarray, kp_names: List, sigma: float = 1.0):
     return kp_data
 
 
-def preprocess_snippet(kp_data: np.ndarray, kp_names: List, params: Dict):
+def preprocess_snippet(kp_data: np.ndarray, kp_names: List, params: Dict) -> np.ndarray:
     """Preprocess snippet data.
 
     Args:
@@ -80,7 +80,7 @@ def preprocess_snippet(kp_data: np.ndarray, kp_names: List, params: Dict):
         params (Dict): Patameters dictionary
 
     Returns:
-        TYPE: Preprocessed keypoint data
+        np.ndarray: Preprocessed keypoint data
     """
     kp_data = kp_data / _MM_TO_METERS
 
@@ -105,11 +105,11 @@ def preprocess_data(
         end_frame (int): Frame to end stac tracking
         skip (int): Subsampling rate for the frames
         params (Dict): Parameters dictionary
-        struct_name (Text, optional): Field name of .mat file to load
+        struct_name (Text, optional): Field name of .mat file to load. DEPRECATED
 
-    No Longer Returned:
+    Returns:
         Tuple: kp_data (np.ndarray): Keypoint data
-            kp_names (List): List of keypoint names
+               kp_names (List): List of keypoint names
     """
     kp_data, kp_names = util.load_dannce_data(
         data_path,
@@ -169,6 +169,7 @@ def root_optimization(env, params: Dict, frame: int = 0):
         params,
         root_only=True,
     )
+    # TODO(Generalize): Trunk keypoints should be general for any skeleton. Define in config.
     # First optimize over the trunk
     trunk_kps = [
         any([n in kp_name for n in ["Spine", "Hip", "Shoulder", "Offset"]])
@@ -194,7 +195,7 @@ def q_clip(env, qs_to_opt: np.ndarray, params: Dict) -> Tuple:
         params (Dict): Parameters dictionary
 
     Returns:
-        Tuple: Lists for qpos and walker body sites
+        Tuple: qpos, walker body sites, xpos
     """
     q, x, walker_body_sites = [], [], []
     for i in range(params["n_frames"]):
@@ -247,7 +248,7 @@ def _get_part_ids(env, parts: List) -> np.ndarray:
     return np.array([any(part in name for part in parts) for name in part_names])
 
 
-def q_clip_iso(env, params) -> Tuple:
+def q_clip_iso(env, params: Dict) -> Tuple:
     """Perform q_phase over the entire clip.
 
     Optimizes limbs and head independently.
@@ -255,10 +256,10 @@ def q_clip_iso(env, params) -> Tuple:
 
     Args:
         env (TYPE): Environment
-        params (TYPE): Parameters dictionary.
+        params (Dict): Parameters dictionary.
 
     Returns:
-        Tuple: Description
+        Tuple: qpos, walker body sites, xpos
     """
     q = []
     x = []
