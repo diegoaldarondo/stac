@@ -148,7 +148,6 @@ def view_stac(
     q, offsets, kp_data, n_frames = load_data(
         data_path, start_frame=start_frame, end_frame=end_frame
     )
-    pass
     setup_visualization(
         param_path,
         q,
@@ -195,10 +194,6 @@ def setup_visualization(
         params[
             "_XML_PATH"
         ] = "/n/home02/daldarondo/LabDir/Diego/code/dm/stac/models/rodent_stac.xml"
-    # else:
-    #     params[
-    #         "_XML_PATH"
-    #     ] = "/n/home02/daldarondo/LabDir/Diego/code/dm/stac/models/rodent_mujoco_overlay.xml"
 
     env = setup_arena(kp_data, params, alpha=alpha)
 
@@ -444,52 +439,6 @@ def mujoco_loop(
             n_frame += 1
             # print(n_frame)
             prev_time = np.round(env.physics.time(), decimals=2)
-
-
-# def variability_loop(
-#     save_path: Text,
-#     frames: np.ndarray,
-#     params: Dict,
-#     variability: np.ndarray,
-#     env,
-#     scene_option,
-#     camera: Text = "walker/close_profile",
-#     height: int = 1200,
-#     width: int = 1920,
-# ):
-#     """Rendering loop for generating variability videos.
-
-#     Args:
-#         save_path (Text): Path to save overlay video
-#         video_path (Text): Path to undistorted rgb video
-#         calibration_path (Text): Path to calibration dannce.mat file.
-#         frames (np.ndarray): Frames to render
-#         params (Dict): stac parameters dictionary
-#         env ([type]): rodent environment
-#         scene_option ([type]): MjvOption rendering options
-#         camera (Text, optional): Name of the camera to use for rendering. Defaults to "walker/close_profile".
-#         height (int, optional): Camera height in pixels. Defaults to 1200.
-#         width (int, optional): Camera width in pixels. Defaults to 1920.
-#     """
-#     prev_time = env.physics.time()
-#     n_frame = 0
-#     env.task.after_step(env.physics, None)
-#     with imageio.get_writer(save_path, fps=FPS) as video:
-#         for n_frame in range(len(frames)):
-#             if n_frame > 0:
-#                 while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
-#                     "_TIME_BINS"
-#                 ]:
-#                     env.physics.step()
-#             reconArr = env.physics.render(
-#                 height,
-#                 width,
-#                 camera_id=camera,
-#                 scene_option=scene_option,
-#             )
-#             video.append_data(reconArr)
-#             print(n_frame)
-#             prev_time = np.round(env.physics.time(), decimals=2)
 
 
 def overlay_loop(
