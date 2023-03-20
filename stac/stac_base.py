@@ -46,26 +46,10 @@ def q_loss(
     Returns:
         float: loss value
     """
-    # if temporal_regularization:
-    #     error_msg = " cannot be None if using temporal regularization"
-    #     if qs_to_opt is None:
-    #         raise _TestNoneArgs("qs_to_opt" + error_msg)
-    #     if q_prev is None:
-    #         raise _TestNoneArgs("q_prev" + error_msg)
-    #     # if q_next is None:
-    #     #     raise _TestNoneArgs('q_next' + error_msg)
-
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     if qs_to_opt is not None:
         q_copy[qs_to_opt] = q.copy()
         q = np.copy(q_copy)
-
-    # Add temporal regularization for arms.
-    # temp_reg_term = 0.0
-    # if temporal_regularization:
-    #     temp_reg_term += (q[qs_to_opt] - q_prev[qs_to_opt]) ** 2
-    #     if q_next is not None:
-    #         temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt]) ** 2
 
     residual = kp_data - q_joints_to_markers(q, physics, sites)
     if kps_to_opt is not None:
@@ -139,11 +123,7 @@ def q_phase(
     q0 = np.copy(physics.named.data.qpos[:])
     q_copy = np.copy(q0)
 
-    # Set the center to help with finding the optima
-    # TODO(centering_bug):
-    # The center is not necessarily from 12:15 depending on struct ordering.
-    # This probably won't be a problem, as it is just an ititialization for the
-    # optimizer, but keep it in mind.
+    # Set the center to help with finding the optima (does not need to be exact)
     if root_only or trunk_only:
         q0[:3] = marker_ref_arr[12:15]
         diff_step = params["_ROOT_DIFF_STEP"]
@@ -153,8 +133,7 @@ def q_phase(
         qs_to_opt = np.zeros_like(q0, dtype=np.bool)
         qs_to_opt[:7] = True
 
-    # If you only want to optimize a subset of qposes,
-    # limit the optimizer to that
+    # Limit the optimizer to a subset of qpos
     if qs_to_opt is not None:
         q0 = q0[qs_to_opt]
         lb = lb[qs_to_opt]
@@ -189,7 +168,6 @@ def q_phase(
             bounds=(lb, ub),
             ftol=ftol,
             diff_step=diff_step,
-            # loss='soft_l1',
             verbose=0,
         )
 
@@ -294,8 +272,7 @@ def m_phase(
     # Define initial position of the optimization
     offset0 = np.copy(physics.bind(sites).pos[:]).flatten()
 
-    # Build a matrix of ones and zeros denoting whether that component of
-    # offsets will be regularized or not.
+    # Define which offsets to regularize
     is_regularized = []
     for site in sites:
         if any(n in site.name for n in params["_SITES_TO_REGULARIZE"]):
@@ -318,8 +295,6 @@ def m_phase(
             reg_coef=reg_coef,
         ),
         offset0,
-        # method="L-BFGS-B",
-        # tol=params['_ROOT_FTOL'],
         options={"maxiter": maxiter},
     )
 
