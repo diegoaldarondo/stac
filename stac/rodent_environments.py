@@ -98,41 +98,13 @@ def rodent_mocap(
         params=params,
         observable_options={"egocentric_camera": dict(enabled=True)},
     )
-    if params["ARENA_TYPE"] == "HField":
-        process_objects = False
-        if hfield_image is None:
-            hfield_image = arenas._load_hfield(
-                params["data_path"], params["scale_factor"]
-            )
-            process_objects = True
-        arena = arenas.RatArena(
-            hfield_image,
-            params,
-            process_objects,
-            pedestal_center=pedestal_center,
-            pedestal_height=pedestal_height,
-            pedestal_radius=pedestal_radius,
-            arena_diameter=arena_diameter,
-            arena_center=arena_center,
-        )
-        task = tasks.ViewMocap_Hfield(walker, arena, kp_data, params=params)
-    elif params["ARENA_TYPE"] == "DannceArena":
-        # arena = floors.Floor(size=(10.0, 10.0))
-        arena = arenas.DannceArena(
-            params,
-            arena_diameter=arena_diameter,
-            arena_center=arena_center,
-            alpha=alpha,
-        )
-        task = tasks.ViewMocap(walker, arena, kp_data, params=params)
-    elif params["ARENA_TYPE"] == "Standard":
-        # Build a Floor arena
-        arena = floors.Floor(size=(1, 1))
-        arena._ground_geom.pos = [0.0, 0.0, -0.01]
-        # Build a mocap viewing task
-        task = tasks.ViewMocap(walker, arena, kp_data, params=params)
-
-    # time_limit = params["_TIME_BINS"] * (params["n_frames"] - 1)
+    arena = arenas.DannceArena(
+        params,
+        arena_diameter=arena_diameter,
+        arena_center=arena_center,
+        alpha=alpha,
+    )
+    task = tasks.ViewMocap(walker, arena, kp_data, params=params)
     time_limit = params["_TIME_BINS"] * (params["n_frames"])
     return composer.Environment(
         task,
