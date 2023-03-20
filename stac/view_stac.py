@@ -93,6 +93,8 @@ def load_data(
             kp_data = in_dict["kp_data"]
         else:
             kp_data = np.zeros((n_frames, offsets.size))
+        if isinstance(q, list):
+            q = np.stack(q, axis=1).T
 
         q_names = in_dict["names_qpos"]
         # print(q_names)
@@ -148,16 +150,17 @@ def view_stac(
     q, offsets, kp_data, n_frames = load_data(
         data_path, start_frame=start_frame, end_frame=end_frame
     )
-    setup_visualization(
+    params, env, scene_option = setup_visualization(
         param_path,
         q,
         offsets,
         kp_data,
         n_frames,
         render_video=render_video,
-        save_path=save_path,
-        headless=headless,
+        # save_path=save_path,
+        # headless=headless,
     )
+    mujoco_loop(save_path, params, env, scene_option)
 
 
 def setup_visualization(
@@ -263,7 +266,7 @@ def setup_hires_scene():
     # scene_option.sitegroup[0] = 0
     # scene_option.sitegroup[1] = 0
     scene_option.sitegroup[2] = 0
-    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
+    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = False
     scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
     scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
     scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
@@ -287,13 +290,13 @@ def setup_variability_scene():
     # scene_option.sitegroup[1] = 0
     scene_option.sitegroup[2] = 0
     scene_option.sitegroup[5] = 1
-    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
+    # scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
     scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
     scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
     scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
     scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
-    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
-    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_FOG] = False
+    # scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SKYBOX] = True
+    # scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_FOG] = True
     return scene_option
 
 

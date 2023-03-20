@@ -15,6 +15,8 @@ import stac.tasks as tasks
 import stac.arenas as arenas
 from typing import List, Dict, Text, Union, Tuple
 import numpy as np
+import collections
+from dm_control.locomotion.arenas import assets as locomotion_arenas_assets
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
@@ -29,7 +31,50 @@ _TOP_CAMERA_DISTANCE = 100
 _TOP_CAMERA_Y_PADDING_FACTOR = 1.1
 PEDESTAL_WIDTH = 0.099
 PEDESTAL_HEIGHT = 0.054
+SkyBox = collections.namedtuple("SkyBox", ("file", "gridsize", "gridlayout"))
 
+
+def rodent_social(
+    kp_data: list,
+    params: list,
+    random_state: int = None,
+    arena_diameter: float = None,
+    arena_center: List = None,
+    alpha=1.0,
+):
+    """View a rat with mocap sites.
+
+    Args:
+        kp_data (List): Reference keypoint data
+        params (List(Dict)): Stac parameters dict
+        random_state (int, optional): Random seed for arena initialization.
+        hfield_image (np.ndarray, optional): Heightfield array for non-flat surfaces.
+        pedestal_center (List, optional): Center of pedestal
+        pedestal_height (float, optional): Height of pedestal
+        pedestal_radius (float, optional): Radius of pedestal
+        arena_diameter (float, optional): Diameter of circular arena
+        arena_center (List, optional): Center of circular arena
+
+    Deleted Parameters:
+        arena_type (Text, optional): Description
+    """
+    # Build a position-controlled Rat
+    walkers = [walkers.Rat(initializer=None, params=p, observable_options={"egocentric_camera": dict(enabled=True)}) for p in params]
+    arena = arenas.DannceArena(
+        params[0],
+        arena_diameter=arena_diameter,
+        arena_center=arena_center,
+        alpha=alpha,
+    )
+    task = tasks.ViewSocial(walkers, arena, kp_data, params=params[0])
+    # time_limit = params["_TIME_BINS"] * (params["n_frames"] - 1)
+    time_limit = params[0]["_TIME_BINS"] * (params[0]["n_frames"])
+    return composer.Environment(
+        task,
+        time_limit=time_limit,
+        random_state=random_state,
+        strip_singleton_obs_buffer_dim=True,
+    )
 
 def rodent_mocap(
     kp_data,
@@ -84,12 +129,14 @@ def rodent_mocap(
         )
         task = tasks.ViewMocap_Hfield(walker, arena, kp_data, params=params)
     elif params["ARENA_TYPE"] == "DannceArena":
+        # arena = floors.Floor(size=(10.0, 10.0))
         arena = arenas.DannceArena(
             params,
             arena_diameter=arena_diameter,
             arena_center=arena_center,
             alpha=alpha,
         )
+        print("made it")
         task = tasks.ViewMocap(walker, arena, kp_data, params=params)
     elif params["ARENA_TYPE"] == "Standard":
         # Build a Floor arena
@@ -135,6 +182,23 @@ def rodent_variability(
     arena = arenas.DannceArena(
         params, alpha=alpha, arena_diameter=None, arena_center=None
     )
+    # arena._mjcf_root.compiler.texturedir = (
+    #     "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/stac"
+    # )
+    # sky_info = SkyBox(
+    #     file="WhiteSkybox2048x2048.png",
+    #     gridsize="11",
+    #     gridlayout="..",
+    # )
+    # arena._skybox = arena._mjcf_root.asset.add(
+    #     "texture",
+    #     name="white_skybox",
+    #     file=sky_info.file,
+    #     type="cube",
+    #     # gridsize=sky_info.gridsize,
+    #     # gridlayout=sky_info.gridlayout,
+    # )
+
     task = tasks.ViewVariability(variability, walker, arena, kp_data, params=params)
     time_limit = params["_TIME_BINS"] * (params["n_frames"])
     return composer.Environment(

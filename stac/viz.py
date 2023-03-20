@@ -16,9 +16,9 @@ import stac.util as util
 
 FPS = 50
 # OFFSET_PATH = "C:/data/virtual_rat/2021_06_21_1/total.p"
-OFFSET_PATH = "C:/data/virtual_rat/2020_12_22_2/total.p"
-PARAM_PATH = "C:/data/virtual_rat/2021_06_21_1/params.yaml"
-CALIBRATION_PATH = "C:/data/virtual_rat/2020_12_22_2/temp_dannce.mat"
+# OFFSET_PATH = "C:/data/virtual_rat/2020_12_22_2/total.p"
+# PARAM_PATH = "C:/data/virtual_rat/2021_06_21_1/params.yaml"
+# CALIBRATION_PATH = "C:/data/virtual_rat/2020_12_22_2/temp_dannce.mat"
 ALPHA_BASE_VALUE = 0.5
 Z_OFFSET = 0.013
 
@@ -105,9 +105,9 @@ def quat2eul(quat: np.ndarray) -> np.ndarray:
         quat[2],
         quat[3],
     )
-    euy = np.arctan2(2 * qy * qw - 2 * qx * qz, 1 - 2 * qy ** 2 - 2 * qz ** 2)
+    euy = np.arctan2(2 * qy * qw - 2 * qx * qz, 1 - 2 * qy**2 - 2 * qz**2)
     euz = np.arcsin(2 * qx * qy + 2 * qz * qw)
-    eux = np.arctan2(2 * qx * qw - 2 * qy * qz, 1 - 2 * qx ** 2 - 2 * qz ** 2)
+    eux = np.arctan2(2 * qx * qw - 2 * qy * qz, 1 - 2 * qx**2 - 2 * qz**2)
     return np.array([np.rad2deg(eux), np.rad2deg(euy), np.rad2deg(euz)])
 
 
@@ -148,9 +148,53 @@ def get_project_paths(
     """
     param_path = os.path.join(project_folder, "stac_params", "params.yaml")
     calibration_path = os.path.join(project_folder, "temp_dannce.mat")
+    if not os.path.exists(calibration_path):
+        dannce_files = [
+            os.path.join(project_folder, f)
+            for f in os.listdir(project_folder)
+            if "dannce.mat" in f
+        ]
+        calibration_path = dannce_files[0]
     video_path = os.path.join(project_folder, "videos", camera, "0.mp4")
     offset_path = os.path.join(project_folder, "stac", "total.p")
+    if not os.path.exists(offset_path):
+        offset_path = os.path.join(project_folder, "stac", "offset.p")
+    offset_path = os.path.join(project_folder, "stac", "offset.p")
     return param_path, calibration_path, video_path, offset_path
+
+
+def get_social_project_paths(
+    project_folder: Text, camera: Text
+) -> Tuple[Text, Text, Text, Text]:
+    """Get relevant paths given a project folder
+
+    Args:
+        project_folder (Text): Path to project folder
+        camera (Text): Name of camera to use for video path.
+
+    Returns:
+        Tuple[Text, Text, Text, Text]: param_path, calibration_path, video_path, offset_path
+    """
+    param_path = os.path.join(project_folder, "stac_params", "params.yaml")
+    calibration_path = os.path.join(project_folder, "temp_dannce.mat")
+    if not os.path.exists(calibration_path):
+        dannce_files = [
+            os.path.join(project_folder, f)
+            for f in os.listdir(project_folder)
+            if "dannce.mat" in f
+        ]
+        calibration_path = dannce_files[0]
+    video_path = os.path.join(project_folder, "videos", camera, "0.mp4")
+    offset_paths = [
+        os.path.join(project_folder, "stac", "total1.p"),
+        os.path.join(project_folder, "stac", "total2.p"),
+    ]
+    if not os.path.exists(offset_path):
+        offset_paths = [
+            os.path.join(project_folder, "stac", "offset1.p"),
+            os.path.join(project_folder, "stac", "offset2.p"),
+        ]
+    return param_path, calibration_path, video_path, offset_paths
 
 
 def generate_video(
@@ -243,9 +287,6 @@ def generate_variability_video(
         offset_path, return_q_names=True
     )
     qpos = load_reconstruction(model_data_path)
-    print(qpos.shape)
-    qpos = qpos[::50, ...]
-    print(qpos.shape)
     qpos = qpos[frames, ...].copy()
     kp_data = kp_data[frames, ...].copy()
     variability = variability[frames, ...].copy()
@@ -306,9 +347,74 @@ def setup_video_scene(
         qpos = load_reconstruction(model_data_path)
 
     # Crop data to frames
-    if video_type == "overlay":
-        qpos[:, 2] -= Z_OFFSET
-    qpos = qpos[frames, ...].copy()
+    # if video_type == "overlay":
+    #     qpos[:, 2] -= Z_OFFSET
+
+    # qpos[:, 2] -= .01
+    # qpos = qpos[frames, ...].copy()
+    qpos = view_stac.fix_tail(qpos, q_names)
+    kp_data = np.zeros((qpos.shape[0], kp_data.shape[1]))
+    n_frames = len(frames)
+
+    # Prepare the environment
+    params, env, scene_option = view_stac.setup_visualization(
+        param_path,
+        qpos,
+        offsets,
+        kp_data,
+        n_frames,
+        render_video=True,
+        segmented=segmented,
+        camera_kwargs=camera_kwargs,
+        registration_xml=registration_xml,
+    )
+
+    return params, env, scene_option, video_path, calibration_path
+
+
+def setup_social_video_scene(
+    project_folder: Text,
+    model_data_path: Text,
+    frames: np.ndarray,
+    camera: Text,
+    segmented: bool,
+    use_stac: bool,
+    registration_xml: bool,
+    video_type: Text,
+) -> Tuple:
+    """[summary]
+
+    Args:
+        project_folder (Text): Path to project folder
+        model_data_path (Text): Path to comic embedding
+        frames (np.ndarray): Frames to include in video
+        camera (Text): Camera to render mujoco
+        segmented (bool): If True, segment the background.
+        use_stac (bool): If True, use the stac registration.
+        registration_xml (bool): If True, use the registration xml
+        video_type (Text): Video type. Can be ["overlay", "mujoco"].
+
+    Returns:
+        Tuple: params, env, scene_option, video_path, calibration_path
+    """
+    param_path, calibration_path, video_path, offset_paths = get_social_project_paths(
+        project_folder, camera
+    )
+    params = view_stac.load_calibration(calibration_path)
+    camera_kwargs = convert_cameras(params)
+
+    # STOPPED HERE  1/5/2023
+    qpos = []
+    qpos, offsets, kp_data, _, q_names = view_stac.load_data(
+        offset_path, return_q_names=True
+    )
+
+    # Crop data to frames
+    # if video_type == "overlay":
+    #     qpos[:, 2] -= Z_OFFSET
+
+    # qpos[:, 2] -= .01
+    # qpos = qpos[frames, ...].copy()
     qpos = view_stac.fix_tail(qpos, q_names)
     kp_data = np.zeros((qpos.shape[0], kp_data.shape[1]))
     n_frames = len(frames)
@@ -434,7 +540,7 @@ def tile_frame(videos: List[np.ndarray], n_rows: int, n_frame: int) -> np.ndarra
                 vid = np.zeros((h, w, 3, 1), dtype=np.uint8)
             block_frame = np.mod(n_frame, vid.shape[3])
             block = vid[:, :, :, block_frame]
-            frame[i * h : (i + 1) * h, j * h : (j + 1) * h, ...] = block
+            frame[i * h : (i + 1) * h, j * w : (j + 1) * w, ...] = block
     return frame
 
 

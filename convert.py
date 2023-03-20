@@ -10,6 +10,8 @@ from stac import util
 from stac import rodent_environments
 import h5py
 import time
+import yaml
+import subprocess
 
 _M_TO_MM = 1000
 N_MOCAP_DIMS = 60
@@ -18,99 +20,40 @@ MOCAP_OFFSET_PATH = (
     "/n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/offsets/july22/JDM25.p"
 )
 PROJECT_FOLDERS = [
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1",
-    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2",
-    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_3",
-    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_23_2",
-    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_23_3",
-    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_1",
-    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_2",
-    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_24_3",
-    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_25_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_25_3",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_26_3",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_2",
-    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_3",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_27_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_28_3",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_29_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_29_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_30_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_30_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_31_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_31_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_01_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_01_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_02_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_02_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_04_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_04_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_05_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_05_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_06_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_06_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_07_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_07_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_08_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2021_01_09_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2",
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_23_1",
     # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_21_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_21_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_22_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_22_2",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_23_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_24_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_25_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_26_1",
     # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_28_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_29_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_06_30_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_01_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_02_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_03_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_05_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_06_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_07_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_08_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_10_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_11_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_12_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_13_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_14_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_15_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_16_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_17_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_18_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/bud/2021_07_19_1",
     # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_28_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_29_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_30_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_07_31_1",
     # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_01_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_02_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_03_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_04_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_05_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_06_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_07_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_08_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_09_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_10_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_11_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_12_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_13_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_14_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_15_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_16_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_17_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_18_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_19_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_20_1",
-    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/coltrane/2021_08_21_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/duke/2022_02_16_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/duke/2022_02_25_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/espie/2022_03_10_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/espie/2022_03_15_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/freddie/2022_05_16_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/freddie/2022_05_24_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/gerry/2022_05_30_1",
+    # "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/gerry/2022_06_03_1",
 ]
+
+CONVERT_PROJECT_SCRIPT = (
+    lambda n_array, project_folder, comic_model: f"""#!/bin/bash
+#SBATCH -J convert_mocap
+#SBATCH --array=0-{n_array}
+#SBATCH -N 1                # number of nodes
+#SBATCH -c 1               # Number of threads (cores)
+#SBATCH -p olveczky,shared,serial_requeue,cox # Number of threads (cores)
+#SBATCH --mem 5000        # memory for all cores
+#SBATCH -t 1-00:00          # time (D-HH:MM)
+#SBATCH --export=ALL
+#SBATCH -o logs/Job.convert_mocap.%N.%j.out    # STDOUT
+#SBATCH -e logs/Job.convert_mocap.%N.%j.err    # STDERR
+#SBATCH --constraint="intel&avx2"
+source ~/.bashrc
+setup_mujoco210_3.7
+python -c "import convert; convert.submit_project('{project_folder}', '{comic_model}')"
+"""
+)
 
 
 def load_data(file_path: Text) -> Dict:
@@ -304,6 +247,24 @@ def submit():
     )
 
 
+def submit_project(pf, comic_model):
+    """Run one batch job on the cluster."""
+    task_id = int(os.getenv("SLURM_ARRAY_TASK_ID"))
+    with open(os.path.join(pf, f"_convert_parameters_{comic_model}.p"), "rb") as file:
+        parameters = pickle.load(file)
+    params = parameters[task_id]
+
+    convert(
+        params["stac_path"],
+        params["offset_path"],
+        params["params_path_source"],
+        params["params_path_target"],
+        params["save_path"],
+        start_frame=params["start_frame"],
+        end_frame=params["end_frame"],
+    )
+
+
 class ParallelConverter:
     """Convert keypoint sets using parallel chunks."""
 
@@ -451,6 +412,38 @@ def submit_comic_convert(comic_model: Text):
     os.system(cmd)
 
 
+def submit_comic_convert_project(project_folder: Text, comic_model: Text):
+    """Submit conversion jobs to the cluster for the sessions in PROJECT_FOLDERS/npmp/comic_model.
+
+    Args:
+        project_folder (Text): Path to the project folder to convert.
+        comic_model (Text): name of the comic model data to convert.
+    """
+    data_path = os.path.join(project_folder, "npmp", comic_model, "logs", "data.hdf5")
+    pc = ComicParallelConverter(
+        data_path,
+        project_folder,
+        offset_path=os.path.join(project_folder, "stac", "offset.p"),
+        save_folder=os.path.join("npmp", comic_model, "kp_conversion"),
+    )
+    pc.params_path_target = pc.params_path_source
+    pc.batches = pc.generate_batches()
+    jobs = pc.batches
+
+    with open(
+        os.path.join(project_folder, f"_convert_parameters_{comic_model}.p"), "wb"
+    ) as file:
+        pickle.dump(jobs, file)
+    # cmd = (
+    #     f"sbatch --array=0-{len(jobs) - 1} cluster/convert_project.sh {project_folder}"
+    # )
+    # print(cmd)
+    script = CONVERT_PROJECT_SCRIPT(len(jobs) - 1, project_folder, comic_model)
+    output = subprocess.check_output("sbatch", input=script, universal_newlines=True)
+    job_id = output.strip().split()[-1]
+    return job_id
+
+
 def submit_convert():
     """Submit conversion jobs to the cluster for the sessions in PROJECT_FOLDERS."""
     stac_paths = [os.path.join(pf, "stac", "total.p") for pf in PROJECT_FOLDERS]
@@ -463,9 +456,27 @@ def submit_convert():
     with open("_parameters.p", "wb") as file:
         pickle.dump(jobs, file)
     print(len(jobs))
-    for job in jobs:
-        print(job["stac_path"])
+    # for job in jobs:
+    #     print(job["stac_path"])
     cmd = "sbatch --array=0-%d cluster/convert.sh" % (len(jobs) - 1)
+    os.system(cmd)
+
+
+def submit_project_convert(project_folder: Text):
+    """Submit conversion jobs to the cluster a project_folder."""
+    stac_path = os.path.join(project_folder, "stac", "total.p")
+    all_batches = []
+    pc = ParallelConverter(stac_path, project_folder)
+    pc.batches = pc.generate_batches()
+    all_batches.append(pc.batches.copy())
+    jobs = [job for batch in all_batches for job in batch]
+    with open(os.path.join(project_folder, "_convert_parameters.p"), "wb") as file:
+        pickle.dump(jobs, file)
+    print(len(jobs))
+    cmd = (
+        "sbatch --wait --array=0-%d /n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/cluster/convert_project.sh %s"
+        % (len(jobs) - 1, project_folder)
+    )
     os.system(cmd)
 
 
@@ -479,6 +490,12 @@ def merge_mocap_conversion():
         merge(path)
 
 
+def merge_mocap_conversion_project(project_folder: Text):
+    """Merge the mocap_conversion sessions in PROJECT_FOLDERS."""
+    mocap_conversion_path = os.path.join(project_folder, "mocap_conversion")
+    merge(mocap_conversion_path)
+
+
 def merge_comic_conversion(comic_model: Text):
     """Merge the mocap_conversion sessions in PROJECT_FOLDERS."""
     mocap_conversion_paths = [
@@ -487,3 +504,59 @@ def merge_comic_conversion(comic_model: Text):
     for path in mocap_conversion_paths:
         print(path, flush=True)
         merge(path)
+
+
+def merge_comic_conversion_project(project_folder: Text, comic_model: Text):
+    """Merge the mocap_conversion sessions in PROJECT_FOLDERS."""
+    path = os.path.join(project_folder, "npmp", comic_model, "kp_conversion")
+    merge(path)
+
+
+def submit_noise_analysis_conversion(config_path: str):
+    """Submit conversion jobs to the cluster for the sessions in the noise analysis config"
+
+    Args:
+        config_path (str): Path to the noise_analysis config.
+    """
+    # Load the yaml config file
+    with open(config_path, "rb") as file:
+        cfg = yaml.safe_load(file)
+    model = "rodent_tracking_model_24189285_2"
+    all_batches = []
+    for noise_type in cfg["latent_noise"]:
+        for noise_gain in cfg["noise_gain"]:
+            comic_model = f"noise_analysis/{model}/{noise_type}{noise_gain}"
+            data_paths = [
+                os.path.join(pf, "npmp", comic_model, "logs", "data.hdf5")
+                for pf in PROJECT_FOLDERS
+            ]
+            for path, pf in zip(data_paths, PROJECT_FOLDERS):
+                pc = ComicParallelConverter(
+                    path,
+                    pf,
+                    offset_path=os.path.join(pf, "stac", "offset.p"),
+                    save_folder=os.path.join("npmp", comic_model, "kp_conversion"),
+                )
+                pc.params_path_target = pc.params_path_source
+                pc.batches = pc.generate_batches()
+                all_batches.append(pc.batches.copy())
+    jobs = [job for batch in all_batches for job in batch]
+    with open("_parameters.p", "wb") as file:
+        pickle.dump(jobs, file)
+    print(len(jobs))
+    for job in jobs:
+        print(job["stac_path"])
+    cmd = "sbatch --array=0-%d cluster/convert.sh" % (len(jobs) - 1)
+    print(cmd)
+    os.system(cmd)
+
+
+def merge_noise_analysis_conversion(config_path: str):
+    """Merge the mocap_conversion sessions in PROJECT_FOLDERS."""
+    with open(config_path, "rb") as file:
+        cfg = yaml.safe_load(file)
+    model = "rodent_tracking_model_24189285_2"
+    for noise_type in cfg["latent_noise"]:
+        for noise_gain in cfg["noise_gain"]:
+            comic_model = f"noise_analysis/{model}/{noise_type}{noise_gain}"
+            merge_comic_conversion(comic_model)

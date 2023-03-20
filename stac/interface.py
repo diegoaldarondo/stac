@@ -169,17 +169,19 @@ def submit_unfinished():
     # commands = commands[0:2]
     save_variables(params["temp_file_name"], commands)
     n_jobs = len(commands)
-    print("Number of jobs: ", n_jobs)
-    cmd = (
-        "sbatch --wait --array=0-%d --exclude=holy2c18111 submit_stac_single_batch.sh %s"
-        % (n_jobs - 1, run_param_path)
-    )
-    # cmd = (
-    #     "sbatch --array=0-0 --exclude=holy2c18111 submit_stac_single_batch.sh %s"
-    #     % (run_param_path)
-    # )
-    print(cmd)
-    sys.exit(os.WEXITSTATUS(os.system(cmd)))
+    if n_jobs > 0:
+        print("Number of jobs: ", n_jobs)
+        cmd = (
+            "sbatch --wait --array=0-%d%%1000 --exclude=holy2c18111 submit_stac_single_batch.sh %s"
+            % (n_jobs - 1, run_param_path)
+        )
+        # cmd = (
+        #     "sbatch --array=0-0 --exclude=holy2c18111 submit_stac_single_batch.sh %s"
+        #     % (run_param_path)
+        # )
+        print(cmd)
+        sys.exit(os.WEXITSTATUS(os.system(cmd)))
+    
 
 
 def compute_single_batch():
@@ -202,14 +204,25 @@ def compute_single_batch():
     save_path = os.path.join(command["base_folder"], "%d.p" % (command["start_frame"]))
     print(command)
     print(save_path)
-    compute_stac.handle_args(
+    st = compute_stac.STAC(
         command["data_path"],
         command["param_path"],
         save_path=save_path,
         offset_path=command["offset_path"],
-        verbose=True,
-        process_snippet=False,
         start_frame=command["start_frame"],
         end_frame=command["end_frame"],
-        skip=1,
+        verbose=True,
     )
+    data = st.transform(offset_path=command["offset_path"])
+    st.save(data, save_path=save_path)
+    # compute_stac.handle_args(
+    #     command["data_path"],
+    #     command["param_path"],
+    #     save_path=save_path,
+    #     offset_path=command["offset_path"],
+    #     verbose=True,
+    #     process_snippet=False,
+    #     start_frame=command["start_frame"],
+    #     end_frame=command["end_frame"],
+    #     skip=1,
+    # )

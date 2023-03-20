@@ -10,6 +10,6 @@
 #SBATCH -e logs/Job.compute_stac.%N.%j.err    # STDERR
 #SBATCH --constraint="intel&avx2"
 source ~/.bashrc
-setup_mujoco200_3.7
+setup_mujoco210_3.7
 stac_path="/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac"
 stac-compute-single-batch $1

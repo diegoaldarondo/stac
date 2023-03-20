@@ -104,6 +104,7 @@ class ViewMocap(composer.Task):
         """
         self._arena = arena
         self._walker = walker
+
         self._walker.create_root_joints(self._arena.attach(self._walker))
         self._walker_spawn_position = walker_spawn_position
         self._walker_spawn_rotation = walker_spawn_rotation
@@ -294,6 +295,128 @@ class ViewMocap(composer.Task):
         #     self.V.write(self.grab_frame(physics))
 
 
+class ViewSocial(composer.Task):
+    """A ViewSocial task."""
+
+    def __init__(
+        self,
+        walkers,
+        arena,
+        kp_data,
+        walker_spawn_position=(0, 0, 0),
+        walker_spawn_rotation=None,
+        physics_timestep=0.001,
+        control_timestep=0.025,
+        precomp_qpos=None,
+        render_video=False,
+        width=600,
+        height=480,
+        video_name=None,
+        params=None,
+        fps=50.0,
+    ):
+        """Initialize ViewMocap environment.
+
+        :param walker: Rodent walker
+        :param arena: Arena defining floor
+        :param kp_data: Keypoint data (t x (n_marker*ndims))
+        :param walker_spawn_position: Initial spawn position.
+        :param walker_spawn_rotation: Initial spawn rotation.
+        :param physics_timestep: Timestep for physics simulation
+        :param control_timestep: Timestep for controller
+        :param precomp_qpos: Precomputed list of qposes.
+        :param render_video: If true, render a video of the simulation.
+        :param width: Width of video
+        :param height: Height of video
+        :param video_name: Name of video
+        :param fps: Frame rate of video
+        """
+        self._arena = arena
+        self.walkers = walkers
+        for walker in self.walkers:
+            walker.create_root_joints(self._arena.attach(walker))
+        self._walker_spawn_position = walker_spawn_position
+        self._walker_spawn_rotation = walker_spawn_rotation
+        self.kp_data = kp_data
+        self.sites = []
+        self.precomp_qpos = precomp_qpos
+        self.render_video = render_video
+        self.width = width
+        self.height = height
+        self.fps = fps
+        self.params = params
+        # for id, name in enumerate(self.params["_KEYPOINT_MODEL_PAIRS"]):
+        #     start = (np.random.rand(3) - 0.5) * 0.001
+        #     rgba = self.params["_KEYPOINT_COLOR_PAIRS"][name]
+        #     site = self._arena.mjcf_model.worldbody.add(
+        #         "site",
+        #         name=name,
+        #         type="sphere",
+        #         size=[0.005],
+        #         rgba=rgba,
+        #         pos=start,
+        #         group=2,
+        #     )
+        #     self.sites.append(site)
+        enabled_observables = []
+        for walker in self.walkers:
+            enabled_observables += walker.observables.proprioception
+            enabled_observables += walker.observables.kinematic_sensors
+            enabled_observables += walker.observables.dynamic_sensors
+            enabled_observables.append(walker.observables.sensors_touch)
+            enabled_observables.append(walker.observables.egocentric_camera)
+
+        for obs in enabled_observables:
+            obs.enabled = True
+
+            self.set_timesteps(
+                physics_timestep=physics_timestep, control_timestep=control_timestep
+            )
+
+    @property
+    def root_entity(self):
+        """Return arena root."""
+        return self._arena
+
+    def initialize_episode_mjcf(self, random_state):
+        """Initialize an arena episode."""
+        # self._arena.regenerate(random_state)
+        self._arena.mjcf_model.visual.map.znear = 0.0002
+        # self._arena.mjcf_model.visual.map.zfar = 4.
+
+    def initialize_episode(self, physics, random_state):
+        """Reinitialize the pose of the walker."""
+        for walker in self.walkers:
+            walker.reinitialize_ose(physics, random_state)
+
+    def get_reward(self, physics):
+        """Get reward."""
+        return 0.0
+
+    def get_discount(self, physics):
+        """Get discount."""
+        return 1.0
+
+
+    def after_step(self, physics, random_state):
+        """Update the mujoco markers on each step."""
+        # Get the frame
+        self.frame = physics.time()
+        self.frame = np.floor(self.frame / self.params["_TIME_BINS"]).astype("int32")
+        # Set the mocap marker positions
+        # physics.bind(self.sites).pos[:] = np.reshape(
+        #     self.kp_data[self.frame, :].T, (-1, 3)
+        # )
+
+        # Set qpose if it has been precomputed.
+        physics.named.data.qpos = np.concatenate([q[self.frame] for q in self.precomp_qpos], axis=0)
+        physics.named.data.qpos["walker/mandible"] = self.params["_MANDIBLE_POS"]
+        physics.named.data.qvel[:] = 0.0
+        physics.named.data.qacc[:] = 0.0
+
+        # Forward kinematics for rendering
+        mjlib.mj_kinematics(physics.model.ptr, physics.data.ptr)
+
 class ViewVariability(ViewMocap):
     def __init__(self, variability, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -318,11 +441,22 @@ class ViewVariability(ViewMocap):
         # Set up the colors.
         # min_val = np.min(variability.flatten())
         # max_val = np.max(variability.flatten())
-        min_val = -1
-        max_val = 1
+
+        # get 95 percentile
+        max_val = np.percentile(variability.flatten(), 95)
+        min_val = np.percentile(variability.flatten(), 5)
+        max_val = np.max([np.abs(min_val), np.abs(max_val)])
+        min_val = -max_val
+        # clip to the min and max values
+        self.variability = np.clip(self.variability, min_val, max_val)
+
+        # min_val = -1
+        # max_val = 1
         norm = colors.Normalize(vmin=min_val, vmax=max_val, clip=True)
-        self.mapper = cm.ScalarMappable(norm=norm, cmap=cm.RdBu_r)
-        self.size_map = interp1d([-3, 3], [0.0001, 0.01])
+        # self.mapper = cm.ScalarMappable(norm=norm, cmap=cm.RdBu_r)
+        self.mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis)
+        # self.size_map = interp1d([min_val, max_val], [0.01, 0.01001])
+        self.size_map = interp1d([min_val, max_val], [0.002, 0.01])
 
     def after_step(self, physics, random_state):
         """Update the mujoco markers on each step."""

@@ -4,6 +4,8 @@ import numpy as np
 import h5py
 import cv2
 import scipy.ndimage as ndimage
+import collections
+from dm_control.locomotion.arenas import assets as locomotion_arenas_assets
 
 _HEIGHTFIELD_ID = 0
 _ARENA_DIAMETER: 0.5842
@@ -18,6 +20,8 @@ FLOOR_PCTILE_CLAMP = 95
 FLOOR_CLAMP_VALUE = 0.01
 GROUND_GEOM_POS = "0 0 -0.005"
 _GROUNDPLANE_QUAD_SIZE = 0.025
+
+SkyBox = collections.namedtuple("SkyBox", ("file", "gridsize", "gridlayout"))
 
 
 def _load_hfield(data_path, scale):
@@ -44,7 +48,20 @@ class DannceArena(composer.Arena):
         self._mjcf_root.visual.headlight.set_attributes(
             ambient=[0.4, 0.4, 0.4], diffuse=[0.8, 0.8, 0.8], specular=[0.1, 0.1, 0.1]
         )
-
+        self._mjcf_root.compiler.texturedir = (
+            "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/stac"
+        )
+        sky_info = SkyBox(
+            file="WhiteSkybox.png", gridsize="3 4", gridlayout=".U..LFRB.D.."
+        )
+        self._skybox = self._mjcf_root.asset.add(
+            "texture",
+            name="wht_skybox",
+            file=sky_info.file,
+            type="skybox",
+            gridsize=sky_info.gridsize,
+            gridlayout=sky_info.gridlayout,
+        )
         self._ground_texture = self._mjcf_root.asset.add(
             "texture",
             rgb1=[0.2, 0.3, 0.4],

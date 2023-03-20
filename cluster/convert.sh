@@ -6,9 +6,9 @@
 #SBATCH --mem 5000        # memory for all cores
 #SBATCH -t 1-00:00          # time (D-HH:MM)
 #SBATCH --export=ALL
-#SBATCH -o logs/Job.convert_mocap.%N.%j.out    # STDOUT
-#SBATCH -e logs/Job.convert_mocap.%N.%j.err    # STDERR
+#SBATCH -o /dev/null    # STDOUT
+#SBATCH -e /dev/null    # STDERR
 #SBATCH --constraint="intel&avx2"
 source ~/.bashrc
-setup_mujoco200_3.7
+setup_mujoco210_3.7
 python -c "import convert; convert.submit()"

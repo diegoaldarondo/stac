@@ -12,7 +12,10 @@ save_path = "./test/data.mat"
 test_comic_file = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/npmp/rodent_tracking_model_21380833_2_final/logs/data.hdf5"
 comic_offset_path = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/stac/offset.p"
 comic_params_path = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/stac_params/params.yaml"
-project_folder = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1"
+project_folder = (
+    "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1"
+)
+
 
 class ConvertTest(absltest.TestCase):
     def test_convert(self):

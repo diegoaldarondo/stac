@@ -6,6 +6,7 @@ import os
 import argparse
 from scipy.io import savemat
 from typing import Text, Tuple
+import h5py
 
 
 def _sort_fn(file: Text) -> int:
@@ -113,6 +114,10 @@ def merge(folder: Text, *, save_path: Text = None):
         if v is None:
             out_dict[k] = "None"
     savemat(mat_path, out_dict)
+    with h5py.File(save_path.split(".p")[0] + ".hdf5", "w") as file:
+        dset = file.create_dataset(
+            "qpos", data=out_dict["qpos"], shape=out_dict["qpos"].shape
+        )
 
 
 def stac_merge():

@@ -46,14 +46,14 @@ def q_loss(
     Returns:
         float: loss value
     """
-    if temporal_regularization:
-        error_msg = " cannot be None if using temporal regularization"
-        if qs_to_opt is None:
-            raise _TestNoneArgs("qs_to_opt" + error_msg)
-        if q_prev is None:
-            raise _TestNoneArgs("q_prev" + error_msg)
-        # if q_next is None:
-        #     raise _TestNoneArgs('q_next' + error_msg)
+    # if temporal_regularization:
+    #     error_msg = " cannot be None if using temporal regularization"
+    #     if qs_to_opt is None:
+    #         raise _TestNoneArgs("qs_to_opt" + error_msg)
+    #     if q_prev is None:
+    #         raise _TestNoneArgs("q_prev" + error_msg)
+    #     # if q_next is None:
+    #     #     raise _TestNoneArgs('q_next' + error_msg)
 
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     if qs_to_opt is not None:
@@ -61,18 +61,16 @@ def q_loss(
         q = np.copy(q_copy)
 
     # Add temporal regularization for arms.
-    temp_reg_term = 0.0
-    if temporal_regularization:
-        temp_reg_term += (q[qs_to_opt] - q_prev[qs_to_opt]) ** 2
-        if q_next is not None:
-            temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt]) ** 2
+    # temp_reg_term = 0.0
+    # if temporal_regularization:
+    #     temp_reg_term += (q[qs_to_opt] - q_prev[qs_to_opt]) ** 2
+    #     if q_next is not None:
+    #         temp_reg_term += (q[qs_to_opt] - q_next[qs_to_opt]) ** 2
 
-    residual = kp_data.T - q_joints_to_markers(q, physics, sites)
+    residual = kp_data - q_joints_to_markers(q, physics, sites)
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
-
-    loss = residual
-    return loss
+    return residual
 
 
 def q_joints_to_markers(q: np.ndarray, physics, sites: np.ndarray) -> np.ndarray:
@@ -94,8 +92,7 @@ def q_joints_to_markers(q: np.ndarray, physics, sites: np.ndarray) -> np.ndarray
     # Center of mass position
     mjlib.mj_comPos(physics.model.ptr, physics.data.ptr)
 
-    return_value = np.array(physics.bind(sites).xpos)
-    return return_value.flatten()
+    return np.array(physics.bind(sites).xpos).flatten()
 
 
 def q_phase(
@@ -176,7 +173,7 @@ def q_phase(
             lambda q: q_loss(
                 q,
                 physics,
-                marker_ref_arr,
+                marker_ref_arr.T,
                 sites,
                 params,
                 qs_to_opt=qs_to_opt,
@@ -244,7 +241,7 @@ def m_loss(
         # Get the offset relative to the initial position, only for
         # markers you wish to regularize
         reg_term += ((offset - initial_offsets.flatten()) ** 2) * is_regularized
-        residual += (kp_data[i, :].T - m_joints_to_markers(offset, physics, sites)) ** 2
+        residual += (kp_data[:, i] - m_joints_to_markers(offset, physics, sites)) ** 2
     return np.sum(residual) + reg_coef * np.sum(reg_term)
 
 
@@ -267,8 +264,7 @@ def m_joints_to_markers(offset, physics, sites) -> np.ndarray:
     # Center of mass position
     mjlib.mj_comPos(physics.model.ptr, physics.data.ptr)
 
-    return_value = np.array(physics.bind(sites).xpos)
-    return return_value.flatten()
+    return np.array(physics.bind(sites).xpos).flatten()
 
 
 def m_phase(
@@ -313,7 +309,7 @@ def m_phase(
         lambda offset: m_loss(
             offset,
             physics,
-            kp_data[time_indices, :],
+            kp_data[time_indices, :].T,
             time_indices,
             sites,
             q,
@@ -322,6 +318,7 @@ def m_phase(
             reg_coef=reg_coef,
         ),
         offset0,
+        # method="L-BFGS-B",
         # tol=params['_ROOT_FTOL'],
         options={"maxiter": maxiter},
     )

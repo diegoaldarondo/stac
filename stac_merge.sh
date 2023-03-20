@@ -4,7 +4,7 @@
 #SBATCH -t 0-01:00
 #SBATCH -N 1
 #SBATCH -c 1
-#SBATCH -p olveczky
+#SBATCH -p olveczky,cox,shared,serial_requeue
 #SBATCH --constraint="intel&avx2"
 # Ask for a single core on the olveczky partition to serve as a dispatcher and merger. 
 # Script to run all steps in converting dannce predictions to npmp embeddings in a single job. 
@@ -21,7 +21,7 @@ set -e
 
 # Load the environment setup functions
 source ~/.bashrc
-setup_mujoco200_3.7
+setup_mujoco210_3.7
 
 stac-merge ./stac
 
