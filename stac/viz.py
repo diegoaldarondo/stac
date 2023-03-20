@@ -111,29 +111,6 @@ def quat2eul(quat: np.ndarray) -> np.ndarray:
     return np.array([np.rad2deg(eux), np.rad2deg(euy), np.rad2deg(euz)])
 
 
-def aligned_view(qpos: np.ndarray) -> np.ndarray:
-    """Align a quaternion representation of joint angles to egocentric coordinates
-
-    DEPRECATED
-
-    Args:
-        qpos (np.ndarray): Original qpos
-
-    Returns:
-        np.ndarray: aligned qpos.
-    """
-    quaternions = qpos[:, 3:7]
-
-    for i in range(quaternions.shape[0]):
-        eul = quat2eul(quaternions[i, :].flatten())
-        eul[0] = 0.0
-        quaternions[i, :] = mjmath.euler2quat(eul[0], eul[1], eul[2])
-
-    qpos[:, 3:7] = quaternions
-    qpos[:, 0:3] = 0.0
-    return qpos
-
-
 def get_project_paths(
     project_folder: Text, camera: Text
 ) -> Tuple[Text, Text, Text, Text]:
@@ -189,11 +166,11 @@ def get_social_project_paths(
         os.path.join(project_folder, "stac", "total1.p"),
         os.path.join(project_folder, "stac", "total2.p"),
     ]
-    if not os.path.exists(offset_path):
-        offset_paths = [
-            os.path.join(project_folder, "stac", "offset1.p"),
-            os.path.join(project_folder, "stac", "offset2.p"),
-        ]
+    # if not os.path.exists(offset_path):
+    #     offset_paths = [
+    #         os.path.join(project_folder, "stac", "offset1.p"),
+    #         os.path.join(project_folder, "stac", "offset2.p"),
+    #     ]
     return param_path, calibration_path, video_path, offset_paths
 
 
