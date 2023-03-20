@@ -5,10 +5,8 @@ import h5py
 import cv2
 import scipy.ndimage as ndimage
 import collections
-from dm_control.locomotion.arenas import assets as locomotion_arenas_assets
 
-_HEIGHTFIELD_ID = 0
-_ARENA_DIAMETER: 0.5842
+
 PEDESTAL_WIDTH = 0.099
 PEDESTAL_HEIGHT = 0.054
 _TOP_CAMERA_DISTANCE = 100
@@ -22,14 +20,6 @@ GROUND_GEOM_POS = "0 0 -0.005"
 _GROUNDPLANE_QUAD_SIZE = 0.025
 
 SkyBox = collections.namedtuple("SkyBox", ("file", "gridsize", "gridlayout"))
-
-
-def _load_hfield(data_path, scale):
-    """Load the floor_map from the snippet file."""
-    with h5py.File(data_path, "r") as f:
-        floormap = f["floormap"][:]
-        floormap = floormap * scale / MM_TO_METER
-    return floormap
 
 
 class DannceArena(composer.Arena):
