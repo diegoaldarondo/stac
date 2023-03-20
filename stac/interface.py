@@ -6,7 +6,7 @@ import pickle
 import yaml
 import h5py
 from scipy.io import loadmat
-from typing import List, Dict, Tuple, Union, Text
+from typing import List, Dict, Text
 
 
 def load_params(param_path: Text) -> Dict:
@@ -88,7 +88,6 @@ def get_clip_duration(data_path: Text) -> int:
     except (NotImplementedError, FileNotFoundError):
         with h5py.File(data_path, "r") as f:
             clip_duration = f["mocapstruct_here"]["markers_preproc"]["ArmL"].shape[1]
-            # clip_duration = f["predictions"]["ArmL"].shape[1]
     return clip_duration
 
 
@@ -124,12 +123,8 @@ def submit():
         "sbatch --wait --array=0-%d --exclude=holy2c18111 submit_stac_single_batch.sh %s"
         % (n_jobs - 1, param_path)
     )
-    # cmd = (
-    #     "sbatch --wait --array=0-0 --exclude=holy2c18111 submit_stac_single_batch.sh %s"
-    #     % (param_path)
-    # )
+
     print(cmd)
-    # os.system(cmd)
     sys.exit(os.WEXITSTATUS(os.system(cmd)))
 
 
@@ -164,9 +159,6 @@ def submit_unfinished():
                     }
                 )
 
-    # start_frames = start_frames[:2]
-    # end_frames = end_frames[:2]
-    # commands = commands[0:2]
     save_variables(params["temp_file_name"], commands)
     n_jobs = len(commands)
     if n_jobs > 0:
@@ -175,13 +167,8 @@ def submit_unfinished():
             "sbatch --wait --array=0-%d%%1000 --exclude=holy2c18111 submit_stac_single_batch.sh %s"
             % (n_jobs - 1, run_param_path)
         )
-        # cmd = (
-        #     "sbatch --array=0-0 --exclude=holy2c18111 submit_stac_single_batch.sh %s"
-        #     % (run_param_path)
-        # )
         print(cmd)
         sys.exit(os.WEXITSTATUS(os.system(cmd)))
-    
 
 
 def compute_single_batch():
@@ -215,14 +202,3 @@ def compute_single_batch():
     )
     data = st.transform(offset_path=command["offset_path"])
     st.save(data, save_path=save_path)
-    # compute_stac.handle_args(
-    #     command["data_path"],
-    #     command["param_path"],
-    #     save_path=save_path,
-    #     offset_path=command["offset_path"],
-    #     verbose=True,
-    #     process_snippet=False,
-    #     start_frame=command["start_frame"],
-    #     end_frame=command["end_frame"],
-    #     skip=1,
-    # )

@@ -41,7 +41,6 @@ def convert(file_path, offset_path, params_path, save_path):
     params = util.load_params(params_path)
     data = load_data(file_path)
 
-    
     params["n_frames"] = data["kp_data"].shape[0]
     params["n_frames"] = int(params["n_frames"])
 
@@ -67,7 +66,7 @@ def convert(file_path, offset_path, params_path, save_path):
         sites[n_site].pos = p
 
     # Set the environment with the qpos.
-    env.task.precomp_qpos = data["qpos"]
+    env.task.qpos = data["qpos"]
 
     env.task.initialize_episode(env.physics, 0)
     prev_time = env.physics.time()

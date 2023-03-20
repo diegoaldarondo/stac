@@ -3,7 +3,6 @@
 Attributes:
     FPS (int): Default frames per second of the video. 
 """
-# from dm_control import viewer
 from dm_control.locomotion.walkers import rescale
 import clize
 import stac.rodent_environments as rodent_environments
@@ -314,7 +313,7 @@ def setup_sites(q: np.ndarray, offsets: np.ndarray, env):
         site.pos = offsets[n_offset, :]
     print(q.shape)
     # q[:, 7:] = uniform_filter1d(q[:, 7:], size=5, axis=0)
-    env.task.precomp_qpos = q
+    env.task.qpos = q
 
 
 def load_calibration(dannce_file: Text) -> Tuple:
