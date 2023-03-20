@@ -56,25 +56,6 @@ def trim_video(video_path: Text, save_path: Text, frames: np.ndarray):
             video.append_data(frame)
 
 
-def concat_videos(rgb_video_path: Text, recon_video_path: Text, frames: np.ndarray):
-    """Concatenate two videos horizontally
-
-    Args:
-        rgb_video_path (Text): Path to rgb video
-        recon_video_path (Text): Path to reconstruction video
-        frames (np.ndarray): frames to include from both videos.
-    """
-    rgb_reader = imageio.get_reader(rgb_video_path)
-    recon_reader = imageio.get_reader(recon_video_path)
-    concat_path = rgb_video_path.replace("rgb", "concat")
-    with imageio.get_writer(concat_path, fps=FPS) as video:
-        for n_frame in frames:
-            rgb_frame = rgb_reader.get_data(n_frame)
-            recon_frame = recon_reader.get_data(n_frame)
-            frame = np.concatenate([rgb_frame, recon_frame], axis=1)
-            video.append_data(frame)
-
-
 def add_qualifier(video_path: Text, qualifier: Text) -> Text:
     """Utility to add qualifier to paths
 
@@ -166,11 +147,11 @@ def get_social_project_paths(
         os.path.join(project_folder, "stac", "total1.p"),
         os.path.join(project_folder, "stac", "total2.p"),
     ]
-    # if not os.path.exists(offset_path):
-    #     offset_paths = [
-    #         os.path.join(project_folder, "stac", "offset1.p"),
-    #         os.path.join(project_folder, "stac", "offset2.p"),
-    #     ]
+    if not os.path.exists(offset_paths[0]):
+        offset_paths = [
+            os.path.join(project_folder, "stac", "offset1.p"),
+            os.path.join(project_folder, "stac", "offset2.p"),
+        ]
     return param_path, calibration_path, video_path, offset_paths
 
 
@@ -328,7 +309,7 @@ def setup_video_scene(
     #     qpos[:, 2] -= Z_OFFSET
 
     # qpos[:, 2] -= .01
-    # qpos = qpos[frames, ...].copy()
+    qpos = qpos[frames, ...].copy()
     qpos = view_stac.fix_tail(qpos, q_names)
     kp_data = np.zeros((qpos.shape[0], kp_data.shape[1]))
     n_frames = len(frames)
@@ -550,6 +531,5 @@ def generate_tile_video(video_folder: Text, n_tiles: int = 25, n_frames: int = 5
     # Tile videos
     with imageio.get_writer(os.path.join(video_folder, "tile.mp4"), fps=50) as video:
         for n_frame in range(n_frames):
-            print(n_frame)
             frame = tile_frame(videos, int(np.sqrt(n_tiles)), n_frame)
             video.append_data(frame)
