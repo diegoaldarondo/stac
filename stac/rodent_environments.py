@@ -1,10 +1,4 @@
-"""Environment for rodent modeling with dm_control and motion capture.
-
-Attributes:
-    MM_TO_METER (int): Description
-    PEDESTAL_HEIGHT (float): Description
-    PEDESTAL_WIDTH (float): Description
-"""
+"""Environment for rodent modeling with dm_control and motion capture."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -13,24 +7,11 @@ from dm_control.locomotion.arenas import floors
 import stac.walkers as walkers
 import stac.tasks as tasks
 import stac.arenas as arenas
-from typing import List, Dict, Text, Union, Tuple
+from typing import List, Dict
 import numpy as np
 import collections
-from dm_control.locomotion.arenas import assets as locomotion_arenas_assets
-
-_UPRIGHT_POS = (0.0, 0.0, 0.94)
-_UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
 
 MM_TO_METER = 1000
-# Height of head above which the rat is considered standing.
-_TORQUE_THRESHOLD = 60
-_HEIGHTFIELD_ID = 0
-_TERRAIN_SMOOTHNESS = 0.15  # 0.0: maximally bumpy; 1.0: completely smooth.
-_TERRAIN_BUMP_SCALE = 0.4  # Spatial scale of terrain bumps (in meters).
-_TOP_CAMERA_DISTANCE = 100
-_TOP_CAMERA_Y_PADDING_FACTOR = 1.1
-PEDESTAL_WIDTH = 0.099
-PEDESTAL_HEIGHT = 0.054
 SkyBox = collections.namedtuple("SkyBox", ("file", "gridsize", "gridlayout"))
 
 
@@ -59,7 +40,14 @@ def rodent_social(
         arena_type (Text, optional): Description
     """
     # Build a position-controlled Rat
-    walkers = [walkers.Rat(initializer=None, params=p, observable_options={"egocentric_camera": dict(enabled=True)}) for p in params]
+    walkers = [
+        walkers.Rat(
+            initializer=None,
+            params=p,
+            observable_options={"egocentric_camera": dict(enabled=True)},
+        )
+        for p in params
+    ]
     arena = arenas.DannceArena(
         params[0],
         arena_diameter=arena_diameter,
@@ -67,7 +55,6 @@ def rodent_social(
         alpha=alpha,
     )
     task = tasks.ViewSocial(walkers, arena, kp_data, params=params[0])
-    # time_limit = params["_TIME_BINS"] * (params["n_frames"] - 1)
     time_limit = params[0]["_TIME_BINS"] * (params[0]["n_frames"])
     return composer.Environment(
         task,
@@ -75,6 +62,7 @@ def rodent_social(
         random_state=random_state,
         strip_singleton_obs_buffer_dim=True,
     )
+
 
 def rodent_mocap(
     kp_data,
@@ -136,7 +124,6 @@ def rodent_mocap(
             arena_center=arena_center,
             alpha=alpha,
         )
-        print("made it")
         task = tasks.ViewMocap(walker, arena, kp_data, params=params)
     elif params["ARENA_TYPE"] == "Standard":
         # Build a Floor arena
