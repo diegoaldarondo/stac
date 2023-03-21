@@ -96,7 +96,6 @@ def load_data(
             q = np.stack(q, axis=1).T
 
         q_names = in_dict["names_qpos"]
-        # print(q_names)
         q = fix_tail(q, q_names)
 
     if return_q_names:
@@ -117,7 +116,6 @@ def fix_tail(q: np.ndarray, q_names: List):
     """
     for i, name in enumerate(q_names):
         if re.match("walker/vertebra_C.*bend", name):
-            # print(name, i, flush=True)
             q[:, i] = 0.0
         if re.match("walker/vertebra_C.*extend", name):
             q[:, i] = 0.0
@@ -311,7 +309,6 @@ def setup_sites(q: np.ndarray, offsets: np.ndarray, env):
     env.physics.bind(sites).pos[:] = offsets
     for n_offset, site in enumerate(sites):
         site.pos = offsets[n_offset, :]
-    print(q.shape)
     # q[:, 7:] = uniform_filter1d(q[:, 7:], size=5, axis=0)
     env.task.qpos = q
 
@@ -439,7 +436,6 @@ def mujoco_loop(
             video.append_data(reconArr)
 
             n_frame += 1
-            # print(n_frame)
             prev_time = np.round(env.physics.time(), decimals=2)
 
 
@@ -493,7 +489,6 @@ def overlay_loop(
                 cam_params,
             )
             video.append_data(frame)
-            print(n_frame)
             prev_time = np.round(env.physics.time(), decimals=2)
 
 
@@ -567,8 +562,8 @@ def render_loop(
     env,
     scene_option,
     camera: Text = "walker/close_profile",
-    height=1200,
-    width=1920,
+    height: int = 1200,
+    width: int = 1920,
 ):
     prev_time = env.physics.time()
     n_frame = 0
@@ -596,7 +591,6 @@ def render_loop(
             # )
             # seg_frames.append(segArr.astype(np.uint8))
             n_frame += 1
-            print(n_frame)
             prev_time = np.round(env.physics.time(), decimals=2)
     # Otherwise, use the viewer
     else:
@@ -605,7 +599,6 @@ def render_loop(
         viewer.launch(env)
     if env.task.V is not None:
         env.task.V.release()
-    print(n_frame, flush=True)
     if save_path is not None and render_video:
         env.task.video_name = save_path
         print("Rendering: ", env.task.video_name)
