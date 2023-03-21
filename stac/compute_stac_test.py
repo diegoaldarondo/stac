@@ -40,7 +40,6 @@ class StacTest(absltest.TestCase):
         data = self.stac.transform(OFFSET_PATH)
 
     def test_stac_save(self):
-        data = self.stac.transform(OFFSET_PATH)
         self.stac.save(SAVE_PATH)
         os.remove(SAVE_PATH)
 
