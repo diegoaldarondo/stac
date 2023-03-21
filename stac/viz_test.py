@@ -1,6 +1,6 @@
 import unittest
-import viz
-import view_stac
+import stac.viz as viz
+import stac.view_stac as view_stac
 import os
 import numpy as np
 
