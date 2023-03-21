@@ -18,7 +18,7 @@ FLOOR_PCTILE_CLAMP = 95
 FLOOR_CLAMP_VALUE = 0.01
 GROUND_GEOM_POS = "0 0 -0.005"
 _GROUNDPLANE_QUAD_SIZE = 0.025
-
+SKYBOX_PATH = "../assets/WhiteSkybox.png"
 SkyBox = collections.namedtuple("SkyBox", ("file", "gridsize", "gridlayout"))
 
 
@@ -41,9 +41,7 @@ class DannceArena(composer.Arena):
         self._mjcf_root.compiler.texturedir = (
             "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/stac"
         )
-        sky_info = SkyBox(
-            file="WhiteSkybox.png", gridsize="3 4", gridlayout=".U..LFRB.D.."
-        )
+        sky_info = SkyBox(file=SKYBOX_PATH, gridsize="3 4", gridlayout=".U..LFRB.D..")
         self._skybox = self._mjcf_root.asset.add(
             "texture",
             name="wht_skybox",
