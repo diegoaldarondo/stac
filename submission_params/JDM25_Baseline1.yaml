@@ -1,7 +1,0 @@
-base_folder: /n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/results/long_clips/Baseline1_JDM25/
-data_path: /n/home02/daldarondo/LabDir/Jesse/Data/Dropbox_curated_sharefolders/mocap_data_diego/Baseline1_JDM25.mat"
-offset_path: /n/home02/daldarondo/LabDir/Diego/tdata/dm/stac/offsets/july22/JDM25.p
-param_path: /n/home02/daldarondo/LabDir/Diego/code/dm/stac/params/july15/JDM25.yaml
-temp_file_name: run_variables.p
-snippet_duration: 7200
-clip_duration: null
