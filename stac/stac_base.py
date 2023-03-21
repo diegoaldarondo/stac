@@ -16,14 +16,8 @@ def q_loss(
     physics,
     kp_data: np.ndarray,
     sites: np.ndarray,
-    params: Dict,
     qs_to_opt: np.ndarray = None,
     q_copy: np.ndarray = None,
-    reg_coef: float = 0.0,
-    root_only: bool = False,
-    temporal_regularization: bool = False,
-    q_prev: np.ndarray = None,
-    q_next: np.ndarray = None,
     kps_to_opt: np.ndarray = None,
 ) -> float:
     """Compute the marker loss for q_phase optimization.
@@ -33,14 +27,8 @@ def q_loss(
         physics (TYPE): Physics of current environment.
         kp_data (np.ndarray): Reference keypoint data.
         sites (np.ndarray): sites of keypoints at frame_index
-        params (Dict): Animal parameters dictionary
         qs_to_opt (List, optional): Binary vector of qposes to optimize.
         q_copy (np.ndarray, optional): Copy of current qpos, for use in optimization of subsets
-        reg_coef (float, optional): L1 regularization coefficient during marker loss.
-        root_only (bool, optional): If True, only regularize the root.
-        temporal_regularization (bool, optional): If True, regularize joints over time.
-        q_prev (np.ndarray, optional): Copy of previous qpos frame
-        q_next (np.ndarray, optional): Copy of next qpos frame
         kps_to_opt (List, optional): Vector denoting which keypoints to use in loss.
 
     Returns:
@@ -79,19 +67,16 @@ def q_joints_to_markers(q: np.ndarray, physics, sites: np.ndarray) -> np.ndarray
     return np.array(physics.bind(sites).xpos).flatten()
 
 
+# TODO: Refactor
 def q_phase(
     physics,
     marker_ref_arr: np.ndarray,
     sites: np.ndarray,
     params: Dict,
-    reg_coef: float = 0.0,
     qs_to_opt: np.ndarray = None,
     kps_to_opt: np.ndarray = None,
     root_only: bool = False,
     trunk_only: bool = False,
-    temporal_regularization=False,
-    q_prev: np.ndarray = None,
-    q_next: np.ndarray = None,
     ftol: float = None,
 ):
     """Update q_pose using estimated marker parameters.
@@ -101,16 +86,12 @@ def q_phase(
         marker_ref_arr (np.ndarray): Keypoint data reference
         sites (np.ndarray): sites of keypoints at frame_index
         params (Dict): Animal parameters dictionary
-        reg_coef (float, optional): Description
         qs_to_opt (np.ndarray, optional): Description
         kps_to_opt (np.ndarray, optional): Description
         root_only (bool, optional): Description
         trunk_only (bool, optional): Description
         temporal_regularization (bool, optional): If True, regularize arm joints over time.
-        q_prev (np.ndarray, optional): Description
-        q_next (np.ndarray, optional): Description
         ftol (float, optional): Description
-        reg_coef (float, optional L1 regularization coefficient during marker loss.
         qs_to_opt (None, optional Binary vector of qs to optimize.
         kps_to_opt (None, optional Logical vector of keypoints to use in q loss function.
         root_only (bool, optional If True, only optimize the root.
@@ -154,14 +135,8 @@ def q_phase(
                 physics,
                 marker_ref_arr.T,
                 sites,
-                params,
                 qs_to_opt=qs_to_opt,
                 q_copy=q_copy,
-                reg_coef=reg_coef,
-                root_only=root_only,
-                temporal_regularization=temporal_regularization,
-                q_prev=q_prev,
-                q_next=q_next,
                 kps_to_opt=kps_to_opt,
             ),
             q0,
