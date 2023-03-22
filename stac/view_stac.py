@@ -192,15 +192,15 @@ def setup_visualization(
         params["_ARENA_DIAMETER"] = None
     if registration_xml:
         params[
-            "_XML_PATH"
+            "XML_PATH"
         ] = "/n/home02/daldarondo/LabDir/Diego/code/dm/stac/models/rodent_stac.xml"
 
     env = setup_arena(kp_data, params, alpha=alpha)
 
     rescale.rescale_subtree(
         env.task._walker._mjcf_root,
-        params["scale_factor"],
-        params["scale_factor"],
+        params["SCALE_FACTOR"],
+        params["SCALE_FACTOR"],
     )
 
     # Setup cameras
@@ -405,7 +405,7 @@ def mujoco_loop(
         n_frame += 1
         while prev_time < env._time_limit:
             while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
-                "_TIME_BINS"
+                "TIME_BINS"
             ]:
                 env.physics.step()
             env.task.after_step(env.physics, None)
@@ -474,7 +474,7 @@ def overlay_loop(
         for n_frame in range(len(frames)):
             if n_frame > 0:
                 while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
-                    "_TIME_BINS"
+                    "TIME_BINS"
                 ]:
                     env.physics.step()
             frame = render_overlay(
@@ -571,7 +571,7 @@ def render_loop(
     if headless & render_video:
         while prev_time < env._time_limit:
             while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
-                "_TIME_BINS"
+                "TIME_BINS"
             ]:
                 env.physics.step()
             env.task.after_step(env.physics, None)

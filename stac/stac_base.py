@@ -107,9 +107,9 @@ def q_phase(
     # Set the center to help with finding the optima (does not need to be exact)
     if root_only or trunk_only:
         q0[:3] = marker_ref_arr[12:15]
-        diff_step = params["_ROOT_DIFF_STEP"]
+        diff_step = params["ROOT_DIFF_STEP"]
     else:
-        diff_step = params["_DIFF_STEP"]
+        diff_step = params["DIFF_STEP"]
     if root_only:
         qs_to_opt = np.zeros_like(q0, dtype=np.bool)
         qs_to_opt[:7] = True
@@ -123,11 +123,11 @@ def q_phase(
     # Use different tolerances for root vs normal optimization
     if ftol is None:
         if root_only:
-            ftol = params["_ROOT_FTOL"]
+            ftol = params["ROOT_FTOL"]
         elif qs_to_opt is not None:
-            ftol = params["_LIMB_FTOL"]
+            ftol = params["LIMB_FTOL"]
         else:
-            ftol = params["_FTOL"]
+            ftol = params["FTOL"]
     try:
         q_opt_param = scipy.optimize.least_squares(
             lambda q: q_loss(
@@ -250,7 +250,7 @@ def m_phase(
     # Define which offsets to regularize
     is_regularized = []
     for site in sites:
-        if any(n in site.name for n in params["_SITES_TO_REGULARIZE"]):
+        if any(n in site.name for n in params["SITES_TO_REGULARIZE"]):
             is_regularized.append(np.array([1.0, 1.0, 1.0]))
         else:
             is_regularized.append(np.array([0.0, 0.0, 0.0]))

@@ -3,7 +3,6 @@
 import pickle
 from stac import util
 from stac import rodent_environments
-from dm_control import viewer
 from scipy.io import savemat
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import mjlib
@@ -48,8 +47,8 @@ def convert(file_path, offset_path, params_path, save_path):
     env = rodent_environments.rodent_mocap(data["kp_data"], params)
     rescale.rescale_subtree(
         env.task._walker._mjcf_root,
-        params["scale_factor"],
-        params["scale_factor"],
+        params["SCALE_FACTOR"],
+        params["SCALE_FACTOR"],
     )
     mjlib.mj_kinematics(env.physics.model.ptr, env.physics.data.ptr)
     # Center of mass position
@@ -80,7 +79,7 @@ def convert(file_path, offset_path, params_path, save_path):
     )
     while prev_time < env._time_limit:
         while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
-            "_TIME_BINS"
+            "TIME_BINS"
         ]:
             env.physics.step()
         env.task.after_step(env.physics, None)

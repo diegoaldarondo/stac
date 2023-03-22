@@ -236,7 +236,7 @@ def generate_variability_video(
     params = util.load_params(param_path)
     params["n_frames"] = len(frames) - 1
     params[
-        "_XML_PATH"
+        "XML_PATH"
     ] = "/n/home02/daldarondo/LabDir/Diego/code/dm/stac/models/rodent_variability.xml"
     camparams = view_stac.load_calibration(calibration_path)
     camera_kwargs = convert_cameras(camparams)

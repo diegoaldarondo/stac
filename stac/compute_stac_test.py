@@ -4,7 +4,9 @@ import os
 
 
 DATA_PATH = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/DANNCE/predict02/save_data_AVG.mat"
-PARAM_PATH = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/stac_params/params.yaml"
+PARAM_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "params", "params.yaml"
+)
 OFFSET_PATH = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/stac/offset.p"
 SAVE_PATH = "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/test/test.p"
 START_FRAME = 0

@@ -91,9 +91,9 @@ class ViewMocap(composer.Task):
         self.V = None
         self.params = params
 
-        for id, name in enumerate(self.params["_KEYPOINT_MODEL_PAIRS"]):
+        for id, name in enumerate(self.params["KEYPOINT_MODEL_PAIRS"]):
             start = (np.random.rand(3) - 0.5) * 0.001
-            rgba = self.params["_KEYPOINT_COLOR_PAIRS"][name]
+            rgba = self.params["KEYPOINT_COLOR_PAIRS"][name]
             site = self._arena.mjcf_model.worldbody.add(
                 "site",
                 name=name,
@@ -144,7 +144,7 @@ class ViewMocap(composer.Task):
         """Update the mujoco markers on each step."""
         # Get the frame
         self.frame = physics.time()
-        self.frame = np.floor(self.frame / self.params["_TIME_BINS"]).astype("int32")
+        self.frame = np.floor(self.frame / self.params["TIME_BINS"]).astype("int32")
         # Set the mocap marker positions
         physics.bind(self.sites).pos[:] = np.reshape(
             self.kp_data[self.frame, :].T, (-1, 3)
@@ -153,7 +153,7 @@ class ViewMocap(composer.Task):
         # Set qpos if it has been precomputed.
         if self.qpos is not None:
             physics.named.data.qpos[:] = self.qpos[self.frame]
-            physics.named.data.qpos["walker/mandible"] = self.params["_MANDIBLE_POS"]
+            physics.named.data.qpos["walker/mandible"] = self.params["MANDIBLE_POS"]
             physics.named.data.qvel[:] = 0.0
             physics.named.data.qacc[:] = 0.0
             # Forward kinematics for rendering
@@ -240,13 +240,13 @@ class ViewSocial(composer.Task):
         """Update the mujoco markers on each step."""
         # Get the frame
         self.frame = physics.time()
-        self.frame = np.floor(self.frame / self.params["_TIME_BINS"]).astype("int32")
+        self.frame = np.floor(self.frame / self.params["TIME_BINS"]).astype("int32")
 
         # Set qpose if it has been precomputed.
         physics.named.data.qpos = np.concatenate(
             [q[self.frame] for q in self.qpos], axis=0
         )
-        physics.named.data.qpos["walker/mandible"] = self.params["_MANDIBLE_POS"]
+        physics.named.data.qpos["walker/mandible"] = self.params["MANDIBLE_POS"]
         physics.named.data.qvel[:] = 0.0
         physics.named.data.qacc[:] = 0.0
 
@@ -289,12 +289,12 @@ class ViewVariability(ViewMocap):
         """Update the mujoco markers on each step."""
         # Get the frame
         self.frame = physics.time()
-        self.frame = np.floor(self.frame / self.params["_TIME_BINS"]).astype("int32")
+        self.frame = np.floor(self.frame / self.params["TIME_BINS"]).astype("int32")
 
         # Set qpose if it has been precomputed.
         if self.qpos is not None:
             physics.named.data.qpos[:] = self.qpos[self.frame]
-            physics.named.data.qpos["walker/mandible"] = self.params["_MANDIBLE_POS"]
+            physics.named.data.qpos["walker/mandible"] = self.params["MANDIBLE_POS"]
             physics.named.data.qvel[:] = 0.0
             physics.named.data.qacc[:] = 0.0
             # Forward kinematics for rendering

@@ -55,7 +55,7 @@ def rodent_social(
         alpha=alpha,
     )
     task = tasks.ViewSocial(walkers, arena, kp_data, params=params[0])
-    time_limit = params[0]["_TIME_BINS"] * (params[0]["n_frames"])
+    time_limit = params[0]["TIME_BINS"] * (params[0]["n_frames"])
     return composer.Environment(
         task,
         time_limit=time_limit,
@@ -105,7 +105,7 @@ def rodent_mocap(
         alpha=alpha,
     )
     task = tasks.ViewMocap(walker, arena, kp_data, params=params)
-    time_limit = params["_TIME_BINS"] * (params["n_frames"])
+    time_limit = params["TIME_BINS"] * (params["n_frames"])
     return composer.Environment(
         task,
         time_limit=time_limit,
@@ -159,7 +159,7 @@ def rodent_variability(
     # )
 
     task = tasks.ViewVariability(variability, walker, arena, kp_data, params=params)
-    time_limit = params["_TIME_BINS"] * (params["n_frames"])
+    time_limit = params["TIME_BINS"] * (params["n_frames"])
     return composer.Environment(
         task,
         time_limit=time_limit,

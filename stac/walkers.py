@@ -44,9 +44,9 @@ class Rat(legacy_base.Walker):
         # Add keypoint sites to the mjcf model, and a reference to the sites as
         # an attribute for easier access
         self.body_sites = []
-        for key, v in self.params["_KEYPOINT_MODEL_PAIRS"].items():
+        for key, v in self.params["KEYPOINT_MODEL_PAIRS"].items():
             parent = self._mjcf_root.find("body", v)
-            pos = self.params["_KEYPOINT_INITIAL_OFFSETS"][key]
+            pos = self.params["KEYPOINT_INITIAL_OFFSETS"][key]
             site = parent.add(
                 "site",
                 name=key,
@@ -149,7 +149,7 @@ class Rat(legacy_base.Walker):
     @property
     def _xml_path(self):
         """Return the path to th model .xml file."""
-        return self.params["_XML_PATH"]
+        return self.params["XML_PATH"]
 
     def _build_observables(self):
         return RodentObservables(self)
