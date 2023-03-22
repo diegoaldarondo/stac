@@ -205,15 +205,7 @@ def pose_optimization(env, params: Dict) -> Tuple:
         ],
     )
     head = get_part_ids(env, ["atlas", "cervical", "atlant_extend"])
-    if params["LIMBS_TO_TEMPORALLY_REGULARIZE"] == "arms":
-        temp_reg_indiv_parts = [r_arm, l_arm]
-        indiv_parts = [r_leg, l_leg, head]
-    elif params["LIMBS_TO_TEMPORALLY_REGULARIZE"] == "arms and legs":
-        temp_reg_indiv_parts = [r_leg, l_leg, r_arm, l_arm]
-        indiv_parts = [head]
-    else:
-        indiv_parts = [head, r_leg, l_leg, r_arm, l_arm]
-        temp_reg_indiv_parts = []
+    indiv_parts = [head, r_leg, l_leg, r_arm, l_arm]
 
     # Iterate through all of the frames in the clip
     for i in range(params["n_frames"]):
@@ -227,14 +219,6 @@ def pose_optimization(env, params: Dict) -> Tuple:
 
         # Next optimize over the limbs individually to improve time and accur.
         for part in indiv_parts:
-            stac_base.q_phase(
-                env.physics,
-                env.task.kp_data[i, :],
-                env.task._walker.body_sites,
-                params,
-                qs_to_opt=part,
-            )
-        for part in temp_reg_indiv_parts:
             stac_base.q_phase(
                 env.physics,
                 env.task.kp_data[i, :],
