@@ -18,7 +18,6 @@ def preprocess_data(
     data_path: Text,
     start_frame: int,
     end_frame: int,
-    skip: int,
     params: Dict,
 ) -> Tuple[np.ndarray, List]:
     """Preprocess mocap data for stac fitting.
@@ -27,7 +26,6 @@ def preprocess_data(
         data_path (Text): Path to .mat mocap file
         start_frame (int): Frame to start stac tracking
         end_frame (int): Frame to end stac tracking
-        skip (int): Subsampling rate for the frames
         params (Dict): Parameters dictionary
         struct_name (Text, optional): Field name of .mat file to load. DEPRECATED
 
@@ -41,7 +39,6 @@ def preprocess_data(
         start_frame=start_frame,
         end_frame=end_frame,
     )
-    kp_data = kp_data[::skip, :]
     kp_data = kp_data / _MM_TO_METERS
     kp_data[:, 2::3] -= params["Z_OFFSET"]
     return kp_data, kp_names
@@ -227,7 +224,7 @@ def package_data(env, q, x, walker_body_sites, part_names, kp_data, params):
         "offsets": offsets,
         "names_qpos": part_names,
         "names_xpos": names_xpos,
-        "kp_data": np.copy(kp_data[: params["n_frames"], :]),
+        "kp_data": np.copy(kp_data[params["start_frame"] : params["end_frame"], :]),
     }
     for k, v in params.items():
         data[k] = v
@@ -243,7 +240,6 @@ class STAC:
         end_frame: int = 0,
         n_frames: int = None,
         n_sample_frames: int = 50,
-        skip: int = 1,
         skeleton_path: Text = "/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat",
     ):
         """Initialize STAC
@@ -256,7 +252,6 @@ class STAC:
             end_frame (int, optional): Ending frame. Defaults to 0.
             n_frames (int, optional): Number of frames to evaluate. Defaults to None.
             n_sample_frames (int, optional): Number of frames to evaluate for m-phase estimation. Defaults to 50.
-            skip (int, optional): Frame skip. Defaults to 1.
             verbose (bool, optional): If True, print status messages. Defaults to False.
             skeleton_path (Text, optional): Path to skeleton file. Defaults to "/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat".
         """
@@ -268,7 +263,6 @@ class STAC:
             "end_frame": end_frame,
             "n_frames": n_frames,
             "n_sample_frames": n_sample_frames,
-            "skip": skip,
             "skeleton_path": skeleton_path,
             "kp_names": None,
             "data": None,
@@ -340,7 +334,6 @@ class STAC:
             self.data_path,
             self.start_frame,
             self.end_frame,
-            self.skip,
             self._properties,
         )
         self.kp_names = kp_names
