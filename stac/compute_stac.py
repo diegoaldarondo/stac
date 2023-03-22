@@ -139,7 +139,6 @@ def pose_optimization(env, params: Dict) -> Tuple:
     """Perform q_phase over the entire clip.
 
     Optimizes limbs and head independently.
-    Perform bidirectional temporal regularization.
 
     Args:
         env (TYPE): Environment
@@ -151,77 +150,29 @@ def pose_optimization(env, params: Dict) -> Tuple:
     q = []
     x = []
     walker_body_sites = []
-
-    r_leg = get_part_ids(
-        env,
-        [
-            "vertebra_1",
-            "vertebra_2",
-            "vertebra_3",
-            "vertebra_4",
-            "vertebra_5",
-            "vertebra_6",
-            "hip_R",
-            "knee_R",
-            "ankle_R",
-            "foot_R",
-        ],
-    )
-    l_leg = get_part_ids(
-        env,
-        [
-            "vertebra_1",
-            "vertebra_2",
-            "vertebra_3",
-            "vertebra_4",
-            "vertebra_5",
-            "vertebra_6",
-            "hip_L",
-            "knee_L",
-            "ankle_L",
-            "foot_L",
-        ],
-    )
-    r_arm = get_part_ids(
-        env,
-        [
-            "scapula_R",
-            "shoulder_R",
-            "shoulder_s",
-            "elbow_R",
-            "hand_R",
-            "finger_R",
-        ],
-    )
-    l_arm = get_part_ids(
-        env,
-        [
-            "scapula_L",
-            "shoulder_L",
-            "shoulder_s",
-            "elbow_L",
-            "hand_L",
-            "finger_L",
-        ],
-    )
-    head = get_part_ids(env, ["atlas", "cervical", "atlant_extend"])
-    indiv_parts = [head, r_leg, l_leg, r_arm, l_arm]
+    if params["INDIVIDUAL_PART_OPTIMIZATION"] is None:
+        indiv_parts = []
+    else:
+        indiv_parts = [
+            get_part_ids(env, parts)
+            for parts in params["INDIVIDUAL_PART_OPTIMIZATION"].values()
+        ]
 
     # Iterate through all of the frames in the clip
-    for i in range(params["n_frames"]):
+    for n_frame in range(params["n_frames"]):
         # Optimize over all points
         stac_base.q_phase(
             env.physics,
-            env.task.kp_data[i, :],
+            env.task.kp_data[n_frame, :],
             env.task._walker.body_sites,
             params,
         )
 
-        # Next optimize over the limbs individually to improve time and accur.
+        # Next optimize over parts individually to improve time and accur.
         for part in indiv_parts:
             stac_base.q_phase(
                 env.physics,
-                env.task.kp_data[i, :],
+                env.task.kp_data[n_frame, :],
                 env.task._walker.body_sites,
                 params,
                 qs_to_opt=part,
