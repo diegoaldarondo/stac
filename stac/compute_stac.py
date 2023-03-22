@@ -43,7 +43,7 @@ def preprocess_data(
     )
     kp_data = kp_data[::skip, :]
     kp_data = kp_data / _MM_TO_METERS
-    kp_data[:, 2::3] -= params["z_offset"]
+    kp_data[:, 2::3] -= params["Z_OFFSET"]
     return kp_data, kp_names
 
 
@@ -70,7 +70,7 @@ def initial_optimization(env, offsets: np.ndarray, params: Dict, maxiter: int = 
         q,
         offsets,
         params,
-        reg_coef=params["m_reg_coef"],
+        reg_coef=params["M_REG_COEF"],
         maxiter=maxiter,
     )
 
@@ -131,7 +131,7 @@ def offset_optimization(env, offsets, q, params: Dict):
         q,
         offsets,
         params,
-        reg_coef=params["m_reg_coef"],
+        reg_coef=params["M_REG_COEF"],
     )
 
 
@@ -248,8 +248,8 @@ def build_env(kp_data: np.ndarray, params: Dict):
     env = rodent_environments.rodent_mocap(kp_data, params)
     rescale.rescale_subtree(
         env.task._walker._mjcf_root,
-        params["scale_factor"],
-        params["scale_factor"],
+        params["SCALE_FACTOR"],
+        params["SCALE_FACTOR"],
     )
     mjlib.mj_kinematics(env.physics.model.ptr, env.physics.data.ptr)
     mjlib.mj_comPos(env.physics.model.ptr, env.physics.data.ptr)
@@ -356,7 +356,7 @@ class STAC:
 
         # Get and set the offsets of the markers
         offsets = np.copy(env.physics.bind(env.task._walker.body_sites).pos[:])
-        offsets *= self.scale_factor
+        offsets *= self.SCALE_FACTOR
         env.physics.bind(env.task._walker.body_sites).pos[:] = offsets
         mjlib.mj_kinematics(env.physics.model.ptr, env.physics.data.ptr)
         mjlib.mj_comPos(env.physics.model.ptr, env.physics.data.ptr)
