@@ -1,6 +1,7 @@
 from absl.testing import absltest
 import stac.compute_stac as cs
 import os
+from scipy.io import loadmat
 
 
 DATA_PATH = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/DANNCE/predict02/save_data_AVG.mat"
@@ -9,37 +10,18 @@ PARAM_PATH = os.path.join(
 )
 OFFSET_PATH = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/stac/offset.p"
 SAVE_PATH = "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/test/test.p"
-START_FRAME = 0
-END_FRAME = 10
-N_TEST_KEYPOINTS = 23
 
 
 class StacTest(absltest.TestCase):
     def setUp(self):
-        self.stac = cs.STAC(
-            DATA_PATH,
-            PARAM_PATH,
-            start_frame=START_FRAME,
-            end_frame=END_FRAME,
-        )
-
-    def test_load_dataset(self):
-        params = self.stac._properties
-        kp_data, _ = cs.preprocess_data(
-            params["data_path"],
-            params["start_frame"],
-            params["end_frame"],
-            params["skip"],
-            params,
-        )
-        self.assertEqual(kp_data.shape[0], params["end_frame"] - params["start_frame"])
-        self.assertEqual(kp_data.shape[1], N_TEST_KEYPOINTS * 3)
+        self.kp_data = loadmat(DATA_PATH)["pred"][:] * 1000
+        self.stac = cs.STAC(PARAM_PATH)
 
     def test_stac_fit(self):
-        self.stac.fit()
+        self.stac.fit(self.kp_data[:10])
 
     def test_stac_transform(self):
-        data = self.stac.transform(OFFSET_PATH)
+        data = self.stac.transform(self.kp_data[:20], OFFSET_PATH)
 
     def test_stac_save(self):
         self.stac.save(SAVE_PATH)

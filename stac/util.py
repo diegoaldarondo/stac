@@ -48,7 +48,7 @@ def load_kp_data_from_file(
             data = f["mocapstruct_here"][struct_name]
             kp_names = [k for k in data.keys()]
             print(kp_names, flush=True)
-            
+
             # Concatenate the data for each keypoint, and format to (t x n_dims)
             if start_frame is None:
                 kp_data = np.concatenate([data[name][:] for name in kp_names]).T

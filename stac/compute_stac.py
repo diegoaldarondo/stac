@@ -10,38 +10,9 @@ import stac.util as util
 import pickle
 import os
 from typing import List, Dict, Tuple, Text
+from scipy.io import loadmat
 
 _MM_TO_METERS = 1000
-
-
-def preprocess_data(
-    data_path: Text,
-    start_frame: int,
-    end_frame: int,
-    params: Dict,
-) -> Tuple[np.ndarray, List]:
-    """Preprocess mocap data for stac fitting.
-
-    Args:
-        data_path (Text): Path to .mat mocap file
-        start_frame (int): Frame to start stac tracking
-        end_frame (int): Frame to end stac tracking
-        params (Dict): Parameters dictionary
-        struct_name (Text, optional): Field name of .mat file to load. DEPRECATED
-
-    Returns:
-        Tuple: kp_data (np.ndarray): Keypoint data
-               kp_names (List): List of keypoint names
-    """
-    kp_data, kp_names = util.load_dannce_data(
-        data_path,
-        params["skeleton_path"],
-        start_frame=start_frame,
-        end_frame=end_frame,
-    )
-    kp_data = kp_data / _MM_TO_METERS
-    kp_data[:, 2::3] -= params["Z_OFFSET"]
-    return kp_data, kp_names
 
 
 def initial_optimization(env, offsets: np.ndarray, params: Dict, maxiter: int = 100):
@@ -119,7 +90,7 @@ def get_part_ids(env, parts: List) -> np.ndarray:
 
 
 def offset_optimization(env, offsets, q, params: Dict):
-    time_indices = np.random.randint(0, params["n_frames"], params["n_sample_frames"])
+    time_indices = np.random.randint(0, params["n_frames"], params["N_SAMPLE_FRAMES"])
     stac_base.m_phase(
         env.physics,
         env.task.kp_data,
@@ -224,7 +195,7 @@ def package_data(env, q, x, walker_body_sites, part_names, kp_data, params):
         "offsets": offsets,
         "names_qpos": part_names,
         "names_xpos": names_xpos,
-        "kp_data": np.copy(kp_data[params["start_frame"] : params["end_frame"], :]),
+        "kp_data": np.copy(kp_data),
     }
     for k, v in params.items():
         data[k] = v
@@ -234,43 +205,23 @@ def package_data(env, q, x, walker_body_sites, part_names, kp_data, params):
 class STAC:
     def __init__(
         self,
-        data_path: Text,
         param_path: Text,
-        start_frame: int = 0,
-        end_frame: int = 0,
-        n_frames: int = None,
-        n_sample_frames: int = 50,
-        skeleton_path: Text = "/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat",
     ):
         """Initialize STAC
 
         Args:
-            data_path (Text): Path to dannce .mat file
             param_path (Text): Path to parameters .yaml file.
-            save_path (Text, optional): Path to save data. Defaults to None.
-            start_frame (int, optional): Starting frame. Defaults to 0.
-            end_frame (int, optional): Ending frame. Defaults to 0.
-            n_frames (int, optional): Number of frames to evaluate. Defaults to None.
-            n_sample_frames (int, optional): Number of frames to evaluate for m-phase estimation. Defaults to 50.
-            verbose (bool, optional): If True, print status messages. Defaults to False.
-            skeleton_path (Text, optional): Path to skeleton file. Defaults to "/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat23.mat".
         """
-        # Aggregate optional cl arguments into params dict
         self._properties = util.load_params(param_path)
-        kw = {
-            "data_path": data_path,
-            "start_frame": start_frame,
-            "end_frame": end_frame,
-            "n_frames": n_frames,
-            "n_sample_frames": n_sample_frames,
-            "skeleton_path": skeleton_path,
-            "kp_names": None,
-            "data": None,
-        }
-        for key, v in kw.items():
-            self._properties[key] = v
+        self._properties["data"] = None
+        self._properties["n_frames"] = None
 
-        # Create properties dynamically
+        # Default ordering of mj sites is alphabetical, so we reorder to match
+        kp_names = loadmat(self._properties["SKELETON_PATH"])["joint_names"]
+        self._properties["kp_names"] = [name[0] for name in kp_names[0]]
+        self._properties["stac_keypoint_order"] = np.argsort(
+            self._properties["kp_names"]
+        )
         for property_name in self._properties.keys():
 
             def getter(self, name=property_name):
@@ -281,21 +232,37 @@ class STAC:
 
             setattr(STAC, property_name, property(fget=getter, fset=setter))
 
-    def fit(self) -> Dict:
+    def _prepare_data(self, kp_data: np.ndarray) -> np.ndarray:
+        """Prepare the data for STAC.
+
+        Args:
+            kp_data (np.ndarray): Keypoint data in meters (n_frames, 3, n_keypoints).
+
+        Returns:
+            np.ndarray: Keypoint data in meters (n_frames, n_keypoints * 3).
+        """
+        kp_data = kp_data[:, :, self.stac_keypoint_order]
+        kp_data = np.transpose(kp_data, (0, 2, 1))
+        kp_data = np.reshape(kp_data, (kp_data.shape[0], -1))
+        return kp_data
+
+    def fit(self, kp_data: np.ndarray) -> "STAC":
         """Calibrate and fit the model to keypoints.
 
         Performs three rounds of alternating marker and quaternion optimization. Optimal
         results with greater than 200 frames of data in which the subject is moving.
 
+        Args:
+            keypoints (np.ndarray): Keypoint data in meters (n_frames, 3, n_keypoints).
+
         Example:
-            stac = STAC(data_path, param_path, **kwargs)
-            offset_data = stac.fit()
-            stac.save(offset_data, offset_save_path)
+            st = st.fit(keypoints)
 
         Returns:
-            Dict: Data dictionary
+
         """
-        kp_data = self._prepare_data()
+        kp_data = self._prepare_data(kp_data)
+        self.n_frames = kp_data.shape[0]
         env = build_env(kp_data, self._properties)
         part_names = initialize_part_names(env)
 
@@ -324,43 +291,23 @@ class STAC:
         )
         return self
 
-    def _prepare_data(self) -> np.ndarray:
-        """Preprocess data and keypoint names.
-
-        Returns:
-            np.ndarray: Keypoint data (nSamples, nKeypoints*3)
-        """
-        kp_data, kp_names = preprocess_data(
-            self.data_path,
-            self.start_frame,
-            self.end_frame,
-            self._properties,
-        )
-        self.kp_names = kp_names
-        if self.n_frames is None:
-            self.n_frames = kp_data.shape[0]
-        self.n_frames = int(self.n_frames)
-        return kp_data
-
-    def transform(self, offset_path: Text) -> Dict:
+    def transform(self, kp_data: np.ndarray, offset_path: Text) -> Dict:
         """Register skeleton to keypoint data
 
         Transform should be used after a skeletal model has been fit to keypoints using the fit() method.
 
         Example:
-            stac = STAC(data_path, param_path, **kwargs)
-            offset_data = stac.fit()
-            stac.save(offset_data, offset_save_path)
-            data = stac.transform(offset_save_path)
-            stac.save(data, save_path)
+            data = stac.transform(keypoints, offset_path)
 
         Args:
+            keypoints (np.ndarray): Keypoint data in meters (n_frames, 3, n_keypoints).
             offset_path (Text): Path to offset file saved after .fit()
 
         Returns:
             Dict: Registered data dictionary
         """
-        kp_data = self._prepare_data()
+        kp_data = self._prepare_data(kp_data)
+        self.n_frames = kp_data.shape[0]
         self.offset_path = offset_path
         env = build_env(kp_data, self._properties)
         part_names = initialize_part_names(env)
