@@ -61,7 +61,7 @@ def root_optimization(env, params: Dict, frame: int = 0):
 
     # First optimize over the trunk
     trunk_kps = [
-        any([n in kp_name for n in ["Spine", "Hip", "Shoulder", "Offset"]])
+        any([n in kp_name for n in params["TRUNK_OPTIMIZATION_KEYPOINTS"]])
         for kp_name in params["kp_names"]
     ]
     trunk_kps = np.repeat(np.array(trunk_kps), 3)
@@ -254,12 +254,12 @@ class STAC:
 
         Args:
             keypoints (np.ndarray): Keypoint data in meters (n_frames, 3, n_keypoints).
+                Keypoint order must match the order in the skeleton file.
 
         Example:
             st = st.fit(keypoints)
 
-        Returns:
-
+        Returns: STAC object with fitted model.
         """
         kp_data = self._prepare_data(kp_data)
         self.n_frames = kp_data.shape[0]
@@ -301,6 +301,7 @@ class STAC:
 
         Args:
             keypoints (np.ndarray): Keypoint data in meters (n_frames, 3, n_keypoints).
+                Keypoint order must match the order in the skeleton file.
             offset_path (Text): Path to offset file saved after .fit()
 
         Returns:
