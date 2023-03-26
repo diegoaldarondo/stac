@@ -14,7 +14,7 @@ SAVE_PATH = "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/test/test.p"
 
 class StacTest(absltest.TestCase):
     def setUp(self):
-        self.kp_data = loadmat(DATA_PATH)["pred"][:] * 1000
+        self.kp_data = loadmat(DATA_PATH)["pred"][:] / 1000
         self.stac = cs.STAC(PARAM_PATH)
 
     def test_stac_fit(self):
