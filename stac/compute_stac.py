@@ -30,11 +30,14 @@ def initial_optimization(env, offsets: np.ndarray, params: Dict, maxiter: int = 
     q, _, _ = pose_optimization(env, params)
 
     # Initial m-phase optimization to calibrate offsets
+    time_indices = np.random.randint(
+        0, high=params["n_frames"], size=params["N_SAMPLE_FRAMES"]
+    )
     stac_base.m_phase(
         env.physics,
         env.task.kp_data,
         env.task._walker.body_sites,
-        np.arange(params["n_frames"]),
+        time_indices,
         q,
         offsets,
         params,
@@ -90,7 +93,9 @@ def get_part_ids(env, parts: List) -> np.ndarray:
 
 
 def offset_optimization(env, offsets, q, params: Dict):
-    time_indices = np.random.randint(0, params["n_frames"], params["N_SAMPLE_FRAMES"])
+    time_indices = np.random.randint(
+        0, high=params["n_frames"], size=params["N_SAMPLE_FRAMES"]
+    )
     stac_base.m_phase(
         env.physics,
         env.task.kp_data,
@@ -276,15 +281,19 @@ class STAC:
             env.task._walker.body_sites[n_site].pos = p
 
         # Optimize the pose and offsets for the first frame
+        print("Initial optimization")
         initial_optimization(env, offsets, self._properties)
 
         # Optimize the pose for the whole sequence
+        print("Pose optimization")
         q, walker_body_sites, x = pose_optimization(env, self._properties)
 
         # Optimize the offsets
+        print("Offset optimization")
         offset_optimization(env, offsets, q, self._properties)
 
         # Optimize the pose for the whole sequence
+        print("Pose optimization")
         q, walker_body_sites, x = pose_optimization(env, self._properties)
         self.data = package_data(
             env, q, x, walker_body_sites, part_names, kp_data, self._properties
