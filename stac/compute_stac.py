@@ -11,7 +11,6 @@ import os
 from typing import List, Dict, Tuple, Text
 
 
-
 def root_optimization(env, params: Dict, frame: int = 0):
     """Optimize only the root.
 
@@ -189,8 +188,7 @@ class STAC:
         self._properties["n_frames"] = None
 
         # Default ordering of mj sites is alphabetical, so we reorder to match
-        kp_names = util.loadmat(self._properties["SKELETON_PATH"])["joint_names"]
-        self._properties["kp_names"] = [name[0] for name in kp_names[0]]
+        self._properties["kp_names"] = util.loadmat(self._properties["SKELETON_PATH"])["joint_names"]
         self._properties["stac_keypoint_order"] = np.argsort(
             self._properties["kp_names"]
         )
@@ -251,7 +249,7 @@ class STAC:
         print("Initial optimization")
         root_optimization(env, self._properties)
 
-        for n_iter in range(self.N_ITERS-1):
+        for n_iter in range(self.N_ITERS):
             print(f"Calibration iteration: {n_iter + 1}/{self.N_ITERS}")
             q, walker_body_sites, x = pose_optimization(env, self._properties)
             offset_optimization(env, offsets, q, self._properties)
@@ -282,11 +280,11 @@ class STAC:
         """
         kp_data = self._prepare_data(kp_data)
         self.n_frames = kp_data.shape[0]
-        self.offset_path = offset_path
         env = build_env(kp_data, self._properties)
         part_names = initialize_part_names(env)
 
-        # If preloading offsets, set them now.
+        # Set the offsets.
+        self.offset_path = offset_path
         with open(self.offset_path, "rb") as f:
             in_dict = pickle.load(f)
         sites = env.task._walker.body_sites
