@@ -165,4 +165,5 @@ SKELETON_PATH: "/n/holylfs02/LABS/olveczky_lab/Diego/code/Label3D/skeletons/rat2
 # What is the size of the animal you'd like to register, relative to the model?
 SCALE_FACTOR: .9
 
-
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 3
