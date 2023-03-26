@@ -1,49 +1,15 @@
-"""Compute stac optimization on data.
-"""
+"""Compute stac optimization on data."""
 from scipy.io import savemat
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import mjlib
 import stac.stac_base as stac_base
 import stac.rodent_environments as rodent_environments
-import numpy as np
 import stac.util as util
+import numpy as np
 import pickle
 import os
 from typing import List, Dict, Tuple, Text
-from scipy.io import loadmat
 
-_MM_TO_METERS = 1000
-
-
-def initial_optimization(env, offsets: np.ndarray, params: Dict, maxiter: int = 100):
-    """Optimize the first frame with alternating q and m phase.
-
-    Args:
-        env (TYPE): Environment
-        offsets (np.ndarray): Vector of starting offsets for initial q_phase
-        params (Dict): parameter dictionary
-        maxiter (int, optional): Maximum number of iterations for m-phase optimization
-    """
-    root_optimization(env, params)
-
-    # Initial q-phase optimization to get joints into approximate position.
-    q, _, _ = pose_optimization(env, params)
-
-    # Initial m-phase optimization to calibrate offsets
-    time_indices = np.random.randint(
-        0, high=params["n_frames"], size=params["N_SAMPLE_FRAMES"]
-    )
-    stac_base.m_phase(
-        env.physics,
-        env.task.kp_data,
-        env.task._walker.body_sites,
-        time_indices,
-        q,
-        offsets,
-        params,
-        reg_coef=params["M_REG_COEF"],
-        maxiter=maxiter,
-    )
 
 
 def root_optimization(env, params: Dict, frame: int = 0):
@@ -92,7 +58,7 @@ def get_part_ids(env, parts: List) -> np.ndarray:
     return np.array([any(part in name for part in parts) for name in part_names])
 
 
-def offset_optimization(env, offsets, q, params: Dict):
+def offset_optimization(env, offsets, q, params: Dict, maxiter: int = 100):
     time_indices = np.random.randint(
         0, high=params["n_frames"], size=params["N_SAMPLE_FRAMES"]
     )
@@ -105,6 +71,7 @@ def offset_optimization(env, offsets, q, params: Dict):
         offsets,
         params,
         reg_coef=params["M_REG_COEF"],
+        maxiter=maxiter,
     )
 
 
@@ -222,7 +189,7 @@ class STAC:
         self._properties["n_frames"] = None
 
         # Default ordering of mj sites is alphabetical, so we reorder to match
-        kp_names = loadmat(self._properties["SKELETON_PATH"])["joint_names"]
+        kp_names = util.loadmat(self._properties["SKELETON_PATH"])["joint_names"]
         self._properties["kp_names"] = [name[0] for name in kp_names[0]]
         self._properties["stac_keypoint_order"] = np.argsort(
             self._properties["kp_names"]
@@ -282,18 +249,15 @@ class STAC:
 
         # Optimize the pose and offsets for the first frame
         print("Initial optimization")
-        initial_optimization(env, offsets, self._properties)
+        root_optimization(env, self._properties)
+
+        for n_iter in range(self.N_ITERS-1):
+            print(f"Calibration iteration: {n_iter + 1}/{self.N_ITERS}")
+            q, walker_body_sites, x = pose_optimization(env, self._properties)
+            offset_optimization(env, offsets, q, self._properties)
 
         # Optimize the pose for the whole sequence
-        print("Pose optimization")
-        q, walker_body_sites, x = pose_optimization(env, self._properties)
-
-        # Optimize the offsets
-        print("Offset optimization")
-        offset_optimization(env, offsets, q, self._properties)
-
-        # Optimize the pose for the whole sequence
-        print("Pose optimization")
+        print("Final pose optimization")
         q, walker_body_sites, x = pose_optimization(env, self._properties)
         self.data = package_data(
             env, q, x, walker_body_sites, part_names, kp_data, self._properties
