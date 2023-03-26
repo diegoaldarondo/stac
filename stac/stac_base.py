@@ -188,8 +188,12 @@ def m_loss(
     """
     residual = 0
     reg_term = 0
+    # print(len(q))
+    # print(kp_data.shape)
+    # print(time_indices)
+    # print(offset.shape)
     for i, frame in enumerate(time_indices):
-        physics.named.data.qpos[:] = q[frame].copy()
+        physics.named.data.qpos[:] = q[i].copy()
 
         # Get the offset relative to the initial position, only for
         # markers you wish to regularize
@@ -257,11 +261,13 @@ def m_phase(
     is_regularized = np.stack(is_regularized).flatten()
 
     # Optimize dm
+    keypoints = kp_data[time_indices, :].T
+    q = [q[i] for i in time_indices]
     offset_opt_param = scipy.optimize.minimize(
         lambda offset: m_loss(
             offset,
             physics,
-            kp_data[time_indices, :].T,
+            keypoints,
             time_indices,
             sites,
             q,
@@ -270,6 +276,8 @@ def m_phase(
             reg_coef=reg_coef,
         ),
         offset0,
+        method="L-BFGS-B",
+        tol=params["ROOT_FTOL"],
         options={"maxiter": maxiter},
     )
 
