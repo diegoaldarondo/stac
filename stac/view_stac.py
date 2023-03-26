@@ -203,6 +203,7 @@ def setup_visualization(
         params["SCALE_FACTOR"],
     )
 
+    # TODO: remove these defaults
     # Setup cameras
     # fovy = 2*atan(height/(2*params{1}.K(2,2)))/2*pi*360
     if camera_kwargs is not None:
@@ -363,11 +364,44 @@ def overlay_frame(
     alpha = gaussian_filter(alpha, 2)
     frame = np.zeros_like(recon_frame)
 
+    # Correct the segmented frame by cropping such that the optical center is at the center of the image
+    recon_frame = correct_optical_center(params, recon_frame, cam_id)
+    seg_frame = correct_optical_center(params, seg_frame, cam_id, pad_val=-1)
+
+    # Calculate the alpha mask using the segmented video
+    alpha = (seg_frame[:, :, 0] >= 0.0) * ALPHA_BASE_VALUE
+    alpha = gaussian_filter(alpha, 2)
+    alpha = gaussian_filter(alpha, 2)
+    alpha = gaussian_filter(alpha, 2)
+    frame = np.zeros_like(recon_frame)
+
     # Blend the two videos
     for n_chan in range(recon_frame.shape[2]):
         frame[:, :, n_chan] = (
             alpha * recon_frame[:, :, n_chan] + (1 - alpha) * rgb_frame[:, :, n_chan]
         )
+    return frame
+
+
+def correct_optical_center(params, frame, cam_id, pad_val=0):
+    cx = params[cam_id].K[2, 0]
+    cy = params[cam_id].K[2, 1]
+    crop_offset_x = int(-cx + (frame.shape[1] / 2))
+    crop_offset_y = int(-cy + (frame.shape[0] / 2))
+    padding = np.max(np.abs([crop_offset_x, crop_offset_y])) + 10
+    padded_frame = np.pad(
+        frame,
+        ((padding, padding), (padding, padding), (0, 0)),
+        mode="constant",
+        constant_values=pad_val,
+    )
+    crop_offset_x += padding
+    crop_offset_y += padding
+    frame = padded_frame[
+        crop_offset_y : crop_offset_y + frame.shape[0],
+        crop_offset_x : crop_offset_x + frame.shape[1],
+    ]
+
     return frame
 
 

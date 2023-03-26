@@ -4,23 +4,14 @@ import stac.view_stac as view_stac
 import numpy as np
 import h5py
 import imageio
-import cv2
-from scipy.ndimage import gaussian_filter
-import matplotlib.pyplot as plt
-from scipy.io import loadmat
 from typing import Text, List, Dict, Tuple
-import dm_control.mujoco.math as mjmath
 from scipy.spatial.transform import Rotation as R
 import stac.rodent_environments as rodent_environments
 import stac.util as util
+import yaml
 
 FPS = 50
-# OFFSET_PATH = "C:/data/virtual_rat/2021_06_21_1/total.p"
-# OFFSET_PATH = "C:/data/virtual_rat/2020_12_22_2/total.p"
-# PARAM_PATH = "C:/data/virtual_rat/2021_06_21_1/params.yaml"
-# CALIBRATION_PATH = "C:/data/virtual_rat/2020_12_22_2/temp_dannce.mat"
 ALPHA_BASE_VALUE = 0.5
-Z_OFFSET = 0.013
 
 # Standard image height for dannce rig data
 HEIGHT = 1200
@@ -86,9 +77,9 @@ def quat2eul(quat: np.ndarray) -> np.ndarray:
         quat[2],
         quat[3],
     )
-    euy = np.arctan2(2 * qy * qw - 2 * qx * qz, 1 - 2 * qy**2 - 2 * qz**2)
+    euy = np.arctan2(2 * qy * qw - 2 * qx * qz, 1 - 2 * qy ** 2 - 2 * qz ** 2)
     euz = np.arcsin(2 * qx * qy + 2 * qz * qw)
-    eux = np.arctan2(2 * qx * qw - 2 * qy * qz, 1 - 2 * qx**2 - 2 * qz**2)
+    eux = np.arctan2(2 * qx * qw - 2 * qy * qz, 1 - 2 * qx ** 2 - 2 * qz ** 2)
     return np.array([np.rad2deg(eux), np.rad2deg(euy), np.rad2deg(euz)])
 
 
@@ -304,11 +295,6 @@ def setup_video_scene(
     if not use_stac:
         qpos = load_reconstruction(model_data_path)
 
-    # Crop data to frames
-    # if video_type == "overlay":
-    #     qpos[:, 2] -= Z_OFFSET
-
-    # qpos[:, 2] -= .01
     qpos = qpos[frames, ...].copy()
     qpos = view_stac.fix_tail(qpos, q_names)
     kp_data = np.zeros((qpos.shape[0], kp_data.shape[1]))
@@ -366,13 +352,7 @@ def setup_social_video_scene(
     qpos, offsets, kp_data, _, q_names = view_stac.load_data(
         offset_path, return_q_names=True
     )
-
-    # Crop data to frames
-    # if video_type == "overlay":
-    #     qpos[:, 2] -= Z_OFFSET
-
-    # qpos[:, 2] -= .01
-    # qpos = qpos[frames, ...].copy()
+    
     qpos = view_stac.fix_tail(qpos, q_names)
     kp_data = np.zeros((qpos.shape[0], kp_data.shape[1]))
     n_frames = len(frames)
@@ -414,7 +394,6 @@ def convert_cameras(params) -> List[Dict]:
         # Convert the quaternion convention from scipy.spatial.transform.Rotation to mujoco.
         quat = quat[np.array([3, 0, 1, 2])]
         quat[0] *= -1
-
         # The y field of fiew is a function of the focal y and the image height.
         fovy = 2 * np.arctan(HEIGHT / (2 * cam.K[1, 1])) / (2 * np.pi) * 360
         camera_kwargs.append(
@@ -533,3 +512,136 @@ def generate_tile_video(video_folder: Text, n_tiles: int = 25, n_frames: int = 5
         for n_frame in range(n_frames):
             frame = tile_frame(videos, int(np.sqrt(n_tiles)), n_frame)
             video.append_data(frame)
+
+
+def render_mujoco(
+    param_path: Text,
+    data_path: Text,
+    save_path: Text,
+    frames: np.ndarray = None,
+    camera: Text = "walker/close_profile",
+    calibration_path: Text = None,
+    segmented: bool = False,
+    height: int = 1200,
+    width: int = 1920,
+    xml_path: Text = None,
+):
+    """Generate a video given a project folder.
+
+    Args:
+        project_folder (Text): Path to project folder.
+        frames (np.ndarray): Frames to include in video.
+        save_path (Text): Path to save video
+        video_type (Text): Video type. Can be ["overlay", "mujoco"].
+        model_data_path (Text, optional): Path to comic embedding. Defaults to None.
+        camera (Text, optional): Name of camera to render in mujoco. Defaults to "Camera1".
+        use_stac (bool, optional): If True, use the stac registration. Defaults to False.
+        segmented (bool, optional): If True, segment the background of the mujoco render. Defaults to False.
+        height (int, optional): Height of video in pixels. Defaults to 1200.
+        width (int, optional): Width of video in pixels. Defaults to 1920.
+        registration_xml (bool, optional): If true, use the registration xml file. Defaults to False.
+    """
+    if xml_path is None:
+        with open(param_path, "rb") as file:
+            params = yaml.safe_load(file)
+        xml_path = params["XML_PATH"]
+
+    with open(data_path, "rb") as file:
+        data = pickle.load(file)
+    qpos = np.stack(data["qpos"][:], axis=0)
+
+    q_names = data["names_qpos"][:]
+    qpos = view_stac.fix_tail(qpos, q_names)
+    if frames is not None:
+        qpos = qpos[frames, ...].copy()
+        kp_data = data["kp_data"][frames, ...].copy()
+    n_frames = qpos.shape[0]
+    offsets = data["offsets"]
+
+    if calibration_path is not None:
+        params = view_stac.load_calibration(calibration_path)
+        camera_kwargs = convert_cameras(params)
+    else:
+        camera_kwargs = None
+
+    # Prepare the environment
+    params, env, scene_option = view_stac.setup_visualization(
+        param_path,
+        qpos,
+        offsets,
+        kp_data,
+        n_frames,
+        render_video=True,
+        segmented=segmented,
+        camera_kwargs=camera_kwargs,
+        registration_xml=xml_path,
+    )
+    view_stac.mujoco_loop(
+        save_path,
+        params,
+        env,
+        scene_option,
+        camera=camera,
+        height=height,
+        width=width,
+    )
+
+
+def render_overlay(
+    param_path: str,
+    video_path: str,
+    data_path: str,
+    save_path: str,
+    frames=None,
+    camera="Camera1",
+    calibration_path=None,
+    segmented=False,
+    height=1200,
+    width=1920,
+    xml_path=None,
+):
+    if xml_path is None:
+        with open(param_path, "rb") as file:
+            params = yaml.safe_load(file)
+        xml_path = params["XML_PATH"]
+    with open(data_path, "rb") as file:
+        data = pickle.load(file)
+    qpos = np.stack(data["qpos"][:], axis=0)
+    q_names = data["names_qpos"][:]
+    qpos = view_stac.fix_tail(qpos, q_names)
+    if frames is not None:
+        qpos = qpos[frames, ...].copy()
+        kp_data = data["kp_data"][frames, ...].copy()
+    n_frames = qpos.shape[0]
+    offsets = data["offsets"]
+
+    if calibration_path is not None:
+        params = view_stac.load_calibration(calibration_path)
+        camera_kwargs = convert_cameras(params)
+    else:
+        camera_kwargs = None
+
+    # Prepare the environment
+    params, env, scene_option = view_stac.setup_visualization(
+        param_path,
+        qpos,
+        offsets,
+        kp_data,
+        n_frames,
+        render_video=True,
+        segmented=segmented,
+        camera_kwargs=camera_kwargs,
+        registration_xml=xml_path,
+    )
+    view_stac.overlay_loop(
+        save_path=save_path,
+        video_path=video_path,
+        calibration_path=calibration_path,
+        frames=frames,
+        params=params,
+        env=env,
+        scene_option=scene_option,
+        camera=camera,
+        height=height,
+        width=width,
+    )
