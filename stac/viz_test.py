@@ -1,6 +1,7 @@
 import unittest
 import stac.viz as viz
 import stac.view_stac as view_stac
+import stac.util as util
 import os
 import numpy as np
 
@@ -29,7 +30,7 @@ class TestViz(unittest.TestCase):
 
     def test_convert_cameras(self):
         calibration_path = os.path.join(PROJECT_FOLDER, "temp_dannce.mat")
-        camparams = view_stac.load_calibration(calibration_path)
+        camparams = util.loadmat(calibration_path)["params"]
         camera_kwargs = viz.convert_cameras(camparams)
         self.assertEqual(len(camera_kwargs), 6)
 
