@@ -1,6 +1,5 @@
 import unittest
 import stac.viz as viz
-import stac.view_stac as view_stac
 import stac.util as util
 import os
 import numpy as np
@@ -20,182 +19,50 @@ PROJECT_FOLDER = (
 MODEL_DATA_PATH = os.path.join(
     PROJECT_FOLDER, "npmp", "rodent_tracking_model_24186410_2", "logs", "data.hdf5"
 )
+param_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "params", "params.yaml"
+)
+results_path = os.path.join(PROJECT_FOLDER, "stac", "total.p")
 
+calibration_path = os.path.join(
+     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "demo", "calibration.mat"
+)
+video_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "demo", "videos", "Camera1", "0.mp4"
+)
 
 class TestViz(unittest.TestCase):
-    def test_add_qualifier(self):
-        video_path = "test.mp4"
-        qualifier = "test"
-        self.assertEqual(viz.add_qualifier(video_path, qualifier), "testtest.mp4")
-
     def test_convert_cameras(self):
         calibration_path = os.path.join(PROJECT_FOLDER, "temp_dannce.mat")
         camparams = util.loadmat(calibration_path)["params"]
         camera_kwargs = viz.convert_cameras(camparams)
         self.assertEqual(len(camera_kwargs), 6)
 
-    def test_get_project_paths(self):
-        camera = "Camera1"
-        param_path, calibration_path, video_path, offset_path = viz.get_project_paths(
-            PROJECT_FOLDER, camera
-        )
-        self.assertEqual(
-            param_path, os.path.join(PROJECT_FOLDER, "stac_params", "params.yaml")
-        )
-        self.assertEqual(
-            calibration_path, os.path.join(PROJECT_FOLDER, "temp_dannce.mat")
-        )
-        self.assertEqual(
-            video_path, os.path.join(PROJECT_FOLDER, "videos", "Camera1", "0.mp4")
-        )
-        self.assertTrue(
-            (offset_path == os.path.join(PROJECT_FOLDER, "stac", "total.p"))
-            or (offset_path == os.path.join(PROJECT_FOLDER, "stac", "offset.p"))
-        )
-
-    def test_setup_video_scene(self):
-        camera = "Camera1"
-        video_type = "mujoco"
-        frames = [0, 1, 2]
-        scene = viz.setup_video_scene(
-            PROJECT_FOLDER,
-            MODEL_DATA_PATH,
-            frames,
-            camera,
-            False,
-            False,
-            False,
-            video_type,
-        )
-        self.assertIsInstance(scene, tuple)
-
-    def test_generate_video_mujoco(self):
-        camera = "Camera1"
-        video_type = "mujoco"
-        frames = [0, 1, 2]
+    def test_render_mujoco(self):
         save_path = "test.mp4"
-        viz.generate_video(
-            PROJECT_FOLDER,
-            frames,
+        viz.render_mujoco(
+            param_path,
+            results_path,
             save_path,
-            video_type,
-            MODEL_DATA_PATH,
-            camera,
-            False,
-            False,
-            1200,
-            1920,
-            False,
+            frames=np.arange(10),
         )
         self.assertTrue(os.path.exists(save_path))
         os.remove(save_path)
 
-    def test_generate_video_mujoco_segmented(self):
-        camera = "Camera1"
-        video_type = "mujoco"
-        frames = [0, 1, 2]
+    def test_render_overlay(self):
         save_path = "test.mp4"
-        viz.generate_video(
-            PROJECT_FOLDER,
-            frames,
+        viz.render_overlay(
+            param_path,
+            video_path,
+            results_path,
             save_path,
-            video_type,
-            MODEL_DATA_PATH,
-            camera,
-            False,
-            True,
-            1200,
-            1920,
-            False,
+            frames=np.arange(10),
+            camera="Camera1",
+            calibration_path=calibration_path,
+            segmented=True,
         )
         self.assertTrue(os.path.exists(save_path))
         os.remove(save_path)
-
-    def test_generate_video_overlay(self):
-        camera = "Camera1"
-        video_type = "overlay"
-        frames = [0, 1, 2]
-        save_path = "test.mp4"
-        viz.generate_video(
-            PROJECT_FOLDER,
-            frames,
-            save_path,
-            video_type,
-            MODEL_DATA_PATH,
-            camera,
-            False,
-            False,
-            1200,
-            1920,
-            False,
-        )
-        self.assertTrue(os.path.exists(save_path))
-        os.remove(save_path)
-
-    def test_generate_video_mujoco_stac(self):
-        camera = "Camera1"
-        video_type = "mujoco"
-        frames = [0, 1, 2]
-        save_path = "test.mp4"
-        viz.generate_video(
-            PROJECT_FOLDER,
-            frames,
-            save_path,
-            video_type,
-            MODEL_DATA_PATH,
-            camera,
-            True,
-            False,
-            1200,
-            1920,
-            True,
-        )
-        self.assertTrue(os.path.exists(save_path))
-        os.remove(save_path)
-
-    def test_generate_video_overlay_stac(self):
-        camera = "Camera1"
-        video_type = "overlay"
-        frames = [0, 1, 2]
-        save_path = "test.mp4"
-        viz.generate_video(
-            PROJECT_FOLDER,
-            frames,
-            save_path,
-            video_type,
-            MODEL_DATA_PATH,
-            camera,
-            True,
-            False,
-            1200,
-            1920,
-            True,
-        )
-        self.assertTrue(os.path.exists(save_path))
-        os.remove(save_path)
-
-    def test_generate_variability_video(self):
-        frames = [0, 1, 2]
-        variability = np.random.rand(3, 38)
-        save_path = "test.mp4"
-        viz.generate_variability_video(
-            PROJECT_FOLDER,
-            variability,
-            frames,
-            save_path,
-            MODEL_DATA_PATH,
-            segmented=False,
-            height=1200,
-            width=1920,
-            registration_xml=False,
-        )
-        self.assertTrue(os.path.exists(save_path))
-        os.remove(save_path)
-
-    def test_tile_frame(self):
-        videos = [np.random.rand(10, 10, 3, 10) for _ in range(4)]
-        frame = viz.tile_frame(videos, n_rows=2, n_frame=4)
-        self.assertEqual(frame.shape, (20, 20, 3))
 
 
 if __name__ == "__main__":
