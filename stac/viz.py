@@ -6,7 +6,6 @@ import re
 import scipy.io as spio
 import stac.rodent_environments as rodent_environments
 import stac.util as util
-import stac.view_stac as view_stac
 import yaml
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco import wrapper
@@ -297,10 +296,28 @@ def overlay_loop(
         height (int, optional): Camera height in pixels. Defaults to 1200.
         width (int, optional): Camera width in pixels. Defaults to 1920.
     """
+    def render_frame(frames, env, scene_option, camera, height, width, reader, n_frame, cam_params):
+        env.task.after_step(env.physics, None)
+        reconArr = env.physics.render(
+            height,
+            width,
+            camera_id=camera,
+            scene_option=scene_option,
+        )
+        segArr = env.physics.render(
+            height,
+            width,
+            camera_id=camera,
+            scene_option=scene_option,
+            segmentation=True,
+        )
+        rgbArr = reader.get_data(frames[n_frame])
+        frame = overlay_frame(rgbArr, cam_params, reconArr, segArr, camera)
+        return frame
     prev_time = env.physics.time()
     reader = imageio.get_reader(video_path)
     n_frame = 0
-    cam_params = loadmat(calibration_path)["params"]
+    cam_params = util.loadmat(calibration_path)["params"]
     env.task.after_step(env.physics, None)
     with imageio.get_writer(save_path, fps=FPS) as video:
         for n_frame in range(len(frames)):
@@ -309,7 +326,7 @@ def overlay_loop(
                     "TIME_BINS"
                 ]:
                     env.physics.step()
-            frame = render_overlay(
+            frame = render_frame(
                 frames,
                 env,
                 scene_option,
@@ -324,26 +341,6 @@ def overlay_loop(
             prev_time = np.round(env.physics.time(), decimals=2)
 
 
-def render_overlay(
-    frames, env, scene_option, camera, height, width, reader, n_frame, cam_params
-):
-    env.task.after_step(env.physics, None)
-    reconArr = env.physics.render(
-        height,
-        width,
-        camera_id=camera,
-        scene_option=scene_option,
-    )
-    segArr = env.physics.render(
-        height,
-        width,
-        camera_id=camera,
-        scene_option=scene_option,
-        segmentation=True,
-    )
-    rgbArr = reader.get_data(frames[n_frame])
-    frame = overlay_frame(rgbArr, cam_params, reconArr, segArr, camera)
-    return frame
 
 
 def setup_arena(kp_data, params, alpha=1.0):
@@ -489,7 +486,7 @@ def load_data(
 
     # Load camera parameters and convert them if a calibration path is provided
     if calibration_path is not None:
-        params = load_calibration(calibration_path)
+        params = util.loadmat(calibration_path)["params"]
         camera_kwargs = convert_cameras(params)
     else:
         camera_kwargs = None
