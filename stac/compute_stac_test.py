@@ -9,6 +9,7 @@ PARAM_PATH = os.path.join(
 )
 OFFSET_PATH = "/n/holylfs02/LABS/olveczky_lab/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_2/stac/offset.p"
 SAVE_PATH = "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/test/test.p"
+N_FRAMES = 3
 
 
 class StacTest(absltest.TestCase):
@@ -17,10 +18,10 @@ class StacTest(absltest.TestCase):
         self.stac = cs.STAC(PARAM_PATH)
 
     def test_stac_fit(self):
-        self.stac.fit(self.kp_data[:10])
+        self.stac.fit(self.kp_data[:N_FRAMES])
 
     def test_stac_transform(self):
-        data = self.stac.transform(self.kp_data[:20], OFFSET_PATH)
+        data = self.stac.transform(self.kp_data[:N_FRAMES], OFFSET_PATH)
 
     def test_stac_save(self):
         self.stac.save(SAVE_PATH)
