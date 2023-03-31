@@ -30,7 +30,9 @@ setup(
         "pyyaml",
         "opencv-python",
         "matplotlib",
-        "imageio"
-        "imageio-ffmpeg"
+        "imageio",
+        "imageio-ffmpeg",
+        "mujoco",
+        "dm_control",
     ],
 )
