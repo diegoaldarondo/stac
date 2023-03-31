@@ -23,7 +23,7 @@ def _check_keys(dict):
     todict is called to change them to nested dictionaries
     """
     for key in dict:
-        if isinstance(dict[key], spio.matlab.mio5_params.mat_struct):
+        if isinstance(dict[key], spio.matlab.mat_struct):
             dict[key] = _todict(dict[key])
     return dict
 
@@ -35,7 +35,7 @@ def _todict(matobj):
     dict = {}
     for strg in matobj._fieldnames:
         elem = matobj.__dict__[strg]
-        if isinstance(elem, spio.matlab.mio5_params.mat_struct):
+        if isinstance(elem, spio.matlab.mat_struct):
             dict[strg] = _todict(elem)
         else:
             dict[strg] = elem

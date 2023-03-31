@@ -1,5 +1,5 @@
 <mujoco model="rat">
-  <compiler angle="radian"/>
+  <compiler angle="radian" autolimits="true"/>
   <size njmax="8000" nconmax="4000"/>
   <default>
     <joint limited="true" solreflimit="0.01 1" solimplimit="0.99 0.9999 0" armature="6e-07" damping="0.001"/>

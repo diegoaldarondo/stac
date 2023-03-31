@@ -31,5 +31,6 @@ setup(
         "opencv-python",
         "matplotlib",
         "imageio"
+        "imageio-ffmpeg"
     ],
 )

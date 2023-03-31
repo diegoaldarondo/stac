@@ -13,6 +13,7 @@ from dm_control.mujoco.wrapper.mjbindings import enums
 from scipy.ndimage import gaussian_filter
 from scipy.spatial.transform import Rotation as R
 from typing import Text, List, Dict
+import os
 
 ALPHA_BASE_VALUE = 0.5
 FPS = 50
@@ -20,6 +21,7 @@ FPS = 50
 # Standard image shape for dannce rig data
 HEIGHT = 1200
 WIDTH = 1920
+MODELS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
 
 def fix_tail(q: np.ndarray, q_names: List):
     """Fix the tail so that it is in the base position.
@@ -70,9 +72,7 @@ def setup_visualization(
         alpha = 1.0
         params["ARENA_DIAMETER"] = None
     if registration_xml:
-        params[
-            "XML_PATH"
-        ] = "/n/home02/daldarondo/LabDir/Diego/code/dm/stac/models/rodent_stac.xml"
+        params["XML_PATH"] = os.path.join(MODELS_PATH, "rodent_stac.xml")
 
     env = setup_arena(kp_data, params, alpha=alpha)
 
@@ -107,13 +107,13 @@ def setup_scene():
     # scene_option.sitegroup[0] = 0
     # scene_option.sitegroup[1] = 0
     scene_option.sitegroup[2] = 0
-    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = False
-    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
-    scene_option._ptr.contents.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
-    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
-    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
-    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
-    scene_option._ptr.contents.flags[enums.mjtRndFlag.mjRND_FOG] = False
+    scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = False
+    scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
+    scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
+    scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
+    scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
+    scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
+    scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = False
     return scene_option
 
 

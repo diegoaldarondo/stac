@@ -5,7 +5,7 @@ import h5py
 import cv2
 import scipy.ndimage as ndimage
 import collections
-
+import os
 
 PEDESTAL_WIDTH = 0.099
 PEDESTAL_HEIGHT = 0.054
@@ -20,6 +20,9 @@ GROUND_GEOM_POS = "0 0 -0.005"
 _GROUNDPLANE_QUAD_SIZE = 0.025
 SKYBOX_PATH = "../assets/WhiteSkybox.png"
 SkyBox = collections.namedtuple("SkyBox", ("file", "gridsize", "gridlayout"))
+ASSETS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets"
+)
 
 
 class DannceArena(composer.Arena):
@@ -38,9 +41,7 @@ class DannceArena(composer.Arena):
         self._mjcf_root.visual.headlight.set_attributes(
             ambient=[0.4, 0.4, 0.4], diffuse=[0.8, 0.8, 0.8], specular=[0.1, 0.1, 0.1]
         )
-        self._mjcf_root.compiler.texturedir = (
-            "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/stac"
-        )
+        self._mjcf_root.compiler.texturedir = ASSETS_PATH
         sky_info = SkyBox(file=SKYBOX_PATH, gridsize="3 4", gridlayout=".U..LFRB.D..")
         self._skybox = self._mjcf_root.asset.add(
             "texture",

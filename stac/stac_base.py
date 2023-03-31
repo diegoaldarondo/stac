@@ -111,7 +111,7 @@ def q_phase(
     else:
         diff_step = params["DIFF_STEP"]
     if root_only:
-        qs_to_opt = np.zeros_like(q0, dtype=np.bool)
+        qs_to_opt = np.zeros_like(q0, dtype=bool)
         qs_to_opt[:7] = True
 
     # Limit the optimizer to a subset of qpos
