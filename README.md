@@ -1,19 +1,17 @@
-# stac
-Implementation of simultaneous tracking and calibration (STAC) for calibrating mujoco models with keypoint data using the [dm_control suite](https://github.com/deepmind/dm_control).
+# STAC
+Implementation of simultaneous tracking and calibration ([STAC](https://ieeexplore.ieee.org/abstract/document/7030016)) for calibrating mujoco models with keypoint data using the [dm_control suite](https://github.com/deepmind/dm_control).
 
-[Original paper](https://ieeexplore.ieee.org/abstract/document/7030016)
 
 ## Requirements and Installation
-As `stac` relies on `mujoco` and `dm_control`, we recommend building within a `virtualenv`.
+Stac has been tested on Windows 10, Windows 11, Ubuntu 18.04, and CentOS7 with python 3.9. In Linux, one can install stac in a conda virtual environment using the following bash script (Windows can use a bash emulator).
 
-`stac` has been tested with python 3.6 and Ubuntu 18.04, CentoOS7, and Windows 10. 
-
-* Install prerequisites using the included setup scripts.
 ```
-python setup.py install
+git clone https://github.com/diegoaldarondo/stac
+cd stac
+conda create -n stac python=3.9
+conda activate stac
+pip install -e .
 ```
-
-* Follow the instructions [here](https://github.com/deepmind/dm_control) to install `dm_control`. If environment is correctly configured, this is as simple as:
 
 ## Authors
 * [Diego Aldarondo](https://github.com/diegoaldarondo)
