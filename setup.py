@@ -5,7 +5,7 @@ setup(
     name="stac",
     version="0.0.1",
     packages=find_packages(),
-    scripts=["cluster/submit_stac_single_batch.sh", "cluster/dannce2npmp.sh"],
+    scripts=["cluster/submit_stac_single_batch.sh"],
     entry_points={
         "console_scripts": [
             "stac-submit = stac.interface:submit",
@@ -20,7 +20,6 @@ setup(
         "absl-py >= 0.7.1",
         "enum34",
         "future",
-        # 'futures',
         "glfw",
         "lxml",
         "numpy",
@@ -30,5 +29,7 @@ setup(
         "scipy >= 1.2.1",
         "pyyaml",
         "opencv-python",
+        "matplotlib",
+        "imageio"
     ],
 )
