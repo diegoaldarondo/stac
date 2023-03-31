@@ -191,14 +191,9 @@ def compute_single_batch():
     save_path = os.path.join(command["base_folder"], "%d.p" % (command["start_frame"]))
     print(command)
     print(save_path)
-    st = compute_stac.STAC(
-        command["data_path"],
-        command["param_path"],
-        save_path=save_path,
-        offset_path=command["offset_path"],
-        start_frame=command["start_frame"],
-        end_frame=command["end_frame"],
-        verbose=True,
-    )
-    data = st.transform(offset_path=command["offset_path"])
-    st.save(data, save_path=save_path)
+    kp_data = loadmat(command["data_path"])["pred"][:] / 1000
+    kp_data = kp_data[command["start_frame"] : command["end_frame"], ...]
+
+    st = compute_stac.STAC(command["param_path"])
+    _ = st.transform(kp_data, offset_path=command["offset_path"])
+    st.save(save_path=save_path)
