@@ -21,7 +21,10 @@ FPS = 50
 # Standard image shape for dannce rig data
 HEIGHT = 1200
 WIDTH = 1920
-MODELS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
+MODELS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models"
+)
+
 
 def fix_tail(q: np.ndarray, q_names: List):
     """Fix the tail so that it is in the base position.
@@ -75,7 +78,6 @@ def setup_visualization(
         params["XML_PATH"] = os.path.join(MODELS_PATH, "rodent_stac.xml")
 
     env = setup_arena(kp_data, params, alpha=alpha)
-
     rescale.rescale_subtree(
         env.task._walker._mjcf_root,
         params["SCALE_FACTOR"],
@@ -188,7 +190,9 @@ def overlay_frame(
     return frame
 
 
-def correct_optical_center(params, frame:np.ndarray, cam_id:int, pad_val=0) -> np.ndarray:
+def correct_optical_center(
+    params, frame: np.ndarray, cam_id: int, pad_val=0
+) -> np.ndarray:
     """Correct the optical center of the frame.
 
     Args:
@@ -296,7 +300,10 @@ def overlay_loop(
         height (int, optional): Camera height in pixels. Defaults to 1200.
         width (int, optional): Camera width in pixels. Defaults to 1920.
     """
-    def render_frame(frames, env, scene_option, camera, height, width, reader, n_frame, cam_params):
+
+    def render_frame(
+        frames, env, scene_option, camera, height, width, reader, n_frame, cam_params
+    ):
         env.task.after_step(env.physics, None)
         reconArr = env.physics.render(
             height,
@@ -314,6 +321,7 @@ def overlay_loop(
         rgbArr = reader.get_data(frames[n_frame])
         frame = overlay_frame(rgbArr, cam_params, reconArr, segArr, camera)
         return frame
+
     prev_time = env.physics.time()
     reader = imageio.get_reader(video_path)
     n_frame = 0
@@ -339,8 +347,6 @@ def overlay_loop(
             )
             video.append_data(frame)
             prev_time = np.round(env.physics.time(), decimals=2)
-
-
 
 
 def setup_arena(kp_data, params, alpha=1.0):
