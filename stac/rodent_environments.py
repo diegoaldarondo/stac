@@ -15,55 +15,6 @@ MM_TO_METER = 1000
 SkyBox = collections.namedtuple("SkyBox", ("file", "gridsize", "gridlayout"))
 
 
-def rodent_social(
-    kp_data: list,
-    params: list,
-    random_state: int = None,
-    arena_diameter: float = None,
-    arena_center: List = None,
-    alpha=1.0,
-):
-    """View a rat with mocap sites.
-
-    Args:
-        kp_data (List): Reference keypoint data
-        params (List(Dict)): Stac parameters dict
-        random_state (int, optional): Random seed for arena initialization.
-        hfield_image (np.ndarray, optional): Heightfield array for non-flat surfaces.
-        pedestal_center (List, optional): Center of pedestal
-        pedestal_height (float, optional): Height of pedestal
-        pedestal_radius (float, optional): Radius of pedestal
-        arena_diameter (float, optional): Diameter of circular arena
-        arena_center (List, optional): Center of circular arena
-
-    Deleted Parameters:
-        arena_type (Text, optional): Description
-    """
-    # Build a position-controlled Rat
-    walkers = [
-        walkers.Rat(
-            initializer=None,
-            params=p,
-            observable_options={"egocentric_camera": dict(enabled=True)},
-        )
-        for p in params
-    ]
-    arena = arenas.DannceArena(
-        params[0],
-        arena_diameter=arena_diameter,
-        arena_center=arena_center,
-        alpha=alpha,
-    )
-    task = tasks.ViewSocial(walkers, arena, kp_data, params=params[0])
-    time_limit = params[0]["TIME_BINS"] * (params[0]["n_frames"])
-    return composer.Environment(
-        task,
-        time_limit=time_limit,
-        random_state=random_state,
-        strip_singleton_obs_buffer_dim=True,
-    )
-
-
 def rodent_mocap(
     kp_data,
     params: Dict,
