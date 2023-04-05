@@ -9,7 +9,7 @@ import numpy as np
 import pickle
 import os
 from typing import List, Dict, Tuple, Text
-
+from tqdm import tqdm
 
 def root_optimization(env, params: Dict, frame: int = 0):
     """Optimize only the root.
@@ -98,7 +98,8 @@ def pose_optimization(env, params: Dict) -> Tuple:
         ]
 
     # Iterate through all of the frames in the clip
-    for n_frame in range(params["n_frames"]):
+    frames = list(range(params["n_frames"]))
+    for n_frame in tqdm(frames):
         # Optimize over all points
         stac_base.q_phase(
             env.physics,
